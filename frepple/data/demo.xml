@@ -419,22 +419,22 @@
         <record id="res_partner_cushion_supplier" model="res.partner">
             <field name="name">cushion supplier</field>
             <field eval="[(6, 0, [ref('base.res_partner_category_0')])]" name="category_id"/>
-            <field name="supplier">1</field>
-            <field eval="0" name="customer"/>
+            <field name="supplier_rank">1</field>
+            <field eval="0" name="customer_rank"/>
             <field name="is_company">1</field>
         </record>        
         <record id="res_partner_screw_supplier" model="res.partner">
             <field name="name">screw supplier</field>
             <field eval="[(6, 0, [ref('base.res_partner_category_0')])]" name="category_id"/>
-            <field name="supplier">1</field>
-            <field eval="0" name="customer"/>
+            <field name="supplier_rank">1</field>
+            <field eval="0" name="customer_rank"/>
             <field name="is_company">1</field>
         </record> 
         <record id="res_partner_wood_supplier" model="res.partner">
             <field name="name">wood supplier</field>
             <field eval="[(6, 0, [ref('base.res_partner_category_0')])]" name="category_id"/>
-            <field name="supplier">1</field>
-            <field eval="0" name="customer"/>
+            <field name="supplier_rank">1</field>
+            <field eval="0" name="customer_rank"/>
             <field name="is_company">1</field>
         </record>         
 	</data>

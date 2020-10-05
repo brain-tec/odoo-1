@@ -49,7 +49,29 @@
                      </div>                     
                      <field name="frepple_server"/> 
                   </div>   
-               </div>               
+               </div>
+               <div class="col-12 col-lg-6 o_setting_box" id="frepple_sol_domain">
+                  <div class="o_setting_left_pane"/>
+                  <div class="o_setting_right_pane">
+                     <label for="sol_domain"/>
+                     <div class="text-muted">
+                     Domain to filter Sale Order lines to be synchronized with Frepple
+                     </div>
+                      <field name="sol_domain"/>
+                  </div>
+               </div>
+               <div class="col-12 col-lg-6 o_setting_box" id="frepple_bom_dummy_route_id">
+                  <div class="o_setting_left_pane" invisible="1"/>
+                  <div class="o_setting_right_pane">
+                     <label for="frepple_bom_dummy_route_id"/>
+                     <div class="text-muted">
+                     The frePPLe XML requires to indicate a route for every BoM. Odoo does not
+                     require this, thus this dummy route will be used to export BoM from Odoo
+                     to frePPLe in a way that the XML is compliant.
+                     </div>
+                      <field name="frepple_bom_dummy_route_id"/>
+                  </div>
+               </div>
             </div>
             </div>
             </xpath>

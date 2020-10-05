@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2019 by frePPLe bv
+# Copyright (c) 2020 brain-tec AG (https://braintec-group.com)
 #
 # This library is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Affero General Public License as published
@@ -37,3 +38,11 @@ class ResConfigSettings(models.TransientModel):
     frepple_server = fields.Char(
         "frePPLe server", size=128, related="company_id.frepple_server", readonly=False
     )
+    sol_domain = fields.Text(
+        string="Sale Order Line Domain", related="company_id.sol_domain", readonly=False)
+    frepple_bom_dummy_route_id = fields.Many2one(
+        "mrp.routing", string="Route for BoM",
+        related="company_id.frepple_bom_dummy_route_id", readonly=False,
+        help="The frePPLe XML requires to indicate a route for every BoM. Odoo does not "
+             "require this, thus this dummy route will be used to export BoM from Odoo "
+             "to frePPLe in a way that the XML is compliant.")

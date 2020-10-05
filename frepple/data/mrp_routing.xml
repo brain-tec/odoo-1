@@ -1,0 +1,5 @@
+<odoo>
+    <record id="dummy_mrp_routing_frepple" model="mrp.routing">
+        <field name="name">Dummy MRP Routing for frePPLe</field>
+    </record>
+</odoo>

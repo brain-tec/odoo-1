@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2014 by frePPLe bv
+# Copyright (c) 2020 brain-tec AG (https://braintec-group.com)
 #
 # This library is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Affero General Public License as published
@@ -34,12 +35,29 @@ class ResCompany(models.Model):
     _name = "res.company"
     _inherit = "res.company"
 
+    @api.model
+    def _get_default_frepple_bom_dummy_route_id(self):
+        return self.env.ref('frepple.dummy_mrp_routing_frepple', raise_if_not_found=False)
+
     manufacturing_warehouse = fields.Many2one(
         "stock.warehouse", "Manufacturing warehouse", ondelete="set null"
     )
     calendar = fields.Many2one("resource.calendar", "Calendar", ondelete="set null")
     webtoken_key = fields.Char("Webtoken key", size=128)
     frepple_server = fields.Char("frePPLe web server", size=128)
+    sol_domain = fields.Text(
+        default="[('order_id.warehouse_id', '!=', False),"
+                "('order_id.partner_id', '!=', False),"
+                "('product_id', '!=', False)]",
+        string="Sale Order Line Domain")
+    frepple_bom_dummy_route_id = fields.Many2one(
+        "mrp.routing", string='Dummy Route for BoM', required=True,
+        default=_get_default_frepple_bom_dummy_route_id,
+        help="See the configuration flag for frePPLe.")
+    internal_moves_domain = fields.Text(
+        "Internal Moves Domain", default="[]")
+    stock_rules_domain = fields.Text(
+        "Stock Rules Domain", default="[]")
 
     @api.model
     def getFreppleURL(self, navbar=True, _url="/"):

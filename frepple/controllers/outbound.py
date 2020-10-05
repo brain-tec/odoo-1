@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2014 by frePPLe bv
+# Copyright (c) 2020 brain-tec AG (https://braintec-group.com)
 #
 # This library is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Affero General Public License as published
@@ -20,7 +21,7 @@ from xml.sax.saxutils import quoteattr
 from datetime import datetime, timedelta
 from operator import itemgetter
 
-import odoo
+import ast
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,8 @@ class exporter(object):
                 yield i
             for i in self.export_onhand():
                 yield i
+            yield self.export_move_lines()
+            yield self.export_stock_rules()
 
         # Footer
         yield "</plan>\n"
@@ -189,6 +192,19 @@ class exporter(object):
             int((float_time*60) % 60),  # duration: minutes
             int((float_time*3600) % 60 % 60),  # duration: seconds
         )
+
+    def _frepple_generate_common_fields_xml(self, odoo_record):
+        """ Calls a method from the ORM that returns triplets used to create
+            the XML for the common_fields. This is a Python class, that had to
+            be monkey-patched; we call the method in the ORM to allow a regular
+            Odoo-inheritance from other modules, while keeping the generation
+            of the XML untouched.
+        """
+        xml_str = []
+        for field_type, field_name, field_value in odoo_record._frepple_get_common_fields():
+            xml_str.append('<{} name="{}" value={}/>'.format(
+                field_type, field_name, quoteattr(field_value)))
+        return xml_str
 
     def export_calendar(self):
         """
@@ -279,7 +295,74 @@ class exporter(object):
             yield "<!-- No holidays since the HR module is not installed -->\n"
         yield "</buckets></calendar></calendars>\n"
 
-    def export_locations(self):
+    def _generate_locations_from_location_xml(self, warehouse, location, ctx=None):
+        ctx = ctx if ctx else {}
+        prefix_location = ctx.get('test_prefix', '') if 'test_export_locations' in ctx else ''
+
+        xml_str = []
+        if location and location.name.startswith(prefix_location):
+            self.map_locations[location.id] = warehouse.name  # They want the warehouse's *name*
+            xml_str.extend([
+                '<location name={} subcategory="{}" description="location">'.format(
+                    quoteattr(location.name), location.id),
+                '<available name={}/>'.format(quoteattr(self.calendar)),
+            ])
+
+            children_locations = self.env['stock.location'].search([
+                ('location_id', '=', location.id),  # The 'parent_id' field, named here 'location_id'.
+            ])
+            if 'test_export_locations' in ctx:
+                children_locations = children_locations.filtered(
+                    lambda warehouse: warehouse.name.startswith(ctx['test_prefix']))
+
+            if children_locations:
+                xml_str.append('<members>')
+                for child_location in children_locations:
+                    xml_str.extend(self._generate_locations_from_location_xml(warehouse, child_location, ctx=ctx))
+                xml_str.append('</members>')
+
+            xml_str.append('</location>')
+        return xml_str
+
+    def _generate_locations_from_warehouse_xml(self, warehouse, ctx=None):
+        """ This assumes a location belongs to only one warehouse.
+            Returns the hierarchical xml structure for it.
+        """
+        ctx = ctx if ctx else {}
+
+        xml_str = ['<members>']
+
+        for location in [
+            warehouse.wh_input_stock_loc_id,
+            warehouse.wh_output_stock_loc_id,
+            warehouse.wh_pack_stock_loc_id,
+            warehouse.wh_qc_stock_loc_id,
+            warehouse.view_location_id,
+        ]:
+            xml_str.extend(self._generate_locations_from_location_xml(warehouse, location, ctx=ctx))
+
+        xml_str.append('</members>')
+        return xml_str
+
+    def _export_warehouses(self, warehouses, ctx=None):
+        ctx = ctx if ctx else {}
+
+        xml_str = []
+
+        for warehouse in warehouses:
+            self.warehouses.add(warehouse.name)
+
+            xml_str.extend([
+                '<location name={} subcategory="{}" description="warehouse">'.format(
+                    quoteattr(warehouse.name), warehouse.id),
+                '<available name={}/>'.format(quoteattr(self.calendar)),
+            ])
+            xml_str.extend(self._generate_locations_from_warehouse_xml(warehouse, ctx=ctx))
+            xml_str.append('</location>')
+
+        return xml_str
+
+    def export_locations(self, ctx=None):
         """
         Generate a list of warehouse locations to frePPLe, based on the
         stock.warehouse model.
@@ -297,83 +380,75 @@ class exporter(object):
         Mapping:
         stock.warehouse.name -> location.name
         stock.warehouse.id -> location.subcategory
+
+        Provides a hierarchy of locations using the <members>. Other consideration is:
+        locations were used for warehouses, not for locations. To differentiate,
+        The common_attributes/description is used, with either 'warehouse' or 'location'.
+
+        The optional context (ctx) is to test easily.
         """
         self.map_locations = {}
         self.warehouses = set()
-        childlocs = {}
-        m = self.env["stock.warehouse"]
-        recs = m.search([])
-        if recs:
-            yield "<!-- warehouses -->\n"
-            yield "<locations>\n"
-            fields = [
-                "name",
-                "wh_input_stock_loc_id",
-                "wh_output_stock_loc_id",
-                "wh_pack_stock_loc_id",
-                "wh_qc_stock_loc_id",
-                "view_location_id",
-            ]
-            for i in recs.read(fields):
-                yield '<location name=%s subcategory="%s"><available name=%s/></location>\n' % (
-                    quoteattr(i["name"]),
-                    i["id"],
-                    quoteattr(self.calendar),
-                )
-                childlocs[i["wh_input_stock_loc_id"][0]] = i["name"]
-                childlocs[i["wh_output_stock_loc_id"][0]] = i["name"]
-                childlocs[i["wh_pack_stock_loc_id"][0]] = i["name"]
-                childlocs[i["wh_qc_stock_loc_id"][0]] = i["name"]
-                childlocs[i["view_location_id"][0]] = i["name"]
-                self.warehouses.add(i["name"])
-            yield "</locations>\n"
 
-            # Populate a mapping location-to-warehouse name for later lookups
-            parent_loc = {}
-            m = self.env["stock.location"]
-            recs = m.search([])
-            for i in recs.read(["location_id"]):
-                if i["location_id"]:
-                    parent_loc[i["id"]] = i["location_id"][0]
+        warehouses = self.env['stock.warehouse'].search([], order='id')
+        if 'test_export_locations' in ctx:
+            warehouses = warehouses.filtered(lambda warehouse: warehouse.name.startswith(ctx['test_prefix']))
 
-            marked = {}
+        xml_str = [
+            '<!-- warehouses -->',
+            '<locations>',
+        ]
+        xml_str.extend(self._export_warehouses(warehouses, ctx=ctx))
+        xml_str.append('</locations>')
+        return '\n'.join(xml_str)
 
-            def fnd_parent(loc_id):  # go up the parent chain to find the warehouse
-                if not marked.get(loc_id):  # ensures O(N) iterations instead of O(N^2)
-                    if childlocs.get(loc_id):
-                        return childlocs[loc_id]
-                    if parent_loc.get(loc_id):
-                        parent = fnd_parent(parent_loc[loc_id])
-                        if parent > 0:
-                            return parent
-                marked[loc_id] = True
-                return -1
+    def _export_customers(self, customers):
+        """ Auxiliary method to export the customers.
+            If partner_affiliates is installed, the field affiliate_ids will be
+            inside the res.partner, so we use it.
+        """
+        xml_str = []
+        if customers:
+            for customer in customers:
+                customer_name = '{} {}'.format(customer.id, customer.name)
+                common_fields = self._frepple_generate_common_fields_xml(customer)
+                if common_fields:
+                    xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
+                    xml_str.extend(common_fields)
+                    xml_str.append('</customer>')
+                else:
+                    xml_str.append('<customer name={}/>'.format(quoteattr(customer_name)))
+        return xml_str
 
-            for loc_id in recs:
-                parent = fnd_parent(loc_id)
-                if parent > 0:
-                    self.map_locations[loc_id] = parent
-
-    def export_customers(self):
+    def export_customers(self, ctx=None):
         """
         Generate a list of customers to frePPLe, based on the res.partner model.
         We filter on res.partner where customer = True.
 
         Mapping:
         res.partner.id res.partner.name -> customer.name
+
+        Implements a hierarchy for customers using <members>.
+
+        The optional context (ctx) is to test easily.
         """
-        self.map_customers = {}
-        m = self.env["res.partner"]
-        recs = m.search([("is_company", "=", True), ("customer_rank", ">", 0)])
-        if recs:
-            yield "<!-- customers -->\n"
-            yield "<customers>\n"
-            fields = ["name"]
-            for i in recs.read(fields):
-                name = "%d %s" % (i["id"], i["name"])
-                yield "<customer name=%s/>\n" % quoteattr(name)
-                self.map_customers[i["id"]] = name
-            yield "</customers>\n"
+        if ctx is None:
+            ctx = {}
+
+        customers = self.env['res.partner'].search([
+            ('customer_rank', '>', 0),
+            ('parent_id', '=', False),
+        ], order='id')
+        if 'test_export_customers' in ctx:
+            customers = customers.filtered(lambda customer: customer.name.startswith(ctx['test_prefix']))
+
+        xml_str = [
+            '<!-- customers -->',
+            '<customers>',
+        ]
+        xml_str.extend(self._export_customers(customers))
+        xml_str.append('</customers>')
+        return '\n'.join(xml_str)
 
     def export_suppliers(self):
         """
@@ -424,7 +499,7 @@ class exporter(object):
                 )
             yield "</resources>\n"
 
-    def export_items(self):
+    def export_items(self, ctx=None):
         """
         Send the list of products to frePPLe, based on the product.product model.
         For purchased items we also create a procurement buffer in each warehouse.
@@ -445,96 +520,111 @@ class exporter(object):
         supplierinfo.date_end -> itemsupplier.effective_end
         product.product.product_tmpl_id.delay -> itemsupplier.leadtime
         '1' -> itemsupplier.priority
+
+        Using the <members> I create a hierarchy of categories/products, first the
+        products of the parent category, then their sub-categories.
         """
-        # Read the product templates
-        self.product_product = {}
-        self.product_template_product = {}
-        m = self.env["product.template"]
-        fields = [
-            "purchase_ok",
-            # "route_ids", #does not exist anymore in odoo 12
-            # "bom_ids",  #does not exist anymore in odoo 12
-            "produce_delay",
-            "list_price",
-            "uom_id",
-            # "seller_ids",  #does not exist anymore in odoo 12
-            # "standard_price",  #does not exist anymore in odoo 12
-        ]
-        recs = m.search([])
-        self.product_templates = {}
-        for i in recs.read(fields):
-            self.product_templates[i["id"]] = i
+        ctx = ctx if ctx else {}
 
-        # Read the stock location routes
-        # rts = self.env["stock.location.route"]
-        # fields = ["name"]
-        # recs = rts.search([])
+        xml_str = []
 
-        # Read the suppliers
-        m = self.env["res.partner"]
-        recs = m.search(
-            [
-                ("is_company", "=", True),
-                ("supplier_rank", ">", 0),
-                ("active", "=", True),
-            ]
-        )
-        supplier_id = {}
-        fields = ["id", "name"]
-        for i in recs.read(fields):
-            supplier_id[i["id"]] = i["name"]
+        # To ease testing, we alter the domain of the records we retrieve
+        # depending on a flag set in the context.
+        if 'test_export_items' in ctx:
+            search_domain_products = [('name', 'like', '{}%'.format(ctx['test_prefix']))]
+            search_domain_templates = [('name', 'like', '{}%'.format(ctx['test_prefix']))]
+            search_domain_suppliers = [('name.name', 'like', '{}%'.format(ctx['test_prefix']))]
+            search_domain_product_categories = [('name', 'like', '{}%'.format(ctx['test_prefix']))]
+        else:
+            search_domain_products = []
+            search_domain_templates = []
+            search_domain_suppliers = []
+            search_domain_product_categories = []
 
-        # Read the products
-        m = self.env["product.product"]
-        recs = m.search([])
-        s = self.env["product.supplierinfo"]
-        s_fields = ["name", "delay", "min_qty", "date_end", "date_start", "price"]
-        if recs:
-            yield "<!-- products -->\n"
-            yield "<items>\n"
-            fields = ["id", "name", "code", "product_tmpl_id"]  # , "seller_ids"]
-            for i in recs.read(fields):
-                tmpl = self.product_templates[i["product_tmpl_id"][0]]
-                if i["code"]:
-                    name = u"[%s] %s" % (i["code"], i["name"])
-                else:
-                    name = i["name"]
-                prod_obj = {"name": name, "template": i["product_tmpl_id"][0]}
-                self.product_product[i["id"]] = prod_obj
-                self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
-                yield '<item name=%s cost="%f" subcategory="%s,%s">\n' % (
-                    quoteattr(name),
-                    (tmpl["list_price"] or 0)
-                    / self.convert_qty_uom(1.0, tmpl["uom_id"][0], i["id"]),
-                    self.uom_categories[self.uom[tmpl["uom_id"][0]]["category"]],
-                    i["id"],
-                )
-                # Export suppliers for the item, if the item is allowed to be purchased
-                if (
-                    tmpl["purchase_ok"]
-                    # and buy_route in tmpl["route_ids"]
-                    # and tmpl["seller_ids"] seller_ids doesn't exist anymore in odoo 12
-                ):
-                    yield "<itemsuppliers>\n"
-                    for sup in s.search([("product_tmpl_id", "=", tmpl["id"])]).read(
-                        s_fields
-                    ):
-                        name = "%d %s" % (sup["name"][0], sup["name"][1])
-                        yield '<itemsupplier leadtime="P%dD" priority="1" size_minimum="%f" cost="%f"%s%s><supplier name=%s/></itemsupplier>\n' % (
-                            sup["delay"],
-                            sup["min_qty"],
-                            sup["price"],
-                            ' effective_end="%s"' % sup["date_end"]
-                            if sup["date_end"]
-                            else "",
-                            ' effective_start="%s"' % sup["date_start"]
-                            if sup["date_start"]
-                            else "",
-                            quoteattr(name),
-                        )
-                    yield "</itemsuppliers>\n"
-                yield "</item>\n"
-            yield "</items>\n"
+        # We fill in the attributes the original method filled in.
+        # I keep them here because the original code defines and fills them ─ only because of that.
+        # The original code also loaded the location routes, that used for nothing, thus
+        # I don't load them...
+        self.product_product = dict()
+        self.product_template_product = dict()
+        self.product_supplier = dict()
+        self.product_templates = dict()
+        for product in self.env['product.product'].with_context(active_test=False).search(search_domain_products):
+            product_template_id = product.product_tmpl_id.id
+            product_data = {'name': product.name, 'template': product_template_id}
+            self.product_product[product.id] = product_data
+            self.product_template_product[product.product_tmpl_id.id] = product_data
+        for supplier in self.env['product.supplierinfo'].with_context(active_test=False).search(search_domain_suppliers):
+            self.product_supplier.setdefault(supplier.product_tmpl_id.id, []).append(
+                (supplier.name, supplier.delay, supplier.min_qty, supplier.date_end,
+                 supplier.date_start, supplier.price, supplier.sequence))
+        for product_template in self.env['product.template'].with_context(active_test=False).search_read(
+                search_domain_templates, ['purchase_ok', 'route_ids', 'bom_ids', 'produce_delay',
+                                          'list_price', 'uom_id', 'seller_ids', 'standard_price']):
+            self.product_templates[product_template['id']] = product_template
+
+        # Now we generate the XML.
+        xml_str.append('<!-- products -->')
+        xml_str.append('<items>')
+
+        top_categories = self.env['product.category'].search(
+            [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
+        for top_category in top_categories:
+            xml_str.extend(self._generate_category_xml(
+                top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
+
+        xml_str.append('</items>')
+        return '\n'.join(xml_str)
+
+    def _generate_category_xml(
+            self, category, search_domain_categories, search_domain_products, search_domain_suppliers):
+        xml_str = ['<item name={} category="{}" description="category">'.format(
+            quoteattr(category.name), category.id)]
+        products = self.env['product.product'].with_context(active_test=False).search(
+            [('product_tmpl_id.categ_id', '=', category.id)] + search_domain_products, order='id')
+        subcategories = self.env['product.category'].search(
+            [('parent_id', '=', category.id)] + search_domain_categories, order='name, id')
+
+        if products or subcategories:
+            xml_str.append('<members>')
+            for product in products:
+                xml_str.extend(self._generate_product_xml(
+                    product, search_domain_suppliers))
+            for subcategory in subcategories:
+                xml_str.extend(self._generate_category_xml(
+                    subcategory, search_domain_categories, search_domain_products, search_domain_suppliers))
+            xml_str.append('</members>')
+
+        xml_str.append('</item>')
+        return xml_str
+
+    def _generate_product_xml(self, product, search_domain_suppliers):
+        xml_str = ['<item name={} cost="{:0.6f}" category="{}" description="product">'.format(
+            quoteattr(product.name), product.list_price, product.id)]
+
+        suppliers = self.env['product.supplierinfo'].search([
+            ('product_tmpl_id', '=', product.product_tmpl_id.id),
+        ] + search_domain_suppliers, order='id')
+        for supplier_no, supplier in enumerate(suppliers):
+            if supplier_no == 0:
+                xml_str.append('<itemsuppliers>')
+
+            seller = supplier.name
+            supplier_name = "{} {}".format(seller.id, seller.name)
+            xml_str.extend([
+                '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
+                'cost="{:0.6f}">'.format(
+                    supplier.delay, supplier.sequence, supplier.price),
+                '<supplier name={}/>'.format(quoteattr(supplier_name)),
+                '</itemsupplier>',
+            ])
+
+            if supplier_no == len(suppliers) - 1:
+                xml_str.append('</itemsuppliers>')
+
+        xml_str.extend(self._frepple_generate_common_fields_xml(product))
+        xml_str.append('</item>')
+        return xml_str
 
     def export_boms(self):
         """
@@ -599,6 +689,14 @@ class exporter(object):
         except Exception:
             subproduct_model = None
 
+        # The mrp.routing is not mandatory in Odoo for an mrp.bom,
+        # but is required by frePPLe when exporting an mrp.bom, thus
+        # we use the dummy one defined in the company if none is
+        # indicated.
+        company = self.env['res.company'].browse(self.company_id)
+        dummy_mrp_route = company.frepple_bom_dummy_route_id
+        dummy_mrp_route_m2o_read = (dummy_mrp_route.id, dummy_mrp_route.name)
+
         # Loop over all bom records
         bom_recs = self.env["mrp.bom"].search([])
         bom_fields = [
@@ -610,6 +708,9 @@ class exporter(object):
             "bom_line_ids",
         ]
         for i in bom_recs.read(bom_fields):
+            if not i['routing_id']:
+                i['routing_id'] = dummy_mrp_route_m2o_read
+
             # Determine the location
             if i["routing_id"]:
                 location = mrp_routings.get(i["routing_id"][0], None)
@@ -793,13 +894,12 @@ class exporter(object):
             yield "</operation>\n"
         yield "</operations>\n"
 
-    def export_salesorders(self):
+    def export_salesorders(self, ctx=None):
         """
-        Send confirmed sales order lines as demand to frePPLe, using the
-        sale.order and sale.order.line models.
+        if ctx is None:
+            ctx = {}
 
-        Each order is linked to a warehouse, which is used as the location in
-        frePPLe.
+        xml_str = []
 
         Only orders in the status 'draft' and 'sale' are extracted.
 
@@ -820,130 +920,88 @@ class exporter(object):
         stock.warehouse.name -> demand->location
         (if sale.order.picking_policy = 'one' then same as demand.quantity else 1) -> demand.minshipment
         """
-        # Get all sales order lines
-        m = self.env["sale.order.line"]
-        recs = m.search([])
-        fields = [
-            "qty_delivered",
-            "state",
-            "product_id",
-            "product_uom_qty",
-            "product_uom",
-            "order_id",
-        ]
-        so_line = [i for i in recs.read(fields)]
+        if ctx is None:
+            ctx = {}
 
-        # Get all sales orders
-        m = self.env["sale.order"]
-        ids = [i["order_id"][0] for i in so_line]
-        fields = [
-            "state",
-            "partner_id",
-            "commitment_date",
-            "date_order",
-            "picking_policy",
-            "warehouse_id",
-        ]
-        so = {}
-        for i in m.browse(ids).read(fields):
-            so[i["id"]] = i
+        xml_str = []
+
+        # Get all sales order lines
+        so_lines_datas = self.env['sale.order.line'].search_read(
+            ast.literal_eval(self.env.user.company_id.sol_domain),
+            ['qty_delivered', 'state', 'product_id', 'product_uom_qty', 'product_uom', 'order_id'],
+            order='order_id, id')
+
+        if 'test_export_salesorders' in ctx:
+            filtered_so_lines_datas = []
+            for so_line_data in so_lines_datas:
+                sale_order = self.env['sale.order'].browse(so_line_data['order_id'][0])
+                if sale_order.partner_id.name.startswith(ctx['test_prefix']):
+                    filtered_so_lines_datas.append(so_line_data)
+            so_lines_datas = filtered_so_lines_datas
 
         # Generate the demand records
-        yield "<!-- sales order lines -->\n"
-        yield "<demands>\n"
+        xml_str.append('<!-- sales order lines -->')
+        xml_str.append('<demands>')
 
-        for i in so_line:
-            name = u"%s %d" % (i["order_id"][1], i["id"])
-            product = self.product_product.get(i["product_id"][0], None)
-            j = so[i["order_id"][0]]
-            location = j["warehouse_id"][1]
-            customer = self.map_customers.get(j["partner_id"][0], None)
-            if not customer or not location or not product:
-                # Not interested in this sales order...
-                continue
-            due = j.get("requested_date", False) or j["date_order"]
-            priority = 1  # We give all customer orders the same default priority
+        # We cache the sale order, since it's likely consecutive iterations have the same sale order.
+        sale_order = None
+        for so_line_data in so_lines_datas:
+            if sale_order is None or sale_order.id != so_line_data['order_id'][0]:
+                sale_order = self.env['sale.order'].browse(so_line_data['order_id'][0])
 
-            # Possible sales order status are 'draft', 'sent', 'sale', 'done' and 'cancel'
-            state = j.get("state", "sale")
-            if state == "draft":
-                status = "quote"
-                qty = self.convert_qty_uom(
-                    i["product_uom_qty"], i["product_uom"][0], i["product_id"][0]
-                )
-            elif state == "sale":
-                qty = i["product_uom_qty"] - i["qty_delivered"]
-                if qty <= 0:
-                    status = "closed"
-                    qty = self.convert_qty_uom(
-                        i["product_uom_qty"], i["product_uom"][0], i["product_id"][0]
-                    )
+            so_line = self.env['sale.order.line'].browse(so_line_data['id'])
+
+            # Will change later, if state == 'sale' and there are pending things to deliver.
+            product_uom_qty = so_line_data['product_uom_qty']
+
+            # Maps the Odoo's status to the frePPLe status for sale orders.
+            state = sale_order.state
+            if state == 'draft':
+                frepple_status = 'quote'
+            elif state == 'sale':
+                delivered_uom_qty = so_line_data['product_uom_qty'] - so_line_data['qty_delivered']
+                if delivered_uom_qty <= 0:
+                    frepple_status = 'closed'
                 else:
-                    status = "open"
-                    qty = self.convert_qty_uom(
-                        qty, i["product_uom"][0], i["product_id"][0]
-                    )
-            elif state in ("done", "sent"):
-                status = "closed"
-                qty = self.convert_qty_uom(
-                    i["product_uom_qty"], i["product_uom"][0], i["product_id"][0]
-                )
-            elif state == "cancel":
-                status = "canceled"
-                qty = self.convert_qty_uom(
-                    i["product_uom_qty"], i["product_uom"][0], i["product_id"][0]
-                )
+                    frepple_status = 'open'
+                    product_uom_qty = delivered_uom_qty
+            elif state in ('done', 'sent'):
+                frepple_status = 'closed'
+            else:  # if state == "cancel":
+                frepple_status = 'canceled'
 
-            #           pick = self.req.session.model('stock.picking')
-            #           p_fields = ['move_lines', 'sale_id', 'state']
-            #           move = self.req.session.model('stock.move')
-            #           m_fields = ['product_id', 'product_uom_qty']
-            #           if j['picking_ids']:
-            #                 # The code below only works in specific situations.
-            #                 # If activated incorrectly it can lead to duplicate demands.
-            #                 # Here to export sale order line based that is closed by stock moves.
-            #                 # if DO line is done then demand status is closed
-            #                 # if DO line is cancel, it will skip the current DO line
-            #                 # else demand status is open
-            #                 pick_number = 0
-            #                 for p in pick.read(j['picking_ids'], p_fields, self.req.session.context):
-            #                     p_ids = p['move_lines']
-            #                     product_id = i['product_id'][0]
-            #                     mv_ids = move.search([('id', 'in', p_ids), ('product_id','=', product_id)], context=self.req.session.context)
-            #
-            #                     status = ''
-            #                     if p['state'] == 'done':
-            #                         if self.mode == 1:
-            #                           # Closed orders aren't transferred during a small run of mode 1
-            #                           continue
-            #                         status = 'closed'
-            #                     elif p['state'] == 'cancel':
-            #                         continue
-            #                     else:
-            #                         status = 'open'
-            #
-            #                     for mv in move.read(mv_ids, m_fields, self.req.session.context):
-            #                         logger.error("     C sales order line %s  %s " % (i, mv))
-            #                         pick_number = pick_number + 1
-            #                         name = u'%s %d %d' % (i['order_id'][1], i['id'], pick_number)
-            #                         yield '<demand name=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/></demand>\n' % (
-            #                             quoteattr(name), mv['product_uom_qty'], due.strftime("%Y-%m-%dT%H:%M:%S")
-            #                             priority, minship,status, quoteattr(product['name']),
-            #                             quoteattr(customer), quoteattr(location)
-            #                         )
-            yield '<demand name=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/></demand>\n' % (
-                quoteattr(name),
-                qty,
-                due.strftime("%Y-%m-%dT%H:%M:%S"),
-                priority,
-                j["picking_policy"] == "one" and qty or 1.0,
-                status,
-                quoteattr(product["name"]),
-                quoteattr(customer),
-                quoteattr(location),
+            qty = self.convert_qty_uom(
+                product_uom_qty,
+                so_line_data['product_uom'][0],
+                so_line_data['product_id'][0]
             )
 
-        yield "</demands>\n"
+            name = '%s %d' % (sale_order.name, so_line_data['id'])
+            product = self.product_product.get(so_line_data['product_id'][0], None)
+            location = sale_order.warehouse_id.name
+            customer_name = self._get_customer_name_for_demands(sale_order)
+            due = getattr(sale_order, 'requested_date', False) or sale_order.date_order
+
+            xml_str.extend([
+                '<demand name={} quantity="{}" due="{}" priority="1" '
+                'minshipment="{}" description="status={}">'.format(
+                    quoteattr(name), qty, due.strftime('%Y-%m-%dT%H:%M:%S'),
+                    sale_order.picking_policy == 'one' and qty or 1.0, frepple_status,
+                ),
+                '<item name={}/>'.format(quoteattr(product['name'])),
+                '<customer name={}/>'.format(quoteattr(customer_name)),
+                '<location name={}/>'.format(quoteattr(location)),
+            ])
+            xml_str.extend(self._frepple_generate_common_fields_xml(so_line))
+            xml_str.append('</demand>')
+
+        xml_str.append('</demands>')
+        return '\n'.join(xml_str)
+
+    def _get_customer_name_for_demands(self, sale_order):
+        """ Returns the name of a customer in a <demand> item.
+        """
+        return '{} {}'.format(sale_order.partner_id.id, sale_order.partner_id.name)
 
     def export_purchaseorders(self):
         """
@@ -1126,7 +1184,7 @@ class exporter(object):
                 )
             yield "</buffers>\n"
 
-    def export_onhand(self):
+    def export_onhand(self, ctx=None):
         """
         Extracting all on hand inventories to frePPLe.
 
@@ -1138,6 +1196,7 @@ class exporter(object):
         stock.report.prodlots.location_id.name -> buffer.location
         sum(stock.report.prodlots.qty) -> buffer.onhand
         """
+        ctx = ctx if ctx else {}
         yield "<!-- inventory -->\n"
         yield "<buffers>\n"
         self.env.cr.execute(
@@ -1164,3 +1223,112 @@ class exporter(object):
                 quoteattr(key[1]),
             )
         yield "</buffers>\n"
+
+    def export_stock_rules(self, ctx=None):
+        """ Exports the selected stock.rules, according to the domain set on the res.company.
+        """
+        if ctx is None:
+            ctx = {}
+
+        xml_str = [
+            '<!-- Stock Rules -->',
+            '<itemdistributions>',
+        ]
+
+        stock_rules = self.env['stock.rule'].search(
+            ast.literal_eval(self.env.user.company_id.stock_rules_domain),
+            order='location_src_id, location_id, delay DESC')
+        if 'test_export_stock_rules' in ctx:
+            stock_rules = stock_rules.filtered(lambda rule: rule.route_id.name.startswith(ctx['test_prefix']))
+
+        # We show all the stock.rules, without considering the stock.location.route
+        # they come from. Thus, it may be that we have duplicates for the same combination
+        # of origin & destination. In this case, we choose the one with the higher delay.
+        unique_rules = []
+        for rule_no, rule in enumerate(stock_rules):
+            if rule_no == 0:
+                unique_rules.append(rule)
+            else:
+                # We check if the current one has the same combination of locations than the
+                # the last one; in that case, since we order descending delay, we know the
+                # current one has a lower delay, thus we skip it because of being duplicated
+                # *and* having a lower delay (we want to keep the highest delay here, to
+                # be on the safe side).
+                last = unique_rules[-1]
+                if rule.location_src_id != last.location_src_id or rule.location_id != last.location_id:
+                    unique_rules.append(rule)
+        unique_rules = self.env['stock.rule'].browse([rule.id for rule in unique_rules])
+
+        for rule in unique_rules:
+            xml_str.append('<itemdistribution>')
+            if rule.location_src_id:
+                xml_str.append('<origin name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
+                    loc_name=quoteattr(rule.location_src_id.name),
+                    loc_id=rule.location_src_id.id))
+            xml_str.append('<destination name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
+                loc_name=quoteattr(rule.location_id.name),
+                loc_id=rule.location_id.id))
+            if rule.delay:
+                xml_str.append('<leadtime>P{}D</leadtime>'.format(rule.delay or 0))
+            xml_str.append('</itemdistribution>')
+
+        xml_str.append('</itemdistributions>')
+        return '\n'.join(xml_str)
+
+    def export_move_lines(self, ctx=None):
+        """ Extracts the move lines, according to the domain set on the res.company.
+        """
+        if ctx is None:
+            ctx = {}
+
+        xml_str = [
+            '<!-- Stock Move Lines -->',
+            '<operationplans>',
+        ]
+
+        move_lines = self.env['stock.move.line'].search(
+            ast.literal_eval(self.env.user.company_id.internal_moves_domain),
+            order='id')
+        if 'test_export_move_lines' in ctx:
+            move_lines = move_lines.filtered(lambda move_line: move_line.reference.startswith(ctx['test_prefix']))
+
+        # Status between stock.move.line in Odoo and in frePPLe differ.
+        # The following dictionary maps Odoo's status into frePPLe's status.
+        status_mapping = {
+            'draft': 'proposed',
+            'waiting': 'approved',
+            'confirmed': 'approved',
+            'partially_available': 'approved',
+            'assigned': 'confirmed',
+            'done': 'completed',
+            'cancel': 'closed',
+        }
+
+        for move_line in move_lines:
+            product = move_line.product_id
+            location_origin = move_line.location_id
+            location_dest = move_line.location_dest_id
+
+            xml_str.append(
+                '<operationplan '
+                'ordertype="DO" '
+                'reference="{reference}" '
+                'start="{start}" '
+                'quantity="{quantity}" '
+                'status="{status}">'.format(
+                    reference=move_line.id,
+                    start=move_line.date.strftime("%Y-%m-%dT%H:%M:%S"),
+                    quantity=move_line.qty_done,
+                    status=status_mapping.get(move_line.state, 'closed')))
+            xml_str.extend([
+                '<item name={product_name} category="{product_id}" description="Product"/>'.format(
+                    product_name=quoteattr(product.name), product_id=product.id),
+                '<location name={location_name} subcategory="{location_id}" description="Dest. location"/>'.format(
+                    location_name=quoteattr(location_dest.name), location_id=location_dest.id),
+                '<origin name={location_name} subcategory="{location_id}" description="Origin location"/>'.format(
+                    location_name=quoteattr(location_origin.name), location_id=location_origin.id),
+            ])
+            xml_str.append('</operationplan>')
+
+        xml_str.append('</operationplans>')
+        return '\n'.join(xml_str)
