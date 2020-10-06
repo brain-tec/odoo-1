@@ -132,6 +132,7 @@ class TestBase(TransactionCase):
         create_values = {
             'name': name,
             'product_id': product.id,
+            'company_id': self.env.user.company_id.id,
         }
         create_values.update(defaults)
         return self.env['stock.production.lot'].create(create_values)
@@ -141,8 +142,8 @@ class TestBase(TransactionCase):
         """
         inventory = self.env['stock.inventory'].create({
             'name': 'Test Inventory Adjustment {}'.format(fields.Datetime.now()),
-            'filter': 'partial',
-            'operating_unit_use_trade_management': False,  # Added so that tests pass in an integrated way.
+            'product_ids': [(4, product.id)],
+            # 'operating_unit_use_trade_management': False,  # Added so that tests pass in an integrated way.
             'line_ids': [(0, 0, {
                 'product_id': product.id,
                 'product_qty': qty,
@@ -150,5 +151,6 @@ class TestBase(TransactionCase):
                 'location_id': location.id
             })]
         })
+        inventory.action_start()
         inventory.action_validate()
         return inventory
