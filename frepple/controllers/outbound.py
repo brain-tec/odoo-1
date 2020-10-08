@@ -387,6 +387,7 @@ class exporter(object):
 
         The optional context (ctx) is to test easily.
         """
+        ctx = ctx if ctx else {}
         self.map_locations = {}
         self.warehouses = set()
 
