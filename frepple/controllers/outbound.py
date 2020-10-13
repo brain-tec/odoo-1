@@ -142,7 +142,7 @@ class exporter(object):
 
     def load_uom(self):
         """
-        Loading units of measures into a dictinary for fast lookups.
+        Loading units of measures into a dictionary for fast lookups.
 
         All quantities are sent to frePPLe as numbers, expressed in the default
         unit of measure of the uom dimension.
@@ -159,10 +159,10 @@ class exporter(object):
                 f = 1.0
                 self.uom_categories[i["category_id"][0]] = i["id"]
             elif i["uom_type"] == "bigger":
-                f = i["factor"]
+                f = 1 / i["factor"]
             else:
                 if i["factor"] > 0:
-                    f = 1 / i["factor"]
+                    f = i["factor"]
                 else:
                     f = 1.0
             self.uom[i["id"]] = {
@@ -173,22 +173,46 @@ class exporter(object):
 
     def convert_qty_uom(self, qty, uom_id, product_id=None):
         """
-        Convert a quantity to the reference uom of the product.
-        The default implementation doesn't consider the product at all, and just
-        converts to the reference unit of the uom category.
+        Convert a quantity to the reference uom of the product.        
         """
         if not uom_id:
             return qty
-        return qty * self.uom[uom_id]["factor"]
+        if not product_id:
+            return qty * self.uom[uom_id]["factor"]
+        try:
+            product_uom = self.product_templates[
+                self.product_product[product_id]["template"]
+            ]["uom_id"][0]
+        except Exception as e:
+            # try with template_id rather than product_id
+            try:
+                product_uom = self.product_templates[product_id]["uom_id"][0]
+            except:
+                return qty * self.uom[uom_id]["factor"]
+        # check if default product uom is the one we received
+        if product_uom == uom_id:
+            return qty
+        # check if different uoms welong to the same category
+        if self.uom[product_uom]["category"] == self.uom[uom_id]["category"]:
+            return qty * self.uom[uom_id]["factor"] / self.uom[product_uom]["factor"]
+        else:
+            # UOM is from a different category as the reference uom of the product.
+            logger.warning(
+                "Can't convert from %s for product %s"
+                % (self.uom[uom_id]["name"], product_id)
+            )
+            return qty * self.uom[uom_id]["factor"]
 
     def convert_float_time(self, float_time):
         """
         Convert Odoo float time to ISO 8601 duration.
         """
-        return "PT%dH%dM%dS" % (
-            int(float_time),  # duration: hours
-            int((float_time * 60) % 60),  # duration: minutes
-            int((float_time * 3600) % 60 % 60),  # duration: seconds
+        d = timedelta(days=float_time)
+        return "P%dDT%dH%dM%dS" % (
+            d.days,  # duration: days
+            int(d.seconds / 3600),  # duration: hours
+            int((d.seconds % 3600) / 60),  # duration: minutes
+            int(d.seconds % 60),  # duration: seconds
         )
 
     def export_calendar(self):
@@ -309,6 +333,7 @@ class exporter(object):
             yield "<locations>\n"
             fields = [
                 "name",
+                "lot_stock_id",
                 "wh_input_stock_loc_id",
                 "wh_output_stock_loc_id",
                 "wh_pack_stock_loc_id",
@@ -321,11 +346,15 @@ class exporter(object):
                     i["id"],
                     quoteattr(self.calendar),
                 )
+                childlocs[i["lot_stock_id"][0]] = i["name"]
                 childlocs[i["wh_input_stock_loc_id"][0]] = i["name"]
                 childlocs[i["wh_output_stock_loc_id"][0]] = i["name"]
                 childlocs[i["wh_pack_stock_loc_id"][0]] = i["name"]
                 childlocs[i["wh_qc_stock_loc_id"][0]] = i["name"]
                 childlocs[i["view_location_id"][0]] = i["name"]
+                # also add warehouse id for future lookups
+                childlocs[i["id"]] = i["name"]
+
                 self.warehouses.add(i["name"])
             yield "</locations>\n"
 
@@ -351,9 +380,9 @@ class exporter(object):
                 return -1
 
             for loc_id in recs:
-                parent = fnd_parent(loc_id)
+                parent = fnd_parent(loc_id["id"])
                 if parent > 0:
-                    self.map_locations[loc_id] = parent
+                    self.map_locations[loc_id["id"]] = parent
 
     def export_customers(self):
         """
@@ -450,76 +479,97 @@ class exporter(object):
         # Read the product templates
         self.product_product = {}
         self.product_template_product = {}
+        self.category_parent = {}
+
+        m = self.env["product.category"]
+        fields = ["name", "parent_id"]
+        recs = m.search([])
+        for i in recs.read(fields):
+            if i["parent_id"]:
+                self.category_parent[i["name"]] = i["parent_id"]
+
         m = self.env["product.template"]
         fields = [
             "purchase_ok",
-            "route_ids",
-            "bom_ids",
+            "name",
             "produce_delay",
             "list_price",
             "uom_id",
-            "seller_ids",
-            "standard_price",
+            "categ_id",
         ]
         recs = m.search([])
         self.product_templates = {}
         for i in recs.read(fields):
             self.product_templates[i["id"]] = i
 
-        # Read the stock location routes
-        rts = self.env["stock.location.route"]
-        fields = ["name"]
-        recs = rts.search([])
-        stock_location_routes = {}
-        buy_route = None
-        for i in recs.read(fields):
-            stock_location_routes[i["id"]] = i
-            if i["name"] == "Buy":
-                # Recognize items that can be purchased
-                buy_route = i["id"]
-
         # Read the products
         m = self.env["product.product"]
         recs = m.search([])
         s = self.env["product.supplierinfo"]
-        s_fields = ["name", "delay", "min_qty", "date_end", "date_start", "price"]
+        s_fields = [
+            "name",
+            "delay",
+            "min_qty",
+            "date_end",
+            "date_start",
+            "price",
+            "product_tmpl_id",
+            "priority",
+        ]
         if recs:
             yield "<!-- products -->\n"
             yield "<items>\n"
-            fields = ["id", "name", "code", "product_tmpl_id", "seller_ids"]
+            fields = ["id", "default_code", "product_tmpl_id", "seller_ids"]
             for i in recs.read(fields):
+                if not i["product_tmpl_id"][0] in self.product_templates:
+                    continue
                 tmpl = self.product_templates[i["product_tmpl_id"][0]]
-                if i["code"]:
-                    name = u"[%s] %s" % (i["code"], i["name"])
+                if i["default_code"]:
+                    name = u"[%s] %s" % (i["default_code"], tmpl["name"])
                 else:
-                    name = i["name"]
-                prod_obj = {"name": name, "template": i["product_tmpl_id"][0]}
+                    name = tmpl["name"]
+                prod_obj = {
+                    "name": name,
+                    "template": i["product_tmpl_id"][0],
+                    "product_id": i["id"],
+                }
                 self.product_product[i["id"]] = prod_obj
                 self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
-                yield '<item name=%s cost="%f" subcategory="%s,%s">\n' % (
+                yield '<item name=%s cost="%f" category=%s subcategory="%s,%s">\n' % (
                     quoteattr(name),
                     (tmpl["list_price"] or 0)
                     / self.convert_qty_uom(1.0, tmpl["uom_id"][0], i["id"]),
+                    quoteattr(
+                        "%s%s"
+                        % (
+                            ("%s/" % self.category_parent(tmpl["categ_id"][1]))
+                            if tmpl["categ_id"][1] in self.category_parent
+                            else "",
+                            tmpl["categ_id"][1],
+                        )
+                    ),
                     self.uom_categories[self.uom[tmpl["uom_id"][0]]["category"]],
                     i["id"],
                 )
                 # Export suppliers for the item, if the item is allowed to be purchased
-                if (
-                    tmpl["purchase_ok"]
-                    and buy_route in tmpl["route_ids"]
-                    and tmpl["seller_ids"]
-                ):
+                if tmpl["purchase_ok"]:
                     yield "<itemsuppliers>\n"
-                    for sup in s.browse(tmpl["seller_ids"]).read(s_fields):
-                        name = "%d %s" % (sup["name"][0], sup["name"][1])
-                        yield '<itemsupplier leadtime="P%dD" priority="1" size_minimum="%f" cost="%f"%s%s><supplier name=%s/></itemsupplier>\n' % (
+                    for sup in s.search(
+                        [("product_tmpl_id", "=", i["product_tmpl_id"][0])]
+                    ):
+                        name = "%d %s" % (sup.name.id, sup.name.name)
+
+                        yield '<itemsupplier leadtime="P%dD" priority="%s" size_minimum="%f" cost="%f"%s%s><supplier name=%s/></itemsupplier>\n' % (
                             sup["delay"],
+                            sup["priority"] or 10,
                             sup["min_qty"],
-                            sup["price"],
-                            ' effective_end="%s"' % sup["date_end"]
+                            sup["price"] if sup["price"] and sup["price"] > 0 else 0,
+                            ' effective_end="%sT00:00:00"'
+                            % sup["date_end"].strftime("%Y-%m-%d")
                             if sup["date_end"]
                             else "",
-                            ' effective_start="%s"' % sup["date_start"]
+                            ' effective_start="%sT00:00:00"'
+                            % sup["date_start"].strftime("%Y-%m-%d")
                             if sup["date_start"]
                             else "",
                             quoteattr(name),
@@ -644,7 +694,11 @@ class exporter(object):
                     quoteattr(location),
                 )
                 yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
-                    i["product_qty"] * uom_factor,
+                    self.convert_qty_uom(
+                        i["product_qty"],
+                        i["product_uom_id"][0],
+                        i["product_tmpl_id"][0],
+                    ),
                     quoteattr(product_buf["name"]),
                 )
 
@@ -1017,7 +1071,9 @@ class exporter(object):
                 continue
             item = self.product_product.get(i["product_id"][0], None)
             j = po[i["order_id"][0]]
-            #
+            # if PO status is done, we should ignore this PO line
+            if j["state"] == "done":
+                continue
             location = self.mfg_location
             if location and item and i["product_qty"] > i["qty_received"]:
                 start = j["date_order"].replace(" ", "T")
@@ -1028,7 +1084,7 @@ class exporter(object):
                     i["product_id"][0],
                 )
                 yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
-                    quoteattr(j["name"]),
+                    quoteattr("%s - %s" % (j["name"], i["id"])),
                     start,
                     end,
                     qty,
