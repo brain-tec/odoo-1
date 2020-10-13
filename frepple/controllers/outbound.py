@@ -1123,8 +1123,8 @@ class exporter(object):
                 )
                 yield '<operationplan reference=%s start="%s" end="%s" quantity="%s"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    startdate.replace(' ', 'T'),
-                    startdate.replace(' ', 'T'),
+                    startdate.strftime('%Y-%m-%dT%H:%M:%S'),
+                    startdate.strftime('%Y-%m-%dT%H:%M:%S'),
                     qty,
                     quoteattr(operation),
                 )
