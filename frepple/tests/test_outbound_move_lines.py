@@ -17,6 +17,25 @@ class TestOutboundMoveLines(TestBase):
         super(TestOutboundMoveLines, self).setUp()
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_discard_moves_with_same_location_as_origin_and_destination(self):
+        """ Exports all moves except those having as location the same for
+            the origin and the destination.
+        """
+        location = self._create_location('Origin Location #1')
+        product = self._create_product('Product #1', price=7)
+        self._create_move_line(location, location, product)
+
+        self.assertEqual(self.env.user.company_id.internal_moves_domain, '[]')
+        xml_str_actual = self.exporter.export_move_lines(
+            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+        xml_str_expected = '\n'.join([
+            '<!-- Stock Move Lines -->',
+            '<operationplans>',
+            '</operationplans>',
+        ])
+        self.assertEqual(xml_str_actual, xml_str_expected)
+
+    @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_export_all_moves(self):
         """ Exports all moves.
         """
@@ -36,9 +55,9 @@ class TestOutboundMoveLines(TestBase):
             '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
                 product_name=product.name, product_id=product.id),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
-                location_name=dest_location.name, location_id=dest_location.id),
+                location_name=dest_location.complete_name, location_id=dest_location.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
-                location_name=orig_location.name, location_id=orig_location.id),
+                location_name=orig_location.complete_name, location_id=orig_location.id),
             '</operationplan>',
             '</operationplans>',
         ])
@@ -49,9 +68,11 @@ class TestOutboundMoveLines(TestBase):
         """ Exports only the moves filtered by the filter defined on the res.company.
         """
         orig_location_1 = self._create_location('Origin Location #1')
-        dest_location_1 = self._create_location('Destination Location #1')
+        dest_location_1 = self._create_location('Destination Location #1',
+                                                parent=self._create_location('Parent of Destination Location #1'))
         orig_location_2 = self._create_location('Origin Location #2')
-        dest_location_2 = self._create_location('Destination Location #2')
+        dest_location_2 = self._create_location('Destination Location #2',
+                                                parent=self._create_location('Parent of Destination Location #2'))
         product_1 = self._create_product('Product #1', price=7)
         product_2 = self._create_product('Product #2', price=13)
         move_line_1 = self._create_move_line(orig_location_1, dest_location_1, product_1)
@@ -68,18 +89,18 @@ class TestOutboundMoveLines(TestBase):
             '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
                 product_name=product_1.name, product_id=product_1.id),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
-                location_name=dest_location_1.name, location_id=dest_location_1.id),
+                location_name=dest_location_1.complete_name, location_id=dest_location_1.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
-                location_name=orig_location_1.name, location_id=orig_location_1.id),
+                location_name=orig_location_1.complete_name, location_id=orig_location_1.id),
             '</operationplan>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
                 move_line_2.id, move_line_2.date.strftime("%Y-%m-%dT%H:%M:%S")),
             '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
                 product_name=product_2.name, product_id=product_2.id),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
-                location_name=dest_location_2.name, location_id=dest_location_2.id),
+                location_name=dest_location_2.complete_name, location_id=dest_location_2.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
-                location_name=orig_location_2.name, location_id=orig_location_2.id),
+                location_name=orig_location_2.complete_name, location_id=orig_location_2.id),
             '</operationplan>',
             '</operationplans>',
         ])
@@ -96,9 +117,9 @@ class TestOutboundMoveLines(TestBase):
             '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
                 product_name=product_1.name, product_id=product_1.id),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
-                location_name=dest_location_1.name, location_id=dest_location_1.id),
+                location_name=dest_location_1.complete_name, location_id=dest_location_1.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
-                location_name=orig_location_1.name, location_id=orig_location_1.id),
+                location_name=orig_location_1.complete_name, location_id=orig_location_1.id),
             '</operationplan>',
             '</operationplans>',
         ])
