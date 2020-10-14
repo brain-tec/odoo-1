@@ -301,10 +301,11 @@ class exporter(object):
 
         xml_str = []
         if location and location.name.startswith(prefix_location):
-            self.map_locations[location.id] = warehouse.name  # They want the warehouse's *name*
+            # Original frePPLe stored the warehouse's name, we store the location's complete name
+            self.map_locations[location.id] = location.complete_name
             xml_str.extend([
                 '<location name={} subcategory="{}" description="location">'.format(
-                    quoteattr(location.name), location.id),
+                    quoteattr(location.complete_name), location.id),
                 '<available name={}/>'.format(quoteattr(self.calendar)),
             ])
 
@@ -1278,6 +1279,7 @@ class exporter(object):
 
     def export_move_lines(self, ctx=None):
         """ Extracts the move lines, according to the domain set on the res.company.
+            Domains having the same location as From & To are discarded always.
         """
         if ctx is None:
             ctx = {}
@@ -1289,7 +1291,7 @@ class exporter(object):
 
         move_lines = self.env['stock.move.line'].search(
             ast.literal_eval(self.env.user.company_id.internal_moves_domain),
-            order='id')
+            order='id').filtered(lambda move: move.location_id != move.location_dest_id)
         if 'test_export_move_lines' in ctx:
             move_lines = move_lines.filtered(lambda move_line: move_line.reference.startswith(ctx['test_prefix']))
 
@@ -1325,9 +1327,9 @@ class exporter(object):
                 '<item name={product_name} category="{product_id}" description="Product"/>'.format(
                     product_name=quoteattr(product.name), product_id=product.id),
                 '<location name={location_name} subcategory="{location_id}" description="Dest. location"/>'.format(
-                    location_name=quoteattr(location_dest.name), location_id=location_dest.id),
+                    location_name=quoteattr(location_dest.complete_name), location_id=location_dest.id),
                 '<origin name={location_name} subcategory="{location_id}" description="Origin location"/>'.format(
-                    location_name=quoteattr(location_origin.name), location_id=location_origin.id),
+                    location_name=quoteattr(location_origin.complete_name), location_id=location_origin.id),
             ])
             xml_str.append('</operationplan>')
 

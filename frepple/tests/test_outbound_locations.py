@@ -21,7 +21,7 @@ class TestOutboundLocations(TestBase):
     def test_flat_locations(self):
         """ Generates an XML for locations, with no sub-locations.
         """
-        warehouse_1 = self._create_warehouse('TC_Warehouse_1')
+        warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
         warehouse_1.wh_input_stock_loc_id = location_1
         xml_str_actual = self.exporter.export_locations(ctx={'test_export_locations': True, 'test_prefix': 'TC_'})
@@ -33,11 +33,11 @@ class TestOutboundLocations(TestBase):
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.name, location_1.id),
+                location_1.complete_name, location_1.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.name.upper(), warehouse_1.view_location_id.id),
+                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '</members>',
@@ -50,7 +50,7 @@ class TestOutboundLocations(TestBase):
     def test_locations_with_children_one_level(self):
         """ Generates an XML for locations, with one level of sub-locations.
         """
-        warehouse_1 = self._create_warehouse('TC_Warehouse_1')
+        warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
         location_1_1 = self._create_location('TC_Location_1_1', parent=location_1)
 
@@ -64,17 +64,17 @@ class TestOutboundLocations(TestBase):
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.name, location_1.id),
+                location_1.complete_name, location_1.id),
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_1.name, location_1_1.id),
+                location_1_1.complete_name, location_1_1.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '</members>',
             '</location>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.name.upper(), warehouse_1.view_location_id.id),
+                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '</members>',
@@ -87,7 +87,7 @@ class TestOutboundLocations(TestBase):
     def test_locations_with_children_more_than_one_level(self):
         """ Generates an XML for locations, with more than one level of sub-locations.
         """
-        warehouse_1 = self._create_warehouse('TC_Warehouse_1')
+        warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
         location_1_1 = self._create_location('TC_Location_1_1', parent=location_1)
         location_1_2 = self._create_location('TC_Location_1_2', parent=location_1)
@@ -103,23 +103,23 @@ class TestOutboundLocations(TestBase):
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.name, location_1.id),
+                location_1.complete_name, location_1.id),
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_1.name, location_1_1.id),
+                location_1_1.complete_name, location_1_1.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2.name, location_1_2.id),
+                location_1_2.complete_name, location_1_2.id),
             '<available name="CALENDAR"/>',
             '<members>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2_1.name, location_1_2_1.id),
+                location_1_2_1.complete_name, location_1_2_1.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2_2.name, location_1_2_2.id),
+                location_1_2_2.complete_name, location_1_2_2.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '</members>',
@@ -127,7 +127,7 @@ class TestOutboundLocations(TestBase):
             '</members>',
             '</location>',
             '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.name.upper(), warehouse_1.view_location_id.id),
+                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
             '<available name="CALENDAR"/>',
             '</location>',
             '</members>',
