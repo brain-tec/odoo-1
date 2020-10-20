@@ -1267,15 +1267,16 @@ class exporter(object):
 
         for rule in unique_rules:
             xml_str.append('<itemdistribution>')
+            if rule.route_id.warehouse_selectable:
+                xml_str.append('<item name="All"/>')
             if rule.location_src_id:
                 xml_str.append('<origin name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
-                    loc_name=quoteattr(rule.location_src_id.name),
+                    loc_name=quoteattr(rule.location_src_id.complete_name),
                     loc_id=rule.location_src_id.id))
             xml_str.append('<destination name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
-                loc_name=quoteattr(rule.location_id.name),
+                loc_name=quoteattr(rule.location_id.complete_name),
                 loc_id=rule.location_id.id))
-            if rule.delay:
-                xml_str.append('<leadtime>P{}D</leadtime>'.format(rule.delay or 0))
+            xml_str.append('<leadtime>P{}D</leadtime>'.format(rule.delay or 0))
             xml_str.append('</itemdistribution>')
 
         xml_str.append('</itemdistributions>')
