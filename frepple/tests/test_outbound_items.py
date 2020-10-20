@@ -16,18 +16,6 @@ class TestOutboundItems(TestBase):
     def setUp(self):
         super(TestOutboundItems, self).setUp()
 
-        # We include just the values that we need here in exporter.uom (the info for the kilos).
-        self.kgm_uom = self.env.ref('uom.product_uom_kgm')
-        self.exporter.uom = {
-            self.kgm_uom.id: {
-                'factor': self.kgm_uom.factor,
-                'name': self.kgm_uom.name,
-                'category': self.kgm_uom.category_id.id,
-            }}
-        self.exporter.uom_categories = {
-            self.kgm_uom.category_id.id: self.kgm_uom.id,
-        }
-
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_no_subcategory(self):
         """ Tests a product with no subcategories.
@@ -47,8 +35,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a.name, category_a.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_1.name, product_1.list_price, product_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -95,8 +83,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a.name, category_a.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_1.name, product_a_1.list_price, product_a_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -114,8 +102,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a_sub.name, category_a_sub.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_sub_1.name, product_a_sub_1.list_price, product_a_sub_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -177,8 +165,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a.name, category_a.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_1.name, product_a_1.list_price, product_a_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -196,8 +184,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a_sub.name, category_a_sub.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_sub_1.name, product_a_sub_1.list_price, product_a_sub_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -215,8 +203,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_a_sub_sub.name, category_a_sub_sub.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, product_a_sub_sub_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -226,8 +214,8 @@ class TestOutboundItems(TestBase):
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, product_a_sub_sub_2.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(
@@ -246,8 +234,8 @@ class TestOutboundItems(TestBase):
             '<item name="{}" category="{}" description="category">'.format(
                 category_b.name, category_b.id),
             '<members>',
-            '<item name="{}" cost="{:0.6f}" category="{}" description="product">'.format(
-                product_b_1.name, product_b_1.list_price, product_b_1.id),
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_b_1.name, product_b_1.list_price, self.kgm_uom.id, product_b_1.id),
             '<itemsuppliers>',
             '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
             'cost="{:0.6f}">'.format(

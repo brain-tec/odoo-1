@@ -18,6 +18,20 @@ class TestBase(TransactionCase):
         super(TestBase, self).setUp()
         self.exporter = exporter(req=self, uid=SUPERUSER_ID)
 
+        # We include just the values that we need here in exporter.uom (the info for the kilos).
+        # because our default method to create products uses just kilos. So just kilos
+        # are enough for the moment.
+        self.kgm_uom = self.env.ref('uom.product_uom_kgm')
+        self.exporter.uom = {
+            self.kgm_uom.id: {
+                'factor': self.kgm_uom.factor,
+                'name': self.kgm_uom.name,
+                'category': self.kgm_uom.category_id.id,
+            }}
+        self.exporter.uom_categories = {
+            self.kgm_uom.category_id.id: self.kgm_uom.id,
+        }
+
     def _create_move_line(self, from_location, to_location, product):
         move = self.env['stock.move'].create({
             'name': 'TC_Ref #1',

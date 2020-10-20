@@ -601,8 +601,12 @@ class exporter(object):
         return xml_str
 
     def _generate_product_xml(self, product, search_domain_suppliers):
-        xml_str = ['<item name={} cost="{:0.6f}" category="{}" description="product">'.format(
-            quoteattr(product.name), product.list_price, product.id)]
+        # The subcategory attribute in an <item> stores, separated by a comma, the ID of the
+        # UOM used as the reference for the category of the UOM set on the product's template,
+        # and then the product's ID. ò_Ó
+        ref_uom_for_uom_category_id = self.uom_categories[self.uom[product.product_tmpl_id.uom_id.id]['category']]
+        xml_str = ['<item name={} cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+            quoteattr(product.name), product.list_price, ref_uom_for_uom_category_id, product.id)]
 
         suppliers = self.env['product.supplierinfo'].search([
             ('product_tmpl_id', '=', product.product_tmpl_id.id),
@@ -1309,6 +1313,8 @@ class exporter(object):
 
         for move_line in move_lines:
             product = move_line.product_id
+            ref_uom_for_uom_category_id = self.uom_categories[
+                self.uom[product.product_tmpl_id.uom_id.id]['category']]
             location_origin = move_line.location_id
             location_dest = move_line.location_dest_id
 
@@ -1324,8 +1330,9 @@ class exporter(object):
                     quantity=move_line.qty_done,
                     status=status_mapping.get(move_line.state, 'closed')))
             xml_str.extend([
-                '<item name={product_name} category="{product_id}" description="Product"/>'.format(
-                    product_name=quoteattr(product.name), product_id=product.id),
+                '<item name={product_name} subcategory="{subcategory}" description="Product"/>'.format(
+                    product_name=quoteattr(product.name), subcategory='{},{}'.format(
+                        ref_uom_for_uom_category_id, product.id)),
                 '<location name={location_name} subcategory="{location_id}" description="Dest. location"/>'.format(
                     location_name=quoteattr(location_dest.complete_name), location_id=location_dest.id),
                 '<origin name={location_name} subcategory="{location_id}" description="Origin location"/>'.format(
