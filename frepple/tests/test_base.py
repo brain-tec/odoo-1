@@ -18,6 +18,20 @@ class TestBase(TransactionCase):
         super(TestBase, self).setUp()
         self.exporter = exporter(req=self, uid=SUPERUSER_ID)
 
+        # We include just the values that we need here in exporter.uom (the info for the kilos).
+        # because our default method to create products uses just kilos. So just kilos
+        # are enough for the moment.
+        self.kgm_uom = self.env.ref('uom.product_uom_kgm')
+        self.exporter.uom = {
+            self.kgm_uom.id: {
+                'factor': self.kgm_uom.factor,
+                'name': self.kgm_uom.name,
+                'category': self.kgm_uom.category_id.id,
+            }}
+        self.exporter.uom_categories = {
+            self.kgm_uom.category_id.id: self.kgm_uom.id,
+        }
+
     def _create_move_line(self, from_location, to_location, product):
         move = self.env['stock.move'].create({
             'name': 'TC_Ref #1',
@@ -107,21 +121,24 @@ class TestBase(TransactionCase):
             'location_id': parent.id if parent else False,
         })
 
-    def _create_quotation(self, client, product, qty, defaults=None):
+    def _create_quotation(self, client, product, qty, defaults=None, defaults_line=None):
         """ Creates a quotation for the given product & quantity.
         """
         defaults = defaults if defaults else {}
+        defaults_line = defaults_line if defaults_line else {}
+        create_values_line = {
+            'name': product.name,
+            'product_id': product.id,
+            'product_uom_qty': qty,
+            'product_uom': self.env.ref('uom.product_uom_kgm').id,
+            'price_unit': 7,
+        }
+        create_values_line.update(defaults_line)
         create_values = {
             'partner_id': client.id,
             'date_order': fields.Datetime.now(),
             'picking_policy': 'direct',
-            'order_line': [
-                (0, 0, {'name': product.name,
-                        'product_id': product.id,
-                        'product_uom_qty': qty,
-                        'product_uom': self.env.ref('uom.product_uom_kgm').id,
-                        'price_unit': 7}),
-            ],
+            'order_line': [(0, 0, create_values_line)],
         }
         create_values.update(defaults)
         sale_order = self.env['sale.order'].create(create_values)

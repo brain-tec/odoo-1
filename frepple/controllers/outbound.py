@@ -20,6 +20,7 @@ import logging
 from xml.sax.saxutils import quoteattr
 from datetime import datetime, timedelta
 from operator import itemgetter
+from odoo import fields
 
 import ast
 
@@ -144,7 +145,7 @@ class exporter(object):
 
     def load_uom(self):
         """
-        Loading units of measures into a dictinary for fast lookups.
+        Loading units of measures into a dictionary for fast lookups.
 
         All quantities are sent to frePPLe as numbers, expressed in the default
         unit of measure of the uom dimension.
@@ -153,7 +154,7 @@ class exporter(object):
         # We also need to load INactive UOMs, because there still might be records
         # using the inactive UOM. Questionable practice, but can happen...
         recs = m.search(["|", ("active", "=", 1), ("active", "=", 0)])
-        fields = ["factor", "uom_type", "category_id", "name"]
+        fields = ["factor", "factor_inv", "uom_type", "category_id", "name"]
         self.uom = {}
         self.uom_categories = {}
         for i in recs.read(fields):
@@ -161,10 +162,10 @@ class exporter(object):
                 f = 1.0
                 self.uom_categories[i["category_id"][0]] = i["id"]
             elif i["uom_type"] == "bigger":
-                f = i["factor"]
+                f = i["factor_inv"]  # We use the Odoo's field.
             else:
                 if i["factor"] > 0:
-                    f = 1 / i["factor"]
+                    f = i["factor"]
                 else:
                     f = 1.0
             self.uom[i["id"]] = {
@@ -176,21 +177,36 @@ class exporter(object):
     def convert_qty_uom(self, qty, uom_id, product_id=None):
         """
         Convert a quantity to the reference uom of the product.
-        The default implementation doesn't consider the product at all, and just
-        converts to the reference unit of the uom category.
         """
         if not uom_id:
             return qty
-        return qty * self.uom[uom_id]["factor"]
+        if not product_id:
+            return qty * self.uom[uom_id]["factor"]
+        else:
+            product = self.env['product.product'].browse(product_id)
+            uom = self.env['uom.uom'].browse(uom_id)
+
+            # I use the normal Odoo's conversion.
+            # If it fails, I return what the original frePPLe code returns.
+            try:
+                return uom._compute_quantity(qty, product.uom_id, raise_if_failure=True)
+            except:
+                logger.warning(
+                    "Can't convert from %s for product %s"
+                    % (self.uom[uom_id]["name"], product_id)
+                )
+                return qty * self.uom[uom_id]["factor"]
 
     def convert_float_time(self, float_time):
         """
         Convert Odoo float time to ISO 8601 duration.
         """
-        return "PT%dH%dM%dS" % (
-            int(float_time),  # duration: hours
-            int((float_time*60) % 60),  # duration: minutes
-            int((float_time*3600) % 60 % 60),  # duration: seconds
+        d = timedelta(days=float_time)
+        return "P%dDT%dH%dM%dS" % (
+            d.days,  # duration: days
+            int(d.seconds / 3600),  # duration: hours
+            int((d.seconds % 3600) / 60),  # duration: minutes
+            int(d.seconds % 60),  # duration: seconds
         )
 
     def _frepple_generate_common_fields_xml(self, odoo_record):
@@ -334,6 +350,7 @@ class exporter(object):
         xml_str = ['<members>']
 
         for location in [
+            warehouse.lot_stock_id,
             warehouse.wh_input_stock_loc_id,
             warehouse.wh_output_stock_loc_id,
             warehouse.wh_pack_stock_loc_id,
@@ -601,8 +618,12 @@ class exporter(object):
         return xml_str
 
     def _generate_product_xml(self, product, search_domain_suppliers):
-        xml_str = ['<item name={} cost="{:0.6f}" category="{}" description="product">'.format(
-            quoteattr(product.name), product.list_price, product.id)]
+        # The subcategory attribute in an <item> stores, separated by a comma, the ID of the
+        # UOM used as the reference for the category of the UOM set on the product's template,
+        # and then the product's ID. ò_Ó
+        ref_uom_for_uom_category_id = self.uom_categories[self.uom[product.product_tmpl_id.uom_id.id]['category']]
+        xml_str = ['<item name={} cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+            quoteattr(product.name), product.list_price, ref_uom_for_uom_category_id, product.id)]
 
         suppliers = self.env['product.supplierinfo'].search([
             ('product_tmpl_id', '=', product.product_tmpl_id.id),
@@ -613,10 +634,15 @@ class exporter(object):
 
             seller = supplier.name
             supplier_name = "{} {}".format(seller.id, seller.name)
+            effective_end_str = ' effective_end="{}T00:00:00"'.format(
+                fields.Date.to_string(supplier.date_end)) if supplier.date_end else ''
+            effective_start_str = ' effective_start="{}T00:00:00"'.format(
+                fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
             xml_str.extend([
-                '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-                'cost="{:0.6f}">'.format(
-                    supplier.delay, supplier.sequence, supplier.price),
+                '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
+                'cost="{:0.6f}"{}{}>'.format(
+                    supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
+                    effective_end_str, effective_start_str),
                 '<supplier name={}/>'.format(quoteattr(supplier_name)),
                 '</itemsupplier>',
             ])
@@ -759,7 +785,11 @@ class exporter(object):
                     quoteattr(location),
                 )
                 yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
-                    i["product_qty"] * uom_factor,
+                    self.convert_qty_uom(
+                        i["product_qty"],
+                        i["product_uom_id"][0],
+                        i["product_tmpl_id"][0],
+                    ),
                     quoteattr(product_buf["name"]),
                 )
 
@@ -1027,7 +1057,11 @@ class exporter(object):
         recs = m.search(
             [
                 "|",
-                ("order_id.state", "not in", ("draft", "sent", "bid", "confirmed")),
+                (
+                    "order_id.state",
+                    "not in",
+                    ("draft", "sent", "bid", "confirmed", "cancel"),
+                ),
                 ("order_id.state", "=", False),
             ]
         )
@@ -1039,6 +1073,7 @@ class exporter(object):
             "qty_received",
             "product_uom",
             "order_id",
+            "state",
         ]
         po_line = [i for i in recs.read(fields)]
 
@@ -1054,11 +1089,13 @@ class exporter(object):
         yield "<!-- open purchase orders -->\n"
         yield "<operationplans>\n"
         for i in po_line:
-            if not i["product_id"]:
+            if not i["product_id"] or i["state"] == "cancel":
                 continue
             item = self.product_product.get(i["product_id"][0], None)
             j = po[i["order_id"][0]]
-            #
+            # if PO status is done, we should ignore this PO line
+            if j["state"] == "done":
+                continue
             location = self.mfg_location
             if location and item and i["product_qty"] > i["qty_received"]:
                 start = j["date_order"].strftime("%Y-%m-%dT%H:%M:%S")
@@ -1069,7 +1106,7 @@ class exporter(object):
                     i["product_id"][0],
                 )
                 yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
-                    quoteattr(j["name"]),
+                    quoteattr("%s - %s" % (j["name"], i["id"])),
                     start,
                     end,
                     qty,
@@ -1092,7 +1129,7 @@ class exporter(object):
         convert mrp.production.product_qty and mrp.production.product_uom -> operationplan.quantity
         mrp.production.date_planned -> operationplan.end
         mrp.production.date_planned -> operationplan.start
-        '1' -> operationplan.locked
+        '1' -> operationplan.status = "confirmed"
         """
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
@@ -1122,10 +1159,10 @@ class exporter(object):
                 qty = self.convert_qty_uom(
                     i["product_qty"], i["product_uom_id"][0], i["product_id"][0]
                 )
-                yield '<operationplan reference=%s start="%s" end="%s" quantity="%s"><operation name=%s/></operationplan>\n' % (
+                yield '<operationplan reference=%s start="%s" end="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    startdate.strftime('%Y-%m-%dT%H:%M:%S'),
-                    startdate.strftime('%Y-%m-%dT%H:%M:%S'),
+                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
+                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
                 )
@@ -1263,15 +1300,16 @@ class exporter(object):
 
         for rule in unique_rules:
             xml_str.append('<itemdistribution>')
+            if rule.route_id.warehouse_selectable:
+                xml_str.append('<item name="All"/>')
             if rule.location_src_id:
                 xml_str.append('<origin name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
-                    loc_name=quoteattr(rule.location_src_id.name),
+                    loc_name=quoteattr(rule.location_src_id.complete_name),
                     loc_id=rule.location_src_id.id))
             xml_str.append('<destination name={loc_name} subcategory="{loc_id}" description="location"/>'.format(
-                loc_name=quoteattr(rule.location_id.name),
+                loc_name=quoteattr(rule.location_id.complete_name),
                 loc_id=rule.location_id.id))
-            if rule.delay:
-                xml_str.append('<leadtime>P{}D</leadtime>'.format(rule.delay or 0))
+            xml_str.append('<leadtime>P{}D</leadtime>'.format(rule.delay or 0))
             xml_str.append('</itemdistribution>')
 
         xml_str.append('</itemdistributions>')
@@ -1309,6 +1347,8 @@ class exporter(object):
 
         for move_line in move_lines:
             product = move_line.product_id
+            ref_uom_for_uom_category_id = self.uom_categories[
+                self.uom[product.product_tmpl_id.uom_id.id]['category']]
             location_origin = move_line.location_id
             location_dest = move_line.location_dest_id
 
@@ -1324,8 +1364,9 @@ class exporter(object):
                     quantity=move_line.qty_done,
                     status=status_mapping.get(move_line.state, 'closed')))
             xml_str.extend([
-                '<item name={product_name} category="{product_id}" description="Product"/>'.format(
-                    product_name=quoteattr(product.name), product_id=product.id),
+                '<item name={product_name} subcategory="{subcategory}" description="Product"/>'.format(
+                    product_name=quoteattr(product.name), subcategory='{},{}'.format(
+                        ref_uom_for_uom_category_id, product.id)),
                 '<location name={location_name} subcategory="{location_id}" description="Dest. location"/>'.format(
                     location_name=quoteattr(location_dest.complete_name), location_id=location_dest.id),
                 '<origin name={location_name} subcategory="{location_id}" description="Origin location"/>'.format(

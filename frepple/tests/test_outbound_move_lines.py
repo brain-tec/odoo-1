@@ -52,8 +52,8 @@ class TestOutboundMoveLines(TestBase):
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
                 move_line.id, move_line.date.strftime("%Y-%m-%dT%H:%M:%S")),
-            '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
-                product_name=product.name, product_id=product.id),
+            '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
+                product_name=product.name, subcategory='{},{}'.format(self.kgm_uom.id, product.id)),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
                 location_name=dest_location.complete_name, location_id=dest_location.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
@@ -86,8 +86,8 @@ class TestOutboundMoveLines(TestBase):
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
                 move_line_1.id, move_line_1.date.strftime("%Y-%m-%dT%H:%M:%S")),
-            '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
-                product_name=product_1.name, product_id=product_1.id),
+            '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
+                product_name=product_1.name, subcategory='{},{}'.format(self.kgm_uom.id, product_1.id)),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
                 location_name=dest_location_1.complete_name, location_id=dest_location_1.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
@@ -95,8 +95,8 @@ class TestOutboundMoveLines(TestBase):
             '</operationplan>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
                 move_line_2.id, move_line_2.date.strftime("%Y-%m-%dT%H:%M:%S")),
-            '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
-                product_name=product_2.name, product_id=product_2.id),
+            '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
+                product_name=product_2.name, subcategory='{},{}'.format(self.kgm_uom.id, product_2.id)),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
                 location_name=dest_location_2.complete_name, location_id=dest_location_2.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(
@@ -114,8 +114,8 @@ class TestOutboundMoveLines(TestBase):
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
                 move_line_1.id, move_line_1.date.strftime("%Y-%m-%dT%H:%M:%S")),
-            '<item name="{product_name}" category="{product_id}" description="Product"/>'.format(
-                product_name=product_1.name, product_id=product_1.id),
+            '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
+                product_name=product_1.name, subcategory='{},{}'.format(self.kgm_uom.id, product_1.id)),
             '<location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>'.format(
                 location_name=dest_location_1.complete_name, location_id=dest_location_1.id),
             '<origin name="{location_name}" subcategory="{location_id}" description="Origin location"/>'.format(

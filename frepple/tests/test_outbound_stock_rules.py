@@ -25,7 +25,7 @@ class TestOutboundStockRules(TestBase):
             'name': 'TC_Route #1',
         })
         location_1 = self._create_location('TC_Location_1')
-        location_2 = self._create_location('TC_Location_2')
+        location_2 = self._create_location('TC_Location_2', parent=location_1)
         self.env['stock.rule'].create({
             'action': 'pull',
             'auto': 'manual',
@@ -43,19 +43,60 @@ class TestOutboundStockRules(TestBase):
             'picking_type_id': self.env.ref('stock.picking_type_out').id,
             'procure_method': 'make_to_order',
             'route_id': route.id,
-            'delay': 7
+            'delay': 0,
         })
         self.env.user.company_id.stock_rules_domain = "[('location_id', '=', {})]".format(
             target_rule.location_id.id)
 
         xml_str_actual = self.exporter.export_stock_rules(
-            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+            ctx={'test_export_stock_rules': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
             '<!-- Stock Rules -->',
             '<itemdistributions>',
             '<itemdistribution>',
             '<destination name="{loc_name}" subcategory="{loc_id}" description="location"/>'.format(
-                loc_name=target_rule.location_id.name,
+                loc_name=target_rule.location_id.complete_name,
+                loc_id=target_rule.location_id.id
+            ),
+            '<leadtime>P{}D</leadtime>'.format(target_rule.delay),
+            '</itemdistribution>',
+            '</itemdistributions>',
+        ])
+        self.assertEqual(xml_str_actual, xml_str_expected)
+
+    @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_export_stock_rules_for_route_applied_for_warehouses(self):
+        """ Tests the export of a stock rule belonging to a route
+            that applies to warehouses.
+        """
+        route = self.env['stock.location.route'].create({
+            'name': 'TC_Route #1',
+            'warehouse_selectable': True,
+        })
+        location_1 = self._create_location('TC_Location_1')
+        location_2 = self._create_location('TC_Location_2', parent=location_1)
+        target_rule = self.env['stock.rule'].create({
+            'action': 'pull',
+            'auto': 'manual',
+            'location_id': location_2.id,
+            'name': 'TC_Rule #2',
+            'picking_type_id': self.env.ref('stock.picking_type_out').id,
+            'procure_method': 'make_to_order',
+            'route_id': route.id,
+            'delay': 0,
+        })
+        # self.env.user.company_id.stock_rules_domain = "[('location_id', '=', {})]".format(
+        #     target_rule.location_id.id)
+
+        xml_str_actual = self.exporter.export_stock_rules(
+            ctx={'test_export_stock_rules': True, 'test_prefix': 'TC_'})
+        xml_str_expected = '\n'.join([
+            '<!-- Stock Rules -->',
+            '<itemdistributions>',
+            '<itemdistribution>',
+            '<item name="All"/>',
+            '<destination name="{loc_name}" subcategory="{loc_id}" description="location"/>'.format(
+                loc_name=target_rule.location_id.complete_name,
                 loc_id=target_rule.location_id.id
             ),
             '<leadtime>P{}D</leadtime>'.format(target_rule.delay),
