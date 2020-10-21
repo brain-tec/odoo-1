@@ -154,7 +154,7 @@ class exporter(object):
         # We also need to load INactive UOMs, because there still might be records
         # using the inactive UOM. Questionable practice, but can happen...
         recs = m.search(["|", ("active", "=", 1), ("active", "=", 0)])
-        fields = ["factor", "uom_type", "category_id", "name"]
+        fields = ["factor", "factor_inv", "uom_type", "category_id", "name"]
         self.uom = {}
         self.uom_categories = {}
         for i in recs.read(fields):
@@ -162,7 +162,7 @@ class exporter(object):
                 f = 1.0
                 self.uom_categories[i["category_id"][0]] = i["id"]
             elif i["uom_type"] == "bigger":
-                f = 1 / i["factor"]
+                f = i["factor_inv"]  # We use the Odoo's field.
             else:
                 if i["factor"] > 0:
                     f = i["factor"]
@@ -182,29 +182,20 @@ class exporter(object):
             return qty
         if not product_id:
             return qty * self.uom[uom_id]["factor"]
-        try:
-            product_uom = self.product_templates[
-                self.product_product[product_id]["template"]
-            ]["uom_id"][0]
-        except Exception as e:
-            # try with template_id rather than product_id
-            try:
-                product_uom = self.product_templates[product_id]["uom_id"][0]
-            except:
-                return qty * self.uom[uom_id]["factor"]
-        # check if default product uom is the one we received
-        if product_uom == uom_id:
-            return qty
-        # check if different uoms welong to the same category
-        if self.uom[product_uom]["category"] == self.uom[uom_id]["category"]:
-            return qty * self.uom[uom_id]["factor"] / self.uom[product_uom]["factor"]
         else:
-            # UOM is from a different category as the reference uom of the product.
-            logger.warning(
-                "Can't convert from %s for product %s"
-                % (self.uom[uom_id]["name"], product_id)
-            )
-            return qty * self.uom[uom_id]["factor"]
+            product = self.env['product.product'].browse(product_id)
+            uom = self.env['uom.uom'].browse(uom_id)
+
+            # I use the normal Odoo's conversion.
+            # If it fails, I return what the original frePPLe code returns.
+            try:
+                return uom._compute_quantity(qty, product.uom_id, raise_if_failure=True)
+            except:
+                logger.warning(
+                    "Can't convert from %s for product %s"
+                    % (self.uom[uom_id]["name"], product_id)
+                )
+                return qty * self.uom[uom_id]["factor"]
 
     def convert_float_time(self, float_time):
         """

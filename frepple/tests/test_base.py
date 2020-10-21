@@ -121,21 +121,24 @@ class TestBase(TransactionCase):
             'location_id': parent.id if parent else False,
         })
 
-    def _create_quotation(self, client, product, qty, defaults=None):
+    def _create_quotation(self, client, product, qty, defaults=None, defaults_line=None):
         """ Creates a quotation for the given product & quantity.
         """
         defaults = defaults if defaults else {}
+        defaults_line = defaults_line if defaults_line else {}
+        create_values_line = {
+            'name': product.name,
+            'product_id': product.id,
+            'product_uom_qty': qty,
+            'product_uom': self.env.ref('uom.product_uom_kgm').id,
+            'price_unit': 7,
+        }
+        create_values_line.update(defaults_line)
         create_values = {
             'partner_id': client.id,
             'date_order': fields.Datetime.now(),
             'picking_policy': 'direct',
-            'order_line': [
-                (0, 0, {'name': product.name,
-                        'product_id': product.id,
-                        'product_uom_qty': qty,
-                        'product_uom': self.env.ref('uom.product_uom_kgm').id,
-                        'price_unit': 7}),
-            ],
+            'order_line': [(0, 0, create_values_line)],
         }
         create_values.update(defaults)
         sale_order = self.env['sale.order'].create(create_values)
