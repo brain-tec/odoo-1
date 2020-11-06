@@ -560,21 +560,21 @@ class exporter(object):
             search_domain_suppliers = []
             search_domain_product_categories = []
 
-            self._fill_in_product_related_variables(
-                search_domain_products, search_domain_suppliers, search_domain_templates)
+        self._fill_in_product_related_variables(
+            search_domain_products, search_domain_suppliers, search_domain_templates)
 
-            # Now we generate the XML.
-            xml_str.append('<!-- products -->')
-            xml_str.append('<items>')
+        # Now we generate the XML.
+        xml_str.append('<!-- products -->')
+        xml_str.append('<items>')
 
-            top_categories = self.env['product.category'].search(
-                [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
-            for top_category in top_categories:
-                xml_str.extend(self._generate_category_xml(
-                    top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
+        top_categories = self.env['product.category'].search(
+            [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
+        for top_category in top_categories:
+            xml_str.extend(self._generate_category_xml(
+                top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
 
-            xml_str.append('</items>')
-            return '\n'.join(xml_str)
+        xml_str.append('</items>')
+        return '\n'.join(xml_str)
 
     def _fill_in_product_related_variables(
             self, search_domain_products, search_domain_suppliers, search_domain_templates):
