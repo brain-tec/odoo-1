@@ -601,19 +601,6 @@ class exporter(object):
                                           'list_price', 'uom_id', 'seller_ids', 'standard_price']):
             self.product_templates[product_template['id']] = product_template
 
-        # Now we generate the XML.
-        xml_str.append('<!-- products -->')
-        xml_str.append('<items>')
-
-        top_categories = self.env['product.category'].search(
-            [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
-        for top_category in top_categories:
-            xml_str.extend(self._generate_category_xml(
-                top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
-
-        xml_str.append('</items>')
-        return '\n'.join(xml_str)
-
     def _generate_category_xml(
             self, category, search_domain_categories, search_domain_products, search_domain_suppliers):
         xml_str = ['<item name={} category="{}" description="category">'.format(
