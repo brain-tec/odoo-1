@@ -560,10 +560,29 @@ class exporter(object):
             search_domain_suppliers = []
             search_domain_product_categories = []
 
-        # We fill in the attributes the original method filled in.
-        # I keep them here because the original code defines and fills them ─ only because of that.
-        # The original code also loaded the location routes, that used for nothing, thus
-        # I don't load them...
+            self._fill_in_product_related_variables(
+                search_domain_products, search_domain_suppliers, search_domain_templates)
+
+            # Now we generate the XML.
+            xml_str.append('<!-- products -->')
+            xml_str.append('<items>')
+
+            top_categories = self.env['product.category'].search(
+                [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
+            for top_category in top_categories:
+                xml_str.extend(self._generate_category_xml(
+                    top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
+
+            xml_str.append('</items>')
+            return '\n'.join(xml_str)
+
+    def _fill_in_product_related_variables(
+            self, search_domain_products, search_domain_suppliers, search_domain_templates):
+        """ We fill in the attributes the original method export_items filled in.
+            I keep them here because the original code defines and fills them ─ only because of that.
+            The original code also loaded the location routes, that used for nothing, thus
+            I don't load them...
+        """
         self.product_product = dict()
         self.product_template_product = dict()
         self.product_supplier = dict()
