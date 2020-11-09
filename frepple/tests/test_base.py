@@ -8,6 +8,7 @@
 from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.addons.frepple.controllers.outbound import exporter
+from odoo.addons.frepple.controllers.inbound import importer
 from odoo import SUPERUSER_ID
 
 
@@ -17,6 +18,10 @@ class TestBase(TransactionCase):
     def setUp(self):
         super(TestBase, self).setUp()
         self.exporter = exporter(req=self, uid=SUPERUSER_ID)
+
+        self.httprequest = lambda: None  # See https://stackoverflow.com/a/2827734
+        self.httprequest.files = {'frePPLe plan': False}
+        self.importer = importer(req=self)
 
         # We include just the values that we need here in exporter.uom (the info for the kilos).
         # because our default method to create products uses just kilos. So just kilos
@@ -32,23 +37,30 @@ class TestBase(TransactionCase):
             self.kgm_uom.category_id.id: self.kgm_uom.id,
         }
 
-    def _create_move_line(self, from_location, to_location, product):
-        move = self.env['stock.move'].create({
+    def _create_move_line(self, from_location, to_location, product, defaults_move=None, defaults_move_line=None):
+        defaults_move = defaults_move if defaults_move else {}
+        defaults_move_line = defaults_move_line if defaults_move_line else {}
+        move_values = {
             'name': 'TC_Ref #1',
             'location_id': from_location.id,
             'location_dest_id': to_location.id,
             'product_id': product.id,
             'product_uom': product.uom_id.id,
             'product_uom_qty': 1.0,
-        })
-        return self.env['stock.move.line'].create({
+        }
+        move_values.update(defaults_move)
+        move = self.env['stock.move'].create(move_values)
+        move_line_values = {
             'move_id': move.id,
             'product_id': move.product_id.id,
+            'product_uom_qty': move.product_uom_qty,
             'qty_done': 1,
             'product_uom_id': move.product_uom.id,
             'location_id': move.location_id.id,
             'location_dest_id': move.location_dest_id.id,
-        })
+        }
+        move_line_values.update(defaults_move_line)
+        return self.env['stock.move.line'].create(move_line_values)
 
     def _create_customer(self, name, parent=None):
         return self.env['res.partner'].create({
@@ -171,3 +183,13 @@ class TestBase(TransactionCase):
         inventory.action_start()
         inventory.action_validate()
         return inventory
+
+    def _create_internal_picking(self, location_src, location_dest, defaults=None):
+        defaults = defaults if defaults else {}
+        create_values = {
+            'picking_type_id': self.env.ref('stock.picking_type_internal').id,
+            'location_id': location_src.id,
+            'location_dest_id': location_dest.id,
+        }
+        create_values.update(defaults)
+        return self.env['stock.picking'].create(create_values)

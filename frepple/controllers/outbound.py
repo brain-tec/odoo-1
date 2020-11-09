@@ -1358,6 +1358,10 @@ class exporter(object):
             location_origin = move_line.location_id
             location_dest = move_line.location_dest_id
 
+            # We do this to ensure a matching between the outgoing and the incoming software.
+            if not move_line.frepple_reference:
+                move_line.frepple_reference = move_line.id
+
             xml_str.append(
                 '<operationplan '
                 'ordertype="DO" '
@@ -1365,7 +1369,7 @@ class exporter(object):
                 'start="{start}" '
                 'quantity="{quantity}" '
                 'status="{status}">'.format(
-                    reference=move_line.id,
+                    reference=move_line.frepple_reference,
                     start=move_line.date.strftime("%Y-%m-%dT%H:%M:%S"),
                     quantity=move_line.qty_done,
                     status=status_mapping.get(move_line.state, 'closed')))

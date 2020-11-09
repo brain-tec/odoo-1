@@ -83,10 +83,13 @@ class importer(object):
 
         for event, elem in iterparse(self.datafile, events=("start", "end")):
             if event == "end" and elem.tag == "operationplan":
-                uom_id, item_id = elem.get("item_id").split(",")
                 try:
                     ordertype = elem.get("ordertype")
                     if ordertype == "PO":
+                        # The following line was moved inside because otherwise it crashed (because the item_id
+                        # was not found). I'd say it's a bug of the original software. So I place it here
+                        # and also inside the `else`. So 1 line of duplicated code.
+                        uom_id, item_id = elem.get("item_id").split(",")
                         # Create purchase order
                         supplier_id = int(elem.get("supplier").split(" ", 1)[0])
                         if supplier_id not in supplier_reference:
@@ -128,9 +131,14 @@ class importer(object):
                             )
                             po_line.product_qty = po_line.product_qty + float(quantity)
                         countproc += 1
-                    # TODO Create a distribution order
+
+                    # Creates a distribution order.
+                    elif ordertype == "DO":
+                        self._create_or_update_stock_move_line(elem)
+
                     # elif ????:
                     else:
+                        uom_id, item_id = elem.get("item_id").split(",")
                         # Create manufacturing order
                         mfg_order.create(
                             {
@@ -161,3 +169,6 @@ class importer(object):
         msg.append("Processed %s uploaded procurement orders" % countproc)
         msg.append("Processed %s uploaded manufacturing orders" % countmfg)
         return "\n".join(msg)
+
+    def _create_or_update_stock_move_line(self, elem):
+        self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem)
