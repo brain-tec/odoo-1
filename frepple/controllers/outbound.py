@@ -1021,7 +1021,7 @@ class exporter(object):
             due = getattr(sale_order, 'requested_date', False) or sale_order.date_order
 
             xml_str.extend([
-                '<demand name={} quantity="{}" due="{}" priority="1" '
+                '<demand name={} quantity="{}" due="{}" priority="10" '
                 'minshipment="{}" description="status={}">'.format(
                     quoteattr(name), qty, due.strftime('%Y-%m-%dT%H:%M:%S'),
                     sale_order.picking_policy == 'one' and qty or 1.0, frepple_status,

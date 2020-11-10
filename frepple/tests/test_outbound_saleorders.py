@@ -37,7 +37,7 @@ class TestOutboundItems(TestBase):
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand name="{}" quantity="1.0" due="{}" priority="1" '
+            '<demand name="{}" quantity="1.0" due="{}" priority="10" '
             'minshipment="1.0" description="status=quote">'.format(
                 '{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
@@ -68,7 +68,7 @@ class TestOutboundItems(TestBase):
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand name="{}" quantity="0.5" due="{}" priority="1" '
+            '<demand name="{}" quantity="0.5" due="{}" priority="10" '
             'minshipment="1.0" description="status=quote">'.format(
                 '{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
