@@ -22,3 +22,7 @@ class ResPartner(models.Model):
         """
         self.ensure_one()
         return []
+
+    def _frepple_get_customer_name(self):
+        self.ensure_one()
+        return '{} {}'.format(self.id, self.name)

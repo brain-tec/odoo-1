@@ -429,7 +429,7 @@ class exporter(object):
         xml_str = []
         if customers:
             for customer in customers:
-                customer_name = '{} {}'.format(customer.id, customer.name)
+                customer_name = customer._frepple_get_customer_name()
                 common_fields = self._frepple_generate_common_fields_xml(customer)
                 if common_fields:
                     xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
