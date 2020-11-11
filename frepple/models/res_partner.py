@@ -48,9 +48,8 @@ class ResPartner(models.Model):
         return xml_str
 
     @api.model
-    def _frepple_export_customers_xml(self):
-        """ Export as a frePPLe's <customers>
-        """
+    def _frepple_export_customers_content_xml(self):
+        xml_str = []
         customers = self.env['res.partner'].search([
             ('customer_rank', '>', 0),
             ('parent_id', '=', False),
@@ -58,12 +57,18 @@ class ResPartner(models.Model):
         if 'test_prefix' in self.env.context:
             customers = customers.filtered(
                 lambda customer: customer.name.startswith(self.env.context['test_prefix']))
+        for customer in customers:
+            xml_str.extend(customer._frepple_export_customer_xml())
+        return xml_str
 
+    @api.model
+    def _frepple_export_customers_xml(self):
+        """ Export as a frePPLe's <customers>
+        """
         xml_str = [
             '<!-- customers -->',
             '<customers>',
         ]
-        for customer in customers:
-            xml_str.extend(customer._frepple_export_customer_xml())
+        xml_str.extend(self._frepple_export_customers_content_xml())
         xml_str.append('</customers>')
         return '\n'.join(xml_str)
