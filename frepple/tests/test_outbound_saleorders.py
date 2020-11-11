@@ -38,7 +38,7 @@ class TestOutboundItems(TestBase):
             '<!-- sales order lines -->',
             '<demands>',
             '<demand name="{}" quantity="1.0" due="{}" priority="10" '
-            'minshipment="1.0" description="status=quote">'.format(
+            'minshipment="1.0" status="quote">'.format(
                 '{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
@@ -69,7 +69,7 @@ class TestOutboundItems(TestBase):
             '<!-- sales order lines -->',
             '<demands>',
             '<demand name="{}" quantity="0.5" due="{}" priority="10" '
-            'minshipment="1.0" description="status=quote">'.format(
+            'minshipment="1.0" status="quote">'.format(
                 '{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
