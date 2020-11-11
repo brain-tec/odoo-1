@@ -421,24 +421,6 @@ class exporter(object):
         xml_str.append('</locations>')
         return '\n'.join(xml_str)
 
-    def _export_customers(self, customers):
-        """ Auxiliary method to export the customers.
-            If partner_affiliates is installed, the field affiliate_ids will be
-            inside the res.partner, so we use it.
-        """
-        xml_str = []
-        if customers:
-            for customer in customers:
-                customer_name = '{} {}'.format(customer.id, customer.name)
-                common_fields = self._frepple_generate_common_fields_xml(customer)
-                if common_fields:
-                    xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
-                    xml_str.extend(common_fields)
-                    xml_str.append('</customer>')
-                else:
-                    xml_str.append('<customer name={}/>'.format(quoteattr(customer_name)))
-        return xml_str
-
     def export_customers(self, ctx=None):
         """
         Generate a list of customers to frePPLe, based on the res.partner model.
@@ -453,21 +435,7 @@ class exporter(object):
         """
         if ctx is None:
             ctx = {}
-
-        customers = self.env['res.partner'].search([
-            ('customer_rank', '>', 0),
-            ('parent_id', '=', False),
-        ], order='id')
-        if 'test_export_customers' in ctx:
-            customers = customers.filtered(lambda customer: customer.name.startswith(ctx['test_prefix']))
-
-        xml_str = [
-            '<!-- customers -->',
-            '<customers>',
-        ]
-        xml_str.extend(self._export_customers(customers))
-        xml_str.append('</customers>')
-        return '\n'.join(xml_str)
+        return self.env['res.partner'].with_context(ctx)._frepple_export_customers_xml()
 
     def export_suppliers(self):
         """
