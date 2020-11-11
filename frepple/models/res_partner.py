@@ -36,19 +36,19 @@ class ResPartner(models.Model):
         self.ensure_one()
         return '{} {}'.format(self.id, self.name)
 
-    def _frepple_export_customer_xml(self):
+    def _frepple_export_customer_tags_xml(self):
         """ Exports as a frePPLe's <customer>
         """
-        self.ensure_one()
         xml_str = []
-        customer_name = self._frepple_customer_name()
-        common_fields = self._frepple_generate_common_fields_xml()
-        if common_fields:
-            xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
-            xml_str.extend(common_fields)
-            xml_str.append('</customer>')
-        else:
-            xml_str.append('<customer name={}/>'.format(quoteattr(customer_name)))
+        for record in self:
+            customer_name = record._frepple_customer_name()
+            common_fields = record._frepple_generate_common_fields_xml()
+            if common_fields:
+                xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
+                xml_str.extend(common_fields)
+                xml_str.append('</customer>')
+            else:
+                xml_str.append('<customer name={}/>'.format(quoteattr(customer_name)))
         return xml_str
 
     @api.model
@@ -61,8 +61,7 @@ class ResPartner(models.Model):
         if 'test_prefix' in self.env.context:
             customers = customers.filtered(
                 lambda customer: customer.name.startswith(self.env.context['test_prefix']))
-        for customer in customers:
-            xml_str.extend(customer._frepple_export_customer_xml())
+        xml_str.extend(customers._frepple_export_customer_tags_xml())
         return xml_str
 
     @api.model
