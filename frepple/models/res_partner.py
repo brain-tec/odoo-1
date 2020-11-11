@@ -32,12 +32,16 @@ class ResPartner(models.Model):
                 field_type, field_name, quoteattr(field_value)))
         return xml_str
 
+    def _frepple_customer_name(self):
+        self.ensure_one()
+        return '{} {}'.format(self.id, self.name)
+
     def _frepple_export_customer_xml(self):
         """ Exports as a frePPLe's <customer>
         """
         self.ensure_one()
         xml_str = []
-        customer_name = '{} {}'.format(self.id, self.name)
+        customer_name = self._frepple_customer_name()
         common_fields = self._frepple_generate_common_fields_xml()
         if common_fields:
             xml_str.append('<customer name={}>'.format(quoteattr(customer_name)))
