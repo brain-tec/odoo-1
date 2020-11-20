@@ -36,47 +36,41 @@ class StockMoveLine(models.Model):
         elem_reference = elem.get('reference')
         elem_date = (elem.get('start') or elem.get('end', '')).replace('T', ' ')
 
-        from_location = self.env['stock.location']
-        to_location = self.env['stock.location']
-        product = self.env['product.product']  # To silent the IDE.
-
         # If we find at least one error, we inform and skip the element update/creation.
         errors = []
 
-        for sub_elem in elem:
+        # Determines the product.
+        product_search_domain = [
+            ('id', '=', elem.get('item_id', 0)),
+            ('name', '=', elem.get('item', '')),
+        ]
+        product = product_product.search(product_search_domain)
+        if not product:
+            errors.append('No product was found for {}'.format(product_search_domain))
+        elif len(product) > 1:
+            errors.append('More than one product was found for {}'.format(product_search_domain))
 
-            if sub_elem.tag == 'item':
-                # If we receive the ID of the product inside the parameter category_id, we use it.
-                # If we don't receive it, then we have to search the product using its name only.
-                product_search_domain = [('name', '=', sub_elem.get('name'))]
-                subcategory_attr = sub_elem.get('subcategory')
-                if subcategory_attr and ',' in subcategory_attr and subcategory_attr.split(',')[-1].isdigit():
-                    product_id = int(subcategory_attr.split(',')[-1])
-                    product_search_domain.append(('id', '=', product_id))
-                product = product_product.search(product_search_domain)
-                if not product:
-                    errors.append('No product was found for {}'.format(product_search_domain))
-                elif len(product) > 1:
-                    errors.append('More than one product was found for {}'.format(product_search_domain))
+        # Determines the origin location.
+        location_search_domain = [
+            ('id', '=', elem.get('origin_id', 0)),
+            ('name', '=', elem.get('origin', '')),
+        ]
+        from_location = stock_location.search(location_search_domain)
+        if not from_location:
+            errors.append('No location was found for {}'.format(location_search_domain))
+        elif len(from_location) > 1:
+            errors.append('More than one location was found for {}'.format(location_search_domain))
 
-            elif sub_elem.tag in {'origin', 'location'}:
-                # If we receive the ID of the location as the parameter subcategory, we use it.
-                # If we don't receive it, then we have to search the location using its name only.
-                location_search_domain = [('name', '=', sub_elem.get('name'))]
-                subcategory_attr = sub_elem.get('subcategory')
-                if subcategory_attr and subcategory_attr.isdigit():
-                    location_id = int(subcategory_attr)
-                    location_search_domain.append(('id', '=', location_id))
-                location = stock_location.search(location_search_domain)
-                if not location:
-                    errors.append('No location was found for {}'.format(location_search_domain))
-                elif len(location) > 1:
-                    errors.append('More than one location was found for {}'.format(location_search_domain))
-                else:
-                    if sub_elem.tag == 'origin':
-                        from_location = location
-                    else:  # if sub_elem.tag == 'location'
-                        to_location = location
+        # Determines the destination location.
+        location_search_domain = [
+            ('id', '=', elem.get('destination_id', 0)),
+            ('name', '=', elem.get('destination', '')),
+        ]
+        to_location = stock_location.search(location_search_domain)
+        if not to_location:
+            errors.append('No location was found for {}'.format(location_search_domain))
+        elif len(to_location) > 1:
+            errors.append('More than one location was found for {}'.format(location_search_domain))
 
         if not from_location:
             errors.append('No origin location found.')
