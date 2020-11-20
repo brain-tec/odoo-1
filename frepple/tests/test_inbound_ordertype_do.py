@@ -30,11 +30,12 @@ class TestInboundOrdertypeDo(TestBase):
                 <operationplans>
                     <operationplan reference="{reference}" ordertype="DO"
                       start="{datetime}" end="{datetime}"
-                      quantity="{qty:0.6f}" status="proposed">
-                        <item name="{product_name}" subcategory=",{product_id}" description="Product"/>
-                        <location name="{location_name}" subcategory="{location_id}" description="Dest. location"/>
-                        <origin name="{origin_name}" subcategory="{origin_id}" description="Origin location"/>
-                    </operationplan>
+                      quantity="{qty:0.6f}" status="proposed"
+                      item="{product_name}" item_id="{product_id}"
+                      origin="{origin_name}" origin_id="{origin_id}"
+                      destination="{location_name}" destination_id="{location_id}"
+                      criticality="1"
+                    />
                 </operationplans>
             </plan>
         '''.format(reference=reference,
