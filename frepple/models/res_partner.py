@@ -66,7 +66,10 @@ class ResPartner(models.Model):
         customers = self.env['res.partner'].search(customers_domain, order='id')
 
         for customer in customers:
-            node_customer = Node('customer', attrs={'name': customer._frepple_get_customer_name()})
+            node_customer = Node(
+                'customer',
+                attrs={'name': customer._frepple_get_customer_name()},
+                odoo_record=customer)
             for common_field_node in customer._frepple_generate_common_field_nodes():
                 node_customer.children.append(common_field_node)
             customers_node.children.append(node_customer)

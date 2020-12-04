@@ -13,10 +13,11 @@ class Node:
     """ This implements an easy tree-like structure with n-children
         Will be used as an auxiliary class to craft some hierarchies in frePPLe.
     """
-    def __init__(self, name, attrs=None, children=None):
+    def __init__(self, name, attrs=None, children=None, odoo_record=None):
         self.name = name
         self.attrs = attrs if attrs else {}
         self.children = children if children else deque()
+        self.odoo_record = odoo_record if odoo_record else None
 
     def to_list_nodes(self):
         _list = []
