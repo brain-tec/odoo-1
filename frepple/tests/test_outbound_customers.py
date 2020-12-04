@@ -21,7 +21,7 @@ class TestOutboundCustomers(TestBase):
         """ Generates XML for customer that has an & in its name
         """
         customer_1 = self._create_customer('TC_Brain & Tec')
-        xml_str_actual = self.exporter.export_customers(ctx={'test_export_customers': True, 'test_prefix': 'TC_'})
+        xml_str_actual = self.exporter.export_customers(ctx={'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
             '<!-- customers -->',
             '<customers>',
@@ -36,7 +36,7 @@ class TestOutboundCustomers(TestBase):
         """
         customer_1 = self._create_customer('TC_1')
         customer_2 = self._create_customer('TC_2')
-        xml_str_actual = self.exporter.export_customers(ctx={'test_export_customers': True, 'test_prefix': 'TC_'})
+        xml_str_actual = self.exporter.export_customers(ctx={'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
             '<!-- customers -->',
             '<customers>',

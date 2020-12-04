@@ -13,3 +13,4 @@ from . import test_outbound_stock_rules
 from . import test_outbound_saleorders
 from . import test_inbound_ordertype_do
 from . import test_stock_location
+from . import test_tree
