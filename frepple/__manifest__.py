@@ -17,7 +17,7 @@
         'stock',
         "uom",
     ],
-    "external_dependencies": {"python": ["jwt"]},
+    "external_dependencies": {"python": ["pyjwt"]},
     "data": [
         "views/frepple_data.xml",
         "views/res_company.xml",
