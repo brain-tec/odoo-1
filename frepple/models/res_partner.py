@@ -7,7 +7,6 @@
 
 from odoo import models, api, _
 from odoo.exceptions import UserError
-from xml.sax.saxutils import quoteattr
 from odoo.addons.frepple.misc.tree import Node
 
 
@@ -32,7 +31,7 @@ class ResPartner(models.Model):
         self.ensure_one()
         nodes = []
         for field_type, field_name, field_value in self._frepple_get_common_fields():
-            nodes.append(Node(field_type, attrs={'name': field_name, 'value': quoteattr(field_value)}))
+            nodes.append(Node(field_type, attrs={'name': field_name, 'value': field_value}))
         return nodes
 
     def _frepple_get_customer_name(self):
