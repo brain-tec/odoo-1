@@ -40,7 +40,7 @@ class Node:
             # Prints the start of the entity.
             tag = ['<{}'.format(self.name)]
             if self.attrs:
-                tag.append(' '.join(['{}={}'.format(k, quoteattr(v)) for k, v in self.attrs.items()]))
+                tag.append(' '.join(['{}={}'.format(k, quoteattr(v)) for k, v in sorted(self.attrs.items())]))
             tag[-1] += '>' if self.children else '/>'
             _list.append(' '.join(tag))
 
