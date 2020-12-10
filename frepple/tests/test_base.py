@@ -149,9 +149,13 @@ class TestBase(TransactionCase):
         create_values = {
             'partner_id': client.id,
             'date_order': fields.Datetime.now(),
-            'picking_policy': 'direct',
             'order_line': [(0, 0, create_values_line)],
         }
+        if self.env['ir.module.module'].search([
+            ('name', '=', 'sale_stock'),
+            ('state', '=', 'installed')
+        ], limit=1, count=True):
+            create_values.update({'picking_policy': 'direct'})
         create_values.update(defaults)
         sale_order = self.env['sale.order'].create(create_values)
         return sale_order

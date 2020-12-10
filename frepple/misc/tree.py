@@ -19,6 +19,11 @@ class Node:
         self.children = children if children else deque()
         self.odoo_record = odoo_record if odoo_record else None
 
+    def __str__(self):
+        attrs_str = ' '.join(['{}={};'.format(k, v) for k, v in self.attrs.items()])
+        children_str = '' if not self.children else '(children: {})'.format(len(self.children))
+        return '<{}> {}{}'.format(self.name, attrs_str, children_str)
+
     def to_list_nodes(self):
         _list = []
         self.__to_list_nodes(_list)
