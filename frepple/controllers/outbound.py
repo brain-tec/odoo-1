@@ -425,6 +425,7 @@ class exporter(object):
         """ Generate a list of customers to frePPLe, based on the res.partner model.
             We filter on res.partner where customer = True.
         """
+        ctx = ctx if ctx else {}
         return self.env['res.partner'].with_context(ctx)._frepple_export_customers()
 
     def export_suppliers(self):
