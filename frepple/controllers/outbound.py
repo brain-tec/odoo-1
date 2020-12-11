@@ -529,7 +529,8 @@ class exporter(object):
             [('parent_id', '=', False)] + search_domain_product_categories, order='name,id')
         for top_category in top_categories:
             xml_str.extend(self._generate_category_xml(
-                top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers))
+                top_category, search_domain_product_categories, search_domain_products, search_domain_suppliers,
+                ctx))
 
         xml_str.append('</items>')
         return '\n'.join(xml_str)
@@ -560,7 +561,9 @@ class exporter(object):
             self.product_templates[product_template['id']] = product_template
 
     def _generate_category_xml(
-            self, category, search_domain_categories, search_domain_products, search_domain_suppliers):
+            self, category, search_domain_categories, search_domain_products, search_domain_suppliers, ctx=None):
+        ctx = ctx if ctx else {}
+
         xml_str = ['<item name={} category="{}" description="category">'.format(
             quoteattr(category.name), category.id)]
         products = self.env['product.product'].with_context(active_test=False).search(
@@ -572,22 +575,29 @@ class exporter(object):
             xml_str.append('<members>')
             for product in products:
                 xml_str.extend(self._generate_product_xml(
-                    product, search_domain_suppliers))
+                    product, search_domain_suppliers, ctx))
             for subcategory in subcategories:
                 xml_str.extend(self._generate_category_xml(
-                    subcategory, search_domain_categories, search_domain_products, search_domain_suppliers))
+                    subcategory, search_domain_categories, search_domain_products, search_domain_suppliers, ctx))
             xml_str.append('</members>')
 
         xml_str.append('</item>')
         return xml_str
 
-    def _generate_product_xml(self, product, search_domain_suppliers):
+    def _generate_product_xml(self, product, search_domain_suppliers, ctx=None):
+        ctx = ctx if ctx else {}
+
         # The subcategory attribute in an <item> stores, separated by a comma, the ID of the
         # UOM used as the reference for the category of the UOM set on the product's template,
         # and then the product's ID. ò_Ó
         ref_uom_for_uom_category_id = self.uom_categories[self.uom[product.product_tmpl_id.uom_id.id]['category']]
         xml_str = ['<item name={} cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
             quoteattr(product.name), product.list_price, ref_uom_for_uom_category_id, product.id)]
+
+        warehouse_domain = []
+        if 'test_prefix' in ctx:
+            warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
+        stock_locs = self.env['stock.warehouse'].search(warehouse_domain).mapped('lot_stock_id')
 
         suppliers = self.env['product.supplierinfo'].search([
             ('product_tmpl_id', '=', product.product_tmpl_id.id),
@@ -596,20 +606,21 @@ class exporter(object):
             if supplier_no == 0:
                 xml_str.append('<itemsuppliers>')
 
-            seller = supplier.name
-            supplier_name = "{} {}".format(seller.id, seller.name)
-            effective_end_str = ' effective_end="{}T00:00:00"'.format(
-                fields.Date.to_string(supplier.date_end)) if supplier.date_end else ''
-            effective_start_str = ' effective_start="{}T00:00:00"'.format(
-                fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
-            xml_str.extend([
-                '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
-                'cost="{:0.6f}"{}{}>'.format(
-                    supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
-                    effective_end_str, effective_start_str),
-                '<supplier name={}/>'.format(quoteattr(supplier_name)),
-                '</itemsupplier>',
-            ])
+            for location in stock_locs:
+                seller = supplier.name
+                supplier_name = "{} {}".format(seller.id, seller.name)
+                effective_end_str = ' effective_end="{}T00:00:00"'.format(
+                    fields.Date.to_string(supplier.date_end)) if supplier.date_end else ''
+                effective_start_str = ' effective_start="{}T00:00:00"'.format(
+                    fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
+                xml_str.extend([
+                    '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
+                    'cost="{:0.6f}" location="{}"{}{}>'.format(
+                        supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
+                        location.complete_name, effective_end_str, effective_start_str),
+                    '<supplier name={}/>'.format(quoteattr(supplier_name)),
+                    '</itemsupplier>',
+                ])
 
             if supplier_no == len(suppliers) - 1:
                 xml_str.append('</itemsuppliers>')
