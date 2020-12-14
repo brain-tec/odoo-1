@@ -43,7 +43,7 @@ class TestOutboundItems(TestBase):
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
-            '<location name="{}"/>'.format(quotation.warehouse_id.name),
+            '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),
         ]))
         xml_str_expected += r'(<stringproperty .+/>)*'
         xml_str_expected += ''.join(map(re.escape, [
@@ -74,7 +74,7 @@ class TestOutboundItems(TestBase):
                 due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
-            '<location name="{}"/>'.format(quotation.warehouse_id.name),
+            '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),
         ]))
         xml_str_expected += r'(<stringproperty .+/>)*'
         xml_str_expected += ''.join(map(re.escape, [

@@ -986,7 +986,7 @@ class exporter(object):
 
             name = '%s %d' % (sale_order.name, so_line_data['id'])
             product = self.product_product.get(so_line_data['product_id'][0], None)
-            location = sale_order.warehouse_id.name
+            location = sale_order.warehouse_id.lot_stock_id.complete_name
             customer_name = self._get_customer_name_for_demands(sale_order)
             due = getattr(sale_order, 'requested_date', False) or sale_order.date_order
 
