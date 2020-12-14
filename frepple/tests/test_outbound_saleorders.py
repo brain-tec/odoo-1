@@ -32,15 +32,15 @@ class TestOutboundItems(TestBase):
         quotation = self._create_quotation(self.customer, product=self.product, qty=1)
 
         xml_str_actual = self.exporter.export_salesorders(
-            ctx={'test_export_salesorders': True, 'test_prefix': 'TC_'})
+            ctx={'test_prefix': 'TC_'})
         due = getattr(quotation, 'requested_date', False) or quotation.date_order
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand name="{}" quantity="1.0" due="{}" priority="10" '
-            'minshipment="1.0" status="quote">'.format(
-                '{} {}'.format(quotation.name, quotation.order_line[0].id),
-                due.strftime('%Y-%m-%dT%H:%M:%S')),
+            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="1.0" '
+            'status="quote">'.format(
+                name='{} {}'.format(quotation.name, quotation.order_line[0].id),
+                due=due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
             '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),
@@ -63,15 +63,15 @@ class TestOutboundItems(TestBase):
             })
 
         xml_str_actual = self.exporter.export_salesorders(
-            ctx={'test_export_salesorders': True, 'test_prefix': 'TC_'})
+            ctx={'test_prefix': 'TC_'})
         due = getattr(quotation, 'requested_date', False) or quotation.date_order
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand name="{}" quantity="0.5" due="{}" priority="10" '
-            'minshipment="1.0" status="quote">'.format(
-                '{} {}'.format(quotation.name, quotation.order_line[0].id),
-                due.strftime('%Y-%m-%dT%H:%M:%S')),
+            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="0.5" '
+            'status="quote">'.format(
+                name='{} {}'.format(quotation.name, quotation.order_line[0].id),
+                due=due.strftime('%Y-%m-%dT%H:%M:%S')),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
             '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),

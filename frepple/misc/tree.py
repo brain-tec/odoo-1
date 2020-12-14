@@ -13,6 +13,8 @@ class Node:
     """ This implements an easy tree-like structure with n-children
         Will be used as an auxiliary class to craft some hierarchies in frePPLe,
         so a node represents an XML entity (see details in the constructor).
+
+        Here everything is public. The methods added are to ease traversing the tree.
     """
     def __init__(self, name, attrs=None, children=None, odoo_record=None, owner=None):
         """
