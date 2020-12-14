@@ -15,7 +15,6 @@ UNDER_DEVELOPMENT_MSG = 'Test skipped because of being under development'
 class TestOutboundLocations(TestBase):
     def setUp(self):
         super(TestOutboundLocations, self).setUp()
-        self.exporter.calendar = 'CALENDAR'
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_flat_locations(self):
