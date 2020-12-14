@@ -23,25 +23,11 @@ class TestOutboundLocations(TestBase):
         """
         warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
-        warehouse_1.wh_input_stock_loc_id = location_1
-        xml_str_actual = self.exporter.export_locations(ctx={'test_export_locations': True, 'test_prefix': 'TC_'})
+        warehouse_1.lot_stock_id = location_1
+        xml_str_actual = self.exporter.export_locations(ctx={'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
-            '<!-- warehouses -->',
             '<locations>',
-            '<location name="{}" subcategory="{}" description="warehouse">'.format(
-                warehouse_1.name, warehouse_1.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.complete_name, location_1.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '</members>',
-            '</location>',
+            '<location name="{}" subcategory="{}"/>'.format(location_1.complete_name, location_1.id),
             '</locations>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)
@@ -52,33 +38,13 @@ class TestOutboundLocations(TestBase):
         """
         warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
-        location_1_1 = self._create_location('TC_Location_1_1', parent=location_1)
+        self._create_location('TC_Location_1_1', parent=location_1)
 
-        warehouse_1.wh_input_stock_loc_id = location_1
-        xml_str_actual = self.exporter.export_locations(ctx={'test_export_locations': True, 'test_prefix': 'TC_'})
+        warehouse_1.lot_stock_id = location_1
+        xml_str_actual = self.exporter.export_locations(ctx={'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
-            '<!-- warehouses -->',
             '<locations>',
-            '<location name="{}" subcategory="{}" description="warehouse">'.format(
-                warehouse_1.name, warehouse_1.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.complete_name, location_1.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_1.complete_name, location_1_1.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '</members>',
-            '</location>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '</members>',
-            '</location>',
+            '<location name="{}" subcategory="{}"/>'.format(location_1.complete_name, location_1.id),
             '</locations>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)
@@ -89,49 +55,15 @@ class TestOutboundLocations(TestBase):
         """
         warehouse_1 = self._create_warehouse('TC_W1')
         location_1 = self._create_location('TC_Location_1')
-        location_1_1 = self._create_location('TC_Location_1_1', parent=location_1)
+        self._create_location('TC_Location_1_1', parent=location_1)
         location_1_2 = self._create_location('TC_Location_1_2', parent=location_1)
-        location_1_2_1 = self._create_location('TC_Location_1_2_1', parent=location_1_2)
-        location_1_2_2 = self._create_location('TC_Location_1_2_2', parent=location_1_2)
-        warehouse_1.wh_input_stock_loc_id = location_1
-        xml_str_actual = self.exporter.export_locations(ctx={'test_export_locations': True, 'test_prefix': 'TC_'})
+        self._create_location('TC_Location_1_2_1', parent=location_1_2)
+        self._create_location('TC_Location_1_2_2', parent=location_1_2)
+        warehouse_1.lot_stock_id = location_1
+        xml_str_actual = self.exporter.export_locations(ctx={'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
-            '<!-- warehouses -->',
             '<locations>',
-            '<location name="{}" subcategory="{}" description="warehouse">'.format(
-                warehouse_1.name, warehouse_1.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1.complete_name, location_1.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_1.complete_name, location_1_1.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2.complete_name, location_1_2.id),
-            '<available name="CALENDAR"/>',
-            '<members>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2_1.complete_name, location_1_2_1.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                location_1_2_2.complete_name, location_1_2_2.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '</members>',
-            '</location>',
-            '</members>',
-            '</location>',
-            '<location name="{}" subcategory="{}" description="location">'.format(
-                warehouse_1.view_location_id.complete_name, warehouse_1.view_location_id.id),
-            '<available name="CALENDAR"/>',
-            '</location>',
-            '</members>',
-            '</location>',
+            '<location name="{}" subcategory="{}"/>'.format(location_1.complete_name, location_1.id),
             '</locations>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)

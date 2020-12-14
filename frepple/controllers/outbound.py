@@ -52,6 +52,9 @@ class exporter(object):
         # Initialize an environment
         self.env = req.env
 
+        # Map: location.id -> 'complete name for the stock location of the warehouse the location belongs to'.
+        self.map_locations = {}
+
     def run(self):
         # Check if we manage by work orders or manufacturing orders.
         self.manage_work_orders = False
@@ -311,113 +314,36 @@ class exporter(object):
             yield "<!-- No holidays since the HR module is not installed -->\n"
         yield "</buckets></calendar></calendars>\n"
 
-    def _generate_locations_from_location_xml(self, warehouse, location, ctx=None):
-        ctx = ctx if ctx else {}
-        prefix_location = ctx.get('test_prefix', '') if 'test_export_locations' in ctx else ''
-
-        xml_str = []
-        if location and location.name.startswith(prefix_location):
-            # Original frePPLe stored the warehouse's name, we store the location's complete name
-            self.map_locations[location.id] = location.complete_name
-            xml_str.extend([
-                '<location name={} subcategory="{}" description="location">'.format(
-                    quoteattr(location.complete_name), location.id),
-                '<available name={}/>'.format(quoteattr(self.calendar)),
-            ])
-
-            children_locations = self.env['stock.location'].search([
-                ('location_id', '=', location.id),  # The 'parent_id' field, named here 'location_id'.
-            ])
-            if 'test_export_locations' in ctx:
-                children_locations = children_locations.filtered(
-                    lambda warehouse: warehouse.name.startswith(ctx['test_prefix']))
-
-            if children_locations:
-                xml_str.append('<members>')
-                for child_location in children_locations:
-                    xml_str.extend(self._generate_locations_from_location_xml(warehouse, child_location, ctx=ctx))
-                xml_str.append('</members>')
-
-            xml_str.append('</location>')
-        return xml_str
-
-    def _generate_locations_from_warehouse_xml(self, warehouse, ctx=None):
-        """ This assumes a location belongs to only one warehouse.
-            Returns the hierarchical xml structure for it.
-        """
-        ctx = ctx if ctx else {}
-
-        xml_str = ['<members>']
-
-        for location in [
-            warehouse.lot_stock_id,
-            warehouse.wh_input_stock_loc_id,
-            warehouse.wh_output_stock_loc_id,
-            warehouse.wh_pack_stock_loc_id,
-            warehouse.wh_qc_stock_loc_id,
-            warehouse.view_location_id,
-        ]:
-            xml_str.extend(self._generate_locations_from_location_xml(warehouse, location, ctx=ctx))
-
-        xml_str.append('</members>')
-        return xml_str
-
-    def _export_warehouses(self, warehouses, ctx=None):
-        ctx = ctx if ctx else {}
-
-        xml_str = []
-
-        for warehouse in warehouses:
-            self.warehouses.add(warehouse.name)
-
-            xml_str.extend([
-                '<location name={} subcategory="{}" description="warehouse">'.format(
-                    quoteattr(warehouse.name), warehouse.id),
-                '<available name={}/>'.format(quoteattr(self.calendar)),
-            ])
-            xml_str.extend(self._generate_locations_from_warehouse_xml(warehouse, ctx=ctx))
-            xml_str.append('</location>')
-
-        return xml_str
-
     def export_locations(self, ctx=None):
         """
         Generate a list of warehouse locations to frePPLe, based on the
         stock.warehouse model.
 
-        We assume the location name to be unique. This is NOT guarantueed by Odoo.
+        We assume the location name to be unique. This is NOT guaranteed by Odoo.
 
-        The field subategory is used to store the id of the warehouse. This makes
+        The field subcategory is used to store the id of the warehouse. This makes
         it easier for frePPLe to send back planning results directly with an
         odoo location identifier.
 
-        FrePPLe is not interested in the locations odoo defines with a warehouse.
+        frePPLe is not interested in the locations odoo defines with a warehouse.
         This methods also populates a map dictionary between these locations and
         warehouse they belong to.
-
-        Mapping:
-        stock.warehouse.name -> location.name
-        stock.warehouse.id -> location.subcategory
-
-        Provides a hierarchy of locations using the <members>. Other consideration is:
-        locations were used for warehouses, not for locations. To differentiate,
-        The common_attributes/description is used, with either 'warehouse' or 'location'.
 
         The optional context (ctx) is to test easily.
         """
         ctx = ctx if ctx else {}
-        self.map_locations = {}
-        self.warehouses = set()
 
-        warehouses = self.env['stock.warehouse'].search([], order='id')
-        if 'test_export_locations' in ctx:
-            warehouses = warehouses.filtered(lambda warehouse: warehouse.name.startswith(ctx['test_prefix']))
+        for loc in self.env['stock.location'].with_context(active_test=False).search([]):
+            self.map_locations[loc.id] = loc.get_warehouse_stock_location().complete_name
 
-        xml_str = [
-            '<!-- warehouses -->',
-            '<locations>',
-        ]
-        xml_str.extend(self._export_warehouses(warehouses, ctx=ctx))
+        warehouses = self.env['stock.warehouse'].with_context(active_test=False).search([]).filtered(
+            lambda warehouse: warehouse.name.startswith(ctx.get('test_prefix', '')))
+        stock_locations = warehouses.mapped('lot_stock_id').filtered(
+            lambda location: location.name.startswith(ctx.get('test_prefix', '')))
+
+        xml_str = ['<locations>']
+        for loc in stock_locations:
+            xml_str.append('<location name="{}" subcategory="{}"/>'.format(loc.complete_name, loc.id))
         xml_str.append('</locations>')
         return '\n'.join(xml_str)
 
