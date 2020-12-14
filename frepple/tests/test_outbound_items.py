@@ -41,14 +41,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_1.delay, seller_1.sequence, seller_1.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
             '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_2.delay, seller_2.sequence, seller_2.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -89,14 +89,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_1.delay, seller_1.sequence, seller_1.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
             '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_2.delay, seller_2.sequence, seller_2.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -108,14 +108,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_3.delay, seller_3.sequence, seller_3.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_3.delay, seller_3.sequence, seller_3.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_3.id, supplier_3.name),
             '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_4.delay, seller_4.sequence, seller_4.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_4.delay, seller_4.sequence, seller_4.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_4.id, supplier_4.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -171,14 +171,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_1.delay, seller_1.sequence, seller_1.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
             '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_2.delay, seller_2.sequence, seller_2.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -190,14 +190,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_3.delay, seller_3.sequence, seller_3.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_3.delay, seller_3.sequence, seller_3.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_3.id, supplier_3.name),
             '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_4.delay, seller_4.sequence, seller_4.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_4.delay, seller_4.sequence, seller_4.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_4.id, supplier_4.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -209,9 +209,9 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_5.delay, seller_5.sequence, seller_5.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_5.delay, seller_5.sequence, seller_5.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_5.id, supplier_5.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -220,9 +220,9 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_6.delay, seller_6.sequence, seller_6.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_6.delay, seller_6.sequence, seller_6.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_6.id, supplier_6.name),
             '</itemsupplier>',
             '</itemsuppliers>',
@@ -240,9 +240,9 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_b_1.name, product_b_1.list_price, self.kgm_uom.id, product_b_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" '
-            'cost="{:0.6f}" location="{}">'.format(
-                seller_7.delay, seller_7.sequence, seller_7.price, self.stock_location.complete_name),
+            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                seller_7.delay, seller_7.sequence, seller_7.price),
+            '<location name="{}"/>'.format(self.stock_location.complete_name),
             '<supplier name="{} {}"/>'.format(supplier_7.id, supplier_7.name),
             '</itemsupplier>',
             '</itemsuppliers>',

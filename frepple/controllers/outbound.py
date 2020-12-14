@@ -616,9 +616,10 @@ class exporter(object):
                     fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
                 xml_str.extend([
                     '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
-                    'cost="{:0.6f}" location="{}"{}{}>'.format(
+                    'cost="{:0.6f}"{}{}>'.format(
                         supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
-                        location.complete_name, effective_end_str, effective_start_str),
+                        effective_end_str, effective_start_str),
+                    '<location name="{}"/>'.format(location.complete_name),
                     '<supplier name={}/>'.format(quoteattr(supplier_name)),
                     '</itemsupplier>',
                 ])
