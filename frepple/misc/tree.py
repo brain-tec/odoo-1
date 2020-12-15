@@ -16,9 +16,10 @@ class Node:
 
         Here everything is public. The methods added are to ease traversing the tree.
     """
-    def __init__(self, name, attrs=None, children=None, odoo_record=None, owner=None):
+    def __init__(self, tag, text=None, attrs=None, children=None, odoo_record=None, owner=None):
         """
-        :param name: The name of the XML-tag, e.g. <customer>, <product>, etc.
+        :param tag: The name of the XML-tag, e.g. <customer>, <product>, etc.
+        :param text: The text inside the tag <tag>text</tag>
         :param attrs: A dictionary storing the attributes of the XML-tag.
         :param children: The deque of Nodes that are children of this Node.
         :param odoo_record: Odoo's record (just one) which is represented by the XML-tag.
@@ -34,7 +35,8 @@ class Node:
                           <owner name="n1"/>
                           </n2>
         """
-        self.name = name
+        self.tag = tag
+        self.text = text
         self.attrs = attrs if attrs else {}
         self.children = children if children else deque()
         self.odoo_record = odoo_record if odoo_record else None
@@ -42,11 +44,13 @@ class Node:
 
         if self.owner and 'name' not in self.owner.attrs:
             raise ValueError('A tree that is set as owner must have an attribute "name"')
+        if self.text and self.children:
+            raise ValueError('A node can not have a text and children at the same time.')
 
     def __str__(self):
         attrs_str = ' '.join(['{}={};'.format(k, v) for k, v in self.attrs.items()])
         children_str = '' if not self.children else '(children: {})'.format(len(self.children))
-        return '<{}> {}{}'.format(self.name, attrs_str, children_str)
+        return '<{}> {}{}'.format(self.tag, attrs_str, children_str)
 
     def to_list_nodes(self):
         _list = []
@@ -66,21 +70,31 @@ class Node:
 
     def __to_list_xml(self, _list):
         if self:
+            # Determines if the element can be inlined.
+            is_inlined = self.children or self.owner or self.text
+
             # Prints the start of the entity.
-            tag = ['<{}'.format(self.name)]
+            tag = ['<{}'.format(self.tag)]
             if self.attrs:
                 tag.append(' '.join(['{}={}'.format(k, quoteattr(v)) for k, v in sorted(self.attrs.items())]))
-            tag[-1] += '>' if (self.children or self.owner) else '/>'
+            tag[-1] += '>' if is_inlined else '/>'
             _list.append(' '.join(tag))
 
             # Prints the owner, if any.
             if self.owner:
                 _list.append('<owner name={}/>'.format(quoteattr(self.owner.attrs.get('name', ''))))
 
-            # Prints the entities that are children of this one.
-            for node in self.children:
-                node.__to_list_xml(_list)
+            # Prints the child-content of the element (children or text)
+            if self.children:
+                for node in self.children:
+                    node.__to_list_xml(_list)
+            elif self.text:
+                _list[-1] += self.text
 
             # Prints the end of the entity.
-            if self.children or self.owner:
-                _list.append('</{}>'.format(self.name))
+            if is_inlined:
+                tag_close = '</{}>'.format(self.tag)
+                if self.text:
+                    _list[-1] += tag_close
+                else:
+                    _list.append(tag_close)

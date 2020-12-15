@@ -23,14 +23,14 @@ class TestBase(TransactionCase):
                     <attribute name="1"/>
                     <attribute name="2"/>
                 </customer>
-                <customer name="customer_3"/>
+                <customer name="customer_3">example-text</customer>
             </customers>
         """
         child_1 = Node('attribute', attrs={'name': '1'})
         child_2 = Node('attribute', attrs={'name': '2'})
         customer_1 = Node('customer', attrs={'name': 'customer_1', 'other': 'attribute'})
         customer_2 = Node('customer', attrs={'name': 'customer_2'}, children=[child_1, child_2], owner=customer_1)
-        customer_3 = Node('customer', attrs={'name': 'customer_3'})
+        customer_3 = Node('customer', attrs={'name': 'customer_3'}, text='example-text')
         customers = Node('customers', children=[customer_1, customer_2, customer_3])
 
         expected = [
@@ -41,7 +41,7 @@ class TestBase(TransactionCase):
             '<attribute name="1"/>',
             '<attribute name="2"/>',
             '</customer>',
-            '<customer name="customer_3"/>',
+            '<customer name="customer_3">example-text</customer>',
             '</customers>',
         ]
         self.assertEqual(expected, customers.to_list_xml())

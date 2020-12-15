@@ -51,7 +51,7 @@ class ResPartner(models.Model):
         """ Builds the tree of <customer> nodes, children of the <customers> node received.
             Intended to be extended.
         """
-        if customers_node.name != 'customers':
+        if customers_node.tag != 'customers':
             raise UserError(_(''))
 
         customers_domain = [
