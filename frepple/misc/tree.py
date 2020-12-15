@@ -53,22 +53,33 @@ class Node:
         return '<{}> {}{}'.format(self.tag, attrs_str, children_str)
 
     def to_list_nodes(self):
+        """ This is a method that allows a DFS over the tree.
+
+            If you are just interested in traversing the children (one level) of a node,
+            simply iterate over the attribute children.
+        """
         _list = []
         self.__to_list_nodes(_list)
         return _list
 
     def __to_list_nodes(self, _list):
+        """ Auxiliary method to to_list_nodes(), to allow recursion.
+        """
         if self:
             _list.append(self)
             for node in self.children:
                 node.__to_list_nodes(_list)
 
     def to_list_xml(self):
+        """ Returns a list of non-indented strings, each string being a line of the XML generated.
+        """
         _list = []
         self.__to_list_xml(_list)
         return _list
 
     def __to_list_xml(self, _list):
+        """ Auxiliary method to to_list_xml(), to allow recursion.
+        """
         if self:
             # Determines if the element can be inlined.
             is_inlined = self.children or self.owner or self.text
