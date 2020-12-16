@@ -395,7 +395,7 @@ class exporter(object):
             yield "<resources>\n"
             for i in recs.read(fields):
                 name = i["name"]
-                self.map_workcenters[i["id"]] = name
+                self.map_workcenters[i["id"]] = name  #LOCLOC
                 yield '<resource name=%s maximum="%s"><location name=%s/></resource>\n' % (
                     quoteattr(name),
                     1,
@@ -643,14 +643,21 @@ class exporter(object):
                 i['routing_id'] = dummy_mrp_route_m2o_read
 
             # Determine the location
+            # We actually want the stock location of the warehouse the location belongs to.
             if i["routing_id"]:
-                location = mrp_routings.get(i["routing_id"][0], None)
-                if not location:
-                    location = self.mfg_location
+                location_id = mrp_routings.get(i["routing_id"][0], None)
+                if not location_id:
+                    location_name = self.env['res.company'].search([
+                        ('name', '=', self.company),
+                    ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
+                    # location = self.mfg_location  # Original frePPLe code.
                 else:
-                    location = location[1]
+                    location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
             else:
-                location = self.mfg_location
+                location_name = self.env['res.company'].search([
+                    ('name', '=', self.company),
+                ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
+                # location = self.mfg_location  # Original frePPLe code.
 
             # Determine operation name and item
             product_buf = self.product_template_product.get(
@@ -664,7 +671,7 @@ class exporter(object):
             uom_factor = self.convert_qty_uom(
                 1.0, i["product_uom_id"][0], i["product_tmpl_id"][0]
             )
-            operation = u"%d %s @ %s" % (i["id"], product_buf["name"], location)
+            operation = u"%d %s @ %s" % (i["id"], product_buf["name"], location_name)
             self.operations.add(operation)
 
             # Build operation. The operation can either be a summary operation or a detailed
@@ -685,7 +692,7 @@ class exporter(object):
                     ),
                     self.manufacturing_lead,
                     quoteattr(product_buf["name"]),
-                    quoteattr(location),
+                    quoteattr(location_name),
                 )
                 yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
                     self.convert_qty_uom(
@@ -763,7 +770,7 @@ class exporter(object):
                     quoteattr(operation),
                     self.manufacturing_lead,
                     quoteattr(product_buf["name"]),
-                    quoteattr(location),
+                    quoteattr(location_name),
                 )
 
                 yield "<suboperations>"
@@ -779,7 +786,7 @@ class exporter(object):
                         ),
                         counter * 10,
                         self.convert_float_time(step[1]),
-                        quoteattr(location),
+                        quoteattr(location_name),
                         1,
                         quoteattr(step[0]),
                     )
@@ -919,8 +926,12 @@ class exporter(object):
             # if PO status is done, we should ignore this PO line
             if j["state"] == "done":
                 continue
-            location = self.mfg_location
-            if location and item and i["product_qty"] > i["qty_received"]:
+
+            location_name = self.env['res.company'].search([
+                ('name', '=', self.company),
+            ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
+            # location = self.mfg_location  # Original frePPLe code.
+            if location_name and item and i["product_qty"] > i["qty_received"]:
                 start = j["date_order"].strftime("%Y-%m-%dT%H:%M:%S")
                 end = i["date_planned"].strftime("%Y-%m-%dT%H:%M:%S")
                 qty = self.convert_qty_uom(
@@ -934,7 +945,7 @@ class exporter(object):
                     end,
                     qty,
                     quoteattr(item["name"]),
-                    quoteattr(location),
+                    quoteattr(location_name),
                     quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
                 )
                 yield "</operationplan>\n"
@@ -1018,6 +1029,7 @@ class exporter(object):
             yield "<!-- order points -->\n"
             yield "<buffers>\n"
             for i in recs.read(fields):
+                warehouse = self.env['stock.warehouse'].browse(i['warehouse_id'][0])
                 item = self.product_product.get(
                     i["product_id"] and i["product_id"][0] or 0, None
                 )
@@ -1030,7 +1042,7 @@ class exporter(object):
                 yield "<buffer name=%s><item name=%s/><location name=%s/>\n" '%s%s%s<booleanproperty name="ip_flag" value="true"/>\n' '<stringproperty name="roq_type" value="quantity"/>\n<stringproperty name="ss_type" value="quantity"/>\n' "</buffer>\n" % (
                     quoteattr(name),
                     quoteattr(item["name"]),
-                    quoteattr(i["warehouse_id"][1]),
+                    quoteattr(warehouse.lot_stock_id.complete_name),
                     '<doubleproperty name="ss_min_qty" value="%s"/>\n'
                     % (i["product_min_qty"] * uom_factor)
                     if i["product_min_qty"]
@@ -1172,8 +1184,8 @@ class exporter(object):
             product = move_line.product_id
             ref_uom_for_uom_category_id = self.uom_categories[
                 self.uom[product.product_tmpl_id.uom_id.id]['category']]
-            location_origin = move_line.location_id
-            location_dest = move_line.location_dest_id
+            location_origin = move_line.location_id.get_warehouse_stock_location()
+            location_dest = move_line.location_dest_id.get_warehouse_stock_location()
 
             # We do this to ensure a matching between the outgoing and the incoming software.
             if not move_line.frepple_reference:

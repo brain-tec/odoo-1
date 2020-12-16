@@ -39,8 +39,14 @@ class TestOutboundMoveLines(TestBase):
     def test_export_all_moves(self):
         """ Exports all moves.
         """
+        warehouse_orig = self._create_warehouse('TC_Orig')
         orig_location = self._create_location('Origin Location #1')
+        warehouse_orig.lot_stock_id = orig_location
+
+        warehouse_dest = self._create_warehouse('TC_Dest')
         dest_location = self._create_location('Destination Location #1')
+        warehouse_dest.lot_stock_id = dest_location
+
         product = self._create_product('Product #1', price=7)
         move_line = self._create_move_line(orig_location, dest_location, product)
 
@@ -73,6 +79,16 @@ class TestOutboundMoveLines(TestBase):
         orig_location_2 = self._create_location('Origin Location #2')
         dest_location_2 = self._create_location('Destination Location #2',
                                                 parent=self._create_location('Parent of Destination Location #2'))
+
+        warehouse_orig_1 = self._create_warehouse('TC_O1')
+        warehouse_orig_1.lot_stock_id = orig_location_1
+        warehouse_orig_2 = self._create_warehouse('TC_O2')
+        warehouse_orig_2.lot_stock_id = orig_location_2
+        warehouse_dest_1 = self._create_warehouse('TC_D1')
+        warehouse_dest_1.lot_stock_id = dest_location_1
+        warehouse_dest_2 = self._create_warehouse('TC_D2')
+        warehouse_dest_2.lot_stock_id = dest_location_2
+
         product_1 = self._create_product('Product #1', price=7)
         product_2 = self._create_product('Product #2', price=13)
         move_line_1 = self._create_move_line(orig_location_1, dest_location_1, product_1)
