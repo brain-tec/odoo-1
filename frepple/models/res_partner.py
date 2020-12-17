@@ -52,11 +52,10 @@ class ResPartner(models.Model):
             Intended to be extended.
         """
         if customers_node.tag != 'customers':
-            raise UserError(_(''))
+            raise UserError(_('The top node received as argument must be <customers>.'))
 
         customers_domain = [
             ('customer_rank', '>', 0),
-            ('parent_id', '=', False),
         ]
         if 'test_prefix' in self.env.context:
             customers_domain.append(
