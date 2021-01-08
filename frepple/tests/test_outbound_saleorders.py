@@ -33,7 +33,7 @@ class TestOutboundItems(TestBase):
 
         xml_str_actual = self.exporter.export_salesorders(
             ctx={'test_prefix': 'TC_'})
-        due = getattr(quotation, 'requested_date', False) or quotation.date_order
+        due = getattr(quotation, 'committed_date', False) or quotation.date_order
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
@@ -64,7 +64,7 @@ class TestOutboundItems(TestBase):
 
         xml_str_actual = self.exporter.export_salesorders(
             ctx={'test_prefix': 'TC_'})
-        due = getattr(quotation, 'requested_date', False) or quotation.date_order
+        due = getattr(quotation, 'committed_date', False) or quotation.date_order
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
