@@ -104,7 +104,7 @@ class SaleOrderLine(models.Model):
             product = product_product.browse(so_line_data['product_id'][0])
             location = sale_order.warehouse_id.lot_stock_id.complete_name
             customer_name = so_line._get_customer_name_for_demands()
-            due = getattr(sale_order, 'committed_date', False) or sale_order.date_order
+            due = getattr(sale_order, 'commitment_date', False) or sale_order.date_order
 
             uom = self.env['uom.uom'].browse(so_line_data['product_uom'][0])
             try:
