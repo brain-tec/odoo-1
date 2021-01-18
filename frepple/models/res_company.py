@@ -20,6 +20,7 @@ import logging
 import time
 
 from odoo import api, models, fields, exceptions
+from odoo.addons.base.models.res_partner import _tz_get
 
 _logger = logging.getLogger(__name__)
 
@@ -58,6 +59,9 @@ class ResCompany(models.Model):
         "Internal Moves Domain", default="[]")
     stock_rules_domain = fields.Text(
         "Stock Rules Domain", default="[]")
+    tz_for_exporting = fields.Selection(
+        _tz_get, string='Timezone for exporting frePPLe', required=True, default='UTC',
+    )
 
     @api.model
     def getFreppleURL(self, navbar=True, _url="/"):

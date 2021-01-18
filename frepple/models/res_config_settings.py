@@ -46,3 +46,4 @@ class ResConfigSettings(models.TransientModel):
         help="The frePPLe XML requires to indicate a route for every BoM. Odoo does not "
              "require this, thus this dummy route will be used to export BoM from Odoo "
              "to frePPLe in a way that the XML is compliant.")
+    tz_for_exporting = fields.Selection(related="company_id.tz_for_exporting", readonly=False)

@@ -20,7 +20,8 @@ import logging
 from xml.sax.saxutils import quoteattr
 from datetime import datetime, timedelta
 from operator import itemgetter
-from odoo import fields
+from odoo import fields as odoo_fields
+from odoo.tools import frozendict
 
 import ast
 
@@ -122,6 +123,7 @@ class exporter(object):
             "manufacturing_lead",
             "calendar",
             "manufacturing_warehouse",
+            "tz_for_exporting",
         ]
         self.company_id = 0
         for i in recs.read(fields):
@@ -137,6 +139,9 @@ class exporter(object):
                 and i["manufacturing_warehouse"][1]
                 or self.company
             )
+            ctx = self.env.context.copy()
+            ctx['tz'] = i["tz_for_exporting"]
+            self.env.context = frozendict(ctx)
         if not self.company_id:
             logger.warning("Can't find company '%s'" % self.company)
             self.company_id = None
@@ -537,9 +542,9 @@ class exporter(object):
                 seller = supplier.name
                 supplier_name = "{} {}".format(seller.id, seller.name)
                 effective_end_str = ' effective_end="{}T00:00:00"'.format(
-                    fields.Date.to_string(supplier.date_end)) if supplier.date_end else ''
+                    odoo_fields.Date.to_string(supplier.date_end)) if supplier.date_end else ''
                 effective_start_str = ' effective_start="{}T00:00:00"'.format(
-                    fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
+                    odoo_fields.Date.to_string(supplier.date_start)) if supplier.date_start else ''
                 xml_str.extend([
                     '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
                     'cost="{:0.6f}"{}{}>'.format(
@@ -932,8 +937,8 @@ class exporter(object):
             ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
             # location = self.mfg_location  # Original frePPLe code.
             if location_name and item and i["product_qty"] > i["qty_received"]:
-                start = j["date_order"].strftime("%Y-%m-%dT%H:%M:%S")
-                end = i["date_planned"].strftime("%Y-%m-%dT%H:%M:%S")
+                start = odoo_fields.Datetime.context_timestamp(m, j["date_order"]).strftime("%Y-%m-%dT%H:%M:%S")
+                end = odoo_fields.Datetime.context_timestamp(m, i["date_planned"]).strftime("%Y-%m-%dT%H:%M:%S")
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
                     i["product_uom"][0],
@@ -995,8 +1000,8 @@ class exporter(object):
                 )
                 yield '<operationplan reference=%s start="%s" end="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
-                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
+                    odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
+                    odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
                 )
@@ -1199,7 +1204,9 @@ class exporter(object):
                 'quantity="{quantity}" '
                 'status="{status}">'.format(
                     reference=move_line.frepple_reference,
-                    start=move_line.date.strftime("%Y-%m-%dT%H:%M:%S"),
+                    start=odoo_fields.Datetime.context_timestamp(
+                        move_line, move_line.date
+                    ).strftime("%Y-%m-%dT%H:%M:%S"),
                     quantity=move_line.qty_done,
                     status=status_mapping.get(move_line.state, 'closed')))
             xml_str.extend([
