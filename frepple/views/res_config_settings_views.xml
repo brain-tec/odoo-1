@@ -72,6 +72,16 @@
                       <field name="frepple_bom_dummy_route_id"/>
                   </div>
                </div>
+               <div class="col-12 col-lg-6 o_setting_box" id="tz_for_exporting">
+                  <div class="o_setting_left_pane" invisible="1"/>
+                  <div class="o_setting_right_pane">
+                     <label for="tz_for_exporting"/>
+                     <div class="text-muted">
+                     Set the timezone to be used when exporting dates with timestamps.
+                     </div>
+                      <field name="tz_for_exporting"/>
+                  </div>
+               </div>
             </div>
             </div>
             </xpath>

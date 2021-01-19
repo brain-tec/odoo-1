@@ -5,10 +5,9 @@
 # See LICENSE file for full licensing details.
 ##############################################################################
 
-from odoo import models, api, _
+from odoo import fields, models, api, _
 from odoo.addons.frepple.misc.tree import Node
 from collections import deque
-from xml.sax.saxutils import quoteattr
 import ast
 import logging
 
@@ -118,7 +117,7 @@ class SaleOrderLine(models.Model):
                 'demand', odoo_record=so_line, attrs={
                     'name': name,
                     'quantity': str(qty),
-                    'due': due.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'due': fields.Datetime.context_timestamp(sale_order, due).strftime('%Y-%m-%dT%H:%M:%S'),
                     'minshipment': sale_order.picking_policy == 'one' and qty or '1.0',
                     'status': frepple_status,
                     'priority': '10',

@@ -9,6 +9,7 @@ import re
 import odoo
 from unittest import skipIf
 from odoo.addons.frepple.tests.test_base import TestBase
+from odoo import fields
 
 UNDER_DEVELOPMENT = False
 UNDER_DEVELOPMENT_MSG = 'Test skipped because of being under development'
@@ -40,7 +41,8 @@ class TestOutboundItems(TestBase):
             '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="1.0" '
             'status="quote">'.format(
                 name='{} {}'.format(quotation.name, quotation.order_line[0].id),
-                due=due.strftime('%Y-%m-%dT%H:%M:%S')),
+                due=fields.Datetime.context_timestamp(quotation, due).strftime("%Y-%m-%dT%H:%M:%S"),
+            ),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
             '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),
@@ -71,7 +73,8 @@ class TestOutboundItems(TestBase):
             '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="0.5" '
             'status="quote">'.format(
                 name='{} {}'.format(quotation.name, quotation.order_line[0].id),
-                due=due.strftime('%Y-%m-%dT%H:%M:%S')),
+                due=fields.Datetime.context_timestamp(quotation, due).strftime("%Y-%m-%dT%H:%M:%S"),
+            ),
             '<item name="{}"/>'.format(self.product.name),
             '<customer name="{}"/>'.format('{} {}'.format(self.customer.id, self.customer.name)),
             '<location name="{}"/>'.format(quotation.warehouse_id.lot_stock_id.complete_name),
