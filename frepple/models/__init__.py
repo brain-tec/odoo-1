@@ -5,3 +5,7 @@ from . import sale_order_line
 from . import product_product
 from . import stock_location
 from . import stock_move_line
+from . import mrp_skill
+from . import mrp_workcenter_inherit
+from . import mrp_routing_workcenter_inherit
+from . import mrp_workcenter_skill
