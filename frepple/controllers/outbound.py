@@ -1051,7 +1051,9 @@ class exporter(object):
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
         m = self.env["mrp.production"]
-        recs = m.search([("state", "in", ["in_production", "confirmed", "ready"])])
+        sml = self.env["stock.move.line"]
+        # Adapting search to some existing states in v13
+        recs = m.search([("state", "in", ["confirmed", "planned", "progress", "to_close"])])
         fields = [
             "bom_id",
             "date_start",
@@ -1062,6 +1064,7 @@ class exporter(object):
             "product_uom_id",
             "location_dest_id",
             "product_id",
+            "finished_move_line_ids",
         ]
         for i in recs.read(fields):
             if i["bom_id"]:
@@ -1085,7 +1088,9 @@ class exporter(object):
                     )
                 except Exception:
                     continue
-                if not location or operation not in self.operations:
+                # Working with ids for bom_ids instead of with text, as it might lead to problems
+                # due to changes in name_get for instance
+                if not location or i["bom_id"][0] not in [int(x.split(' ')[0]) for x in self.operations]:
                     continue
                 factor = (
                     self.bom_producedQty[(operation, item["name"])]
@@ -1093,16 +1098,24 @@ class exporter(object):
                     else 1
                 )
                 qty = (
-                    self.convert_qty_uom(
-                        i["product_qty"],
-                        i["product_uom_id"][0],
-                        self.product_product[i["product_id"][0]]["template"],
-                    )
-                    / factor
+                        self.convert_qty_uom(
+                            i["product_qty"],
+                            i["product_uom_id"][0],
+                            self.product_product[i["product_id"][0]]["template"],
+                        )
+                        / factor
                 )
+                # qty would be here the qty to be produced. In case we already produced a part,
+                # we should rather decrease it with the qty already produced
+                if i["finished_move_line_ids"]:
+                    move_lines = sml.browse(i["finished_move_line_ids"])
+                    qty_done = 0
+                    for ml in move_lines:
+                        qty_done += (self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
+                                     / factor)
+                    qty -= qty_done
                 yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
