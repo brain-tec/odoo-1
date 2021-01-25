@@ -90,7 +90,11 @@ class exporter(object):
         if self.mode == 1:
             for i in self.export_suppliers():
                 yield i
+            for i in self.export_skills():
+                yield i
             for i in self.export_workcenters():
+                yield i
+            for i in self.export_workcenterskills():
                 yield i
         for i in self.export_items():
             yield i
@@ -379,6 +383,36 @@ class exporter(object):
                 )
             yield "</suppliers>\n"
 
+    def export_skills(self):
+        m = self.env["mrp.skill"]
+        recs = m.search([])
+        fields = ["name"]
+        if recs:
+            yield "<!-- skills -->\n"
+            yield "<skills>\n"
+            for i in recs.read(fields):
+                name = i["name"]
+                yield "<skill name=%s/>\n" % (quoteattr(name),)
+            yield "</skills>\n"
+
+    def export_workcenterskills(self):
+        m = self.env["mrp.workcenter.skill"]
+        recs = m.search([])
+        fields = ["workcenter", "skill", "priority"]
+        if recs:
+            yield "<!-- resourceskills -->\n"
+            yield "<skills>\n"
+            for i in recs.read(fields):
+                yield "<skill name=%s>\n" % quoteattr(i["skill"][1])
+                yield "<resourceskills>"
+                yield '<resourceskill priority="%d"><resource name=%s/></resourceskill>' % (
+                    i["priority"],
+                    quoteattr(i["workcenter"][1]),
+                )
+                yield "</resourceskills>"
+                yield "</skill>"
+            yield "</skills>"
+
     def export_workcenters(self):
         """
         Send the workcenter list to frePPLe, based one the mrp.workcenter model.
@@ -394,17 +428,20 @@ class exporter(object):
         self.map_workcenters = {}
         m = self.env["mrp.workcenter"]
         recs = m.search([])
-        fields = ["name"]
+        fields = ["name", "owner"]
         if recs:
             yield "<!-- workcenters -->\n"
             yield "<resources>\n"
             for i in recs.read(fields):
                 name = i["name"]
-                self.map_workcenters[i["id"]] = name  #LOCLOC
-                yield '<resource name=%s maximum="%s"><location name=%s/></resource>\n' % (
+                owner = i["owner"]
+                logger.info(owner)
+                self.map_workcenters[i["id"]] = name
+                yield '<resource name=%s maximum="%s"><location name=%s/>%s</resource>\n' % (
                     quoteattr(name),
                     1,
                     quoteattr(self.mfg_location),
+                    ("<owner name=%s/>" % quoteattr(owner[1])) if owner else "",
                 )
             yield "</resources>\n"
 
@@ -573,6 +610,11 @@ class exporter(object):
         yield "<operations>\n"
         self.operations = set()
 
+        # dictionary used to divide the confirmed MO quantities
+        # key is tuple (operation name, produced item)
+        # value is quantity in Operation Materials.
+        self.bom_producedQty = {}
+
         # Read all active manufacturing routings
         mrp_routings = {}
         # m = self.env["mrp.routing"]
@@ -585,7 +627,15 @@ class exporter(object):
         mrp_routing_workcenters = {}
         m = self.env["mrp.routing.workcenter"]
         recs = m.search([], order="routing_id, sequence asc")
-        fields = ["name", "routing_id", "workcenter_id", "sequence", "time_cycle"]
+        fields = [
+            "name",
+            "routing_id",
+            "workcenter_id",
+            "sequence",
+            "time_cycle",
+            "skill",
+            "search_mode",
+        ]
         for i in recs.read(fields):
             if i["routing_id"][0] in mrp_routing_workcenters:
                 # If the same workcenter is used multiple times in a routing,
@@ -604,11 +654,20 @@ class exporter(object):
                             i["time_cycle"],
                             i["sequence"],
                             i["name"],
+                            i["skill"][1] if i["skill"] else None,
+                            i["search_mode"],
                         ]
                     )
             else:
                 mrp_routing_workcenters[i["routing_id"][0]] = [
-                    [i["workcenter_id"][1], i["time_cycle"], i["sequence"], i["name"]]
+                    [
+                        i["workcenter_id"][1],
+                        i["time_cycle"],
+                        i["sequence"],
+                        i["name"],
+                        i["skill"][1] if i["skill"] else None,
+                        i["search_mode"],
+                    ]
                 ]
 
         # Models used in the bom-loop below
@@ -699,14 +758,14 @@ class exporter(object):
                     quoteattr(product_buf["name"]),
                     quoteattr(location_name),
                 )
+                convertedQty = self.convert_qty_uom(
+                    i["product_qty"], i["product_uom_id"][0], i["product_tmpl_id"][0]
+                )
                 yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
-                    self.convert_qty_uom(
-                        i["product_qty"],
-                        i["product_uom_id"][0],
-                        i["product_tmpl_id"][0],
-                    ),
+                    convertedQty,
                     quoteattr(product_buf["name"]),
                 )
+                self.bom_producedQty[(operation, product_buf["name"])] = convertedQty
 
                 # Build consuming flows.
                 # If the same component is consumed multiple times in the same BOM
@@ -727,7 +786,9 @@ class exporter(object):
                     product = self.product_product[j]
                     qty = sum(
                         self.convert_qty_uom(
-                            k["product_qty"], k["product_uom_id"][0], k["product_id"][0]
+                            k["product_qty"],
+                            k["product_uom_id"][0],
+                            self.product_product[k["product_id"][0]]["template"],
                         )
                         for k in fl[j]
                     )
@@ -761,9 +822,11 @@ class exporter(object):
                 if i["routing_id"]:
                     yield "<loads>\n"
                     for j in mrp_routing_workcenters.get(i["routing_id"][0], []):
-                        yield '<load quantity="%f"><resource name=%s/></load>\n' % (
+                        yield '<load quantity="%f" search=%s><resource name=%s/>%s</load>\n' % (
                             j[1],
+                            quoteattr(j[5]),
                             quoteattr(j[0]),
+                            ("<skill name=%s/>" % quoteattr(j[4])) if j[4] else "",
                         )
                     yield "</loads>\n"
             else:
@@ -785,7 +848,7 @@ class exporter(object):
                 for step in steplist:
                     counter = counter + 1
                     suboperation = step[3]
-                    yield "<suboperation>" '<operation name=%s priority="%s" duration="%s" xsi:type="operation_fixed_time">\n' "<location name=%s/>\n" '<loads><load quantity="%f"><resource name=%s/></load></loads>\n' % (
+                    yield "<suboperation>" '<operation name=%s priority="%s" duration="%s" xsi:type="operation_fixed_time">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load></loads>\n' % (
                         quoteattr(
                             "%s - %s - %s" % (operation, suboperation, (counter * 100))
                         ),
@@ -793,7 +856,9 @@ class exporter(object):
                         self.convert_float_time(step[1]),
                         quoteattr(location_name),
                         1,
+                        quoteattr(step[5]),
                         quoteattr(step[0]),
+                        ("<skill name=%s/>" % quoteattr(step[4])) if step[4] else "",
                     )
                     if step[2] == steplist[-1][2]:
                         # Add producing flows on the last routing step
@@ -803,7 +868,19 @@ class exporter(object):
                             * uom_factor,
                             quoteattr(product_buf["name"]),
                         )
+
                         yield "</flows>\n"
+                        self.bom_producedQty[
+                            (
+                                "%s - %s - %s"
+                                % (operation, suboperation, (counter * 100)),
+                                product_buf["name"],
+                            )
+                        ] = (
+                            i["product_qty"]
+                            * getattr(i, "product_efficiency", 1.0)
+                            * uom_factor
+                        )
                     if step[2] == steplist[0][2]:
                         # All consuming flows on the first routing step.
                         # If the same component is consumed multiple times in the same BOM
@@ -827,7 +904,9 @@ class exporter(object):
                                 self.convert_qty_uom(
                                     k["product_qty"],
                                     k["product_uom_id"][0],
-                                    k["product_id"][0],
+                                    self.product_product[k["product_id"][0]][
+                                        "template"
+                                    ],
                                 )
                                 for k in fl[j]
                             )
@@ -942,7 +1021,7 @@ class exporter(object):
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
                     i["product_uom"][0],
-                    i["product_id"][0],
+                    self.product_product[i["product_id"][0]]["template"],
                 )
                 yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
                     quoteattr("%s - %s" % (j["name"], i["id"])),
@@ -966,7 +1045,6 @@ class exporter(object):
         Mapping:
         mrp.production.bom_id mrp.production.bom_id.name @ mrp.production.location_dest_id -> operationplan.operation
         convert mrp.production.product_qty and mrp.production.product_uom -> operationplan.quantity
-        mrp.production.date_planned -> operationplan.end
         mrp.production.date_planned -> operationplan.start
         '1' -> operationplan.status = "confirmed"
         """
@@ -989,19 +1067,43 @@ class exporter(object):
             "finished_move_line_ids",
         ]
         for i in recs.read(fields):
-            if i["state"] and i["bom_id"]:
+            if i["bom_id"]:
                 # Open orders
                 location = self.map_locations.get(i["location_dest_id"][0], None)
-                operation = u"%d %s @ %s" % (i["bom_id"][0], i["bom_id"][1], location)
-                startdate = i["date_start"] or i["date_planned_start"] or None
-                if not startdate:
+                item = (
+                    self.product_product[i["product_id"][0]]
+                    if i["product_id"][0] in self.product_product
+                    else None
+                )
+                if not item:
+                    continue
+                operation = u"%d %s @ %s" % (
+                    i["bom_id"][0],
+                    item["name"],
+                    i["location_dest_id"][1],
+                )
+                try:
+                    startdate = (i["date_start"] or i["date_planned_start"]).replace(
+                        " ", "T"
+                    )
+                except Exception:
                     continue
                 # Working with ids for bom_ids instead of with text, as it might lead to problems
                 # due to changes in name_get for instance
                 if not location or i["bom_id"][0] not in [int(x.split(' ')[0]) for x in self.operations]:
                     continue
-                qty = self.convert_qty_uom(
-                    i["product_qty"], i["product_uom_id"][0], i["product_id"][0]
+                factor = (
+                    self.bom_producedQty[(operation, item["name"])]
+                    if (operation, i["name"]) in self.bom_producedQty
+                    else 1
+                )
+                qty = (
+                        self.convert_qty_uom(
+                            i["product_qty"],
+                            i["product_uom_id"][0],
+                            self.product_product[i["product_id"][0]]["template"],
+                        )
+                        / factor
                 )
                 # qty would be here the qty to be produced. In case we already produced a part,
                 # we should rather decrease it with the qty already produced
@@ -1009,11 +1111,11 @@ class exporter(object):
                     move_lines = sml.browse(i["finished_move_line_ids"])
                     qty_done = 0
                     for ml in move_lines:
-                        qty_done += self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
+                        qty_done += (self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
+                                     / factor)
                     qty -= qty_done
-                yield '<operationplan reference=%s start="%s" end="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
+                yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
@@ -1054,7 +1156,9 @@ class exporter(object):
                 if not item:
                     continue
                 uom_factor = self.convert_qty_uom(
-                    1.0, i["product_uom"][0], i["product_id"][0]
+                    1.0,
+                    i["product_uom"][0],
+                    self.product_product[i["product_id"][0]]["template"],
                 )
                 name = u"%s @ %s" % (item["name"], i["warehouse_id"][1])
                 yield "<buffer name=%s><item name=%s/><location name=%s/>\n" '%s%s%s<booleanproperty name="ip_flag" value="true"/>\n' '<stringproperty name="roq_type" value="quantity"/>\n<stringproperty name="ss_type" value="quantity"/>\n' "</buffer>\n" % (
