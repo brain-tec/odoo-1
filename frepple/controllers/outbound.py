@@ -1082,11 +1082,8 @@ class exporter(object):
                     item["name"],
                     i["location_dest_id"][1],
                 )
-                try:
-                    startdate = (i["date_start"] or i["date_planned_start"]).replace(
-                        " ", "T"
-                    )
-                except Exception:
+                startdate = i["date_start"] or i["date_planned_start"] or None
+                if not startdate:
                     continue
                 # Working with ids for bom_ids instead of with text, as it might lead to problems
                 # due to changes in name_get for instance
