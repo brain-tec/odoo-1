@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from operator import itemgetter
 from odoo import fields as odoo_fields
 from odoo.tools import frozendict
+from odoo.osv import expression
 
 import ast
 
@@ -566,16 +567,23 @@ class exporter(object):
         warehouse_domain = []
         if 'test_prefix' in ctx:
             warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
-        stock_locs = self.env['stock.warehouse'].search(warehouse_domain).mapped('lot_stock_id')
+        # in the export of product master data the supplierinfo is also exported. to make sure frepple has all
+        # the right routes to source the products, we were exporting each supplierinfo once for each warehouse.
+        # Here we changed the implementation as not all products can be purchased for every warehouse.
+        # Hence we use routes to determine for which warehouses the sourcing should be done.
+        # Instead of just using all warehouses, only warehouses for which the product in question has a route
+        # are used
+        stock_rules = self.env['stock.rule'].search(
+            [('action', '=', 'buy'), ('route_id', 'in', product.product_tmpl_id.route_ids.ids)])
 
-        suppliers = self.env['product.supplierinfo'].search([
+        suppliers = self.env['product.supplierinfo'].search(expression.AND([[
             ('product_tmpl_id', '=', product.product_tmpl_id.id),
-        ] + search_domain_suppliers, order='id')
+        ], search_domain_suppliers]), order='id')
         for supplier_no, supplier in enumerate(suppliers):
             if supplier_no == 0:
                 xml_str.append('<itemsuppliers>')
 
-            for location in stock_locs:
+            for rule in stock_rules:
                 seller = supplier.name
                 supplier_name = "{} {}".format(seller.id, seller.name)
                 effective_end_str = ' effective_end="{}T00:00:00"'.format(
@@ -587,7 +595,7 @@ class exporter(object):
                     'cost="{:0.6f}"{}{}>'.format(
                         supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
                         effective_end_str, effective_start_str),
-                    '<location name="{}"/>'.format(location.complete_name),
+                    '<location name="{}"/>'.format(rule.location_id.complete_name),
                     '<supplier name={}/>'.format(quoteattr(supplier_name)),
                     '</itemsupplier>',
                 ])
