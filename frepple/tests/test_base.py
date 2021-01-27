@@ -96,6 +96,21 @@ class TestBase(TransactionCase):
             create_values['categ_id'] = category.id
         return self.env['product.product'].create(create_values)
 
+    def _create_bom(self, product, child_products):
+        bom_line_ids = []
+        for child_product in child_products:
+            bom_line_ids.append((0, 0,
+                                 {'product_id': child_product.id,
+                                  'product_qty': 1,
+                                  'product_uom_id': child_product.uom_id.id
+                                  }))
+        return self.env['mrp.bom'].create({
+            'product_tmpl_id': product.product_tmpl_id.id,
+            'product_qty': 1,
+            'product_uom_id': product.uom_id.id,
+            'bom_line_ids': bom_line_ids
+        })
+
     def _create_supplier_seller(self, name, product, priority, price, delay):
         supplier = self.env['res.partner'].create({
             'name': name,

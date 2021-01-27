@@ -29,6 +29,7 @@
         "views/mrp_workcenter_inherit.xml",
         "views/mrp_workcenter_skill.xml",
         "views/mrp_routing_workcenter_inherit.xml",
+        "views/mrp_production.xml",
     ],
     "demo": ["data/demo.xml"],
     "test": [],

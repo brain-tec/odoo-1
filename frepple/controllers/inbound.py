@@ -138,23 +138,7 @@ class importer(object):
 
                     # elif ????:
                     else:
-                        uom_id, item_id = elem.get("item_id").split(",")
-                        # Create manufacturing order
-                        mfg_order.create(
-                            {
-                                "product_qty": elem.get("quantity"),
-                                "date_planned_start": elem.get("start"),
-                                "date_planned_finished": elem.get("end"),
-                                "product_id": int(item_id),
-                                "company_id": self.company.id,
-                                "product_uom_id": int(uom_id),
-                                "location_src_id": int(elem.get("location_id")),
-                                "bom_id": int(elem.get("operation").split(" ", 1)[0]),
-                                # TODO no place to store the criticality
-                                # elem.get('criticality'),
-                                "origin": "frePPLe",
-                            }
-                        )
+                        self._create_or_update_mo(elem, self.company)
                         countmfg += 1
                 except Exception as e:
                     logger.error("Exception %s" % e)
@@ -172,3 +156,6 @@ class importer(object):
 
     def _create_or_update_stock_move_line(self, elem):
         self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem)
+
+    def _create_or_update_mo(self, elem, company):
+        self.env['mrp.production']._create_or_update_from_frepple_mo(elem, company)
