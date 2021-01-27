@@ -9,3 +9,4 @@ from . import mrp_skill
 from . import mrp_workcenter_inherit
 from . import mrp_routing_workcenter_inherit
 from . import mrp_workcenter_skill
+from . import mrp_production
