@@ -42,8 +42,6 @@ class importer(object):
     def run(self):
         msg = []
 
-        proc_order = self.env["purchase.order"]
-        proc_orderline = self.env["purchase.order.line"]
         mfg_order = self.env["mrp.production"]
         if self.mode == 1:
             # Cancel previous draft purchase quotations
@@ -68,6 +66,7 @@ class importer(object):
 
         # Parsing the XML data file
         countproc = 0
+        countsm = 0
         countmfg = 0
 
         # dictionary that stores as key the supplier id and the associated po id
@@ -85,61 +84,19 @@ class importer(object):
             if event == "end" and elem.tag == "operationplan":
                 try:
                     ordertype = elem.get("ordertype")
+
                     if ordertype == "PO":
-                        # The following line was moved inside because otherwise it crashed (because the item_id
-                        # was not found). I'd say it's a bug of the original software. So I place it here
-                        # and also inside the `else`. So 1 line of duplicated code.
-                        uom_id, item_id = elem.get("item_id").split(",")
-                        # Create purchase order
-                        supplier_id = int(elem.get("supplier").split(" ", 1)[0])
-                        if supplier_id not in supplier_reference:
-                            po = proc_order.create(
-                                {
-                                    "company_id": self.company.id,
-                                    "partner_id": int(
-                                        elem.get("supplier").split(" ", 1)[0]
-                                    ),
-                                    # TODO Odoo has no place to store the location and criticality
-                                    # int(elem.get('location_id')),
-                                    # elem.get('criticality'),
-                                    "origin": "frePPLe",
-                                }
-                            )
-                            supplier_reference[supplier_id] = po.id
-
-                        quantity = elem.get("quantity")
-                        date_planned = elem.get("end")
-                        if (item_id, supplier_id) not in product_supplier_dict:
-                            po_line = proc_orderline.create(
-                                {
-                                    "order_id": supplier_reference[supplier_id],
-                                    "product_id": int(item_id),
-                                    "product_qty": quantity,
-                                    "product_uom": int(uom_id),
-                                    "date_planned": date_planned,
-                                    "price_unit": 0,
-                                    "name": elem.get("item"),
-                                }
-                            )
-                            product_supplier_dict[(item_id, supplier_id)] = po_line
-
-                        else:
-                            po_line = product_supplier_dict[(item_id, supplier_id)]
-                            po_line.date_planned = min(
-                                po_line.date_planned,
-                                datetime.strptime(date_planned, "%Y-%m-%d %H:%M:%S"),
-                            )
-                            po_line.product_qty = po_line.product_qty + float(quantity)
+                        self._create_or_update_po(elem, self.company, supplier_reference, product_supplier_dict)
                         countproc += 1
 
-                    # Creates a distribution order.
                     elif ordertype == "DO":
                         self._create_or_update_stock_move_line(elem)
+                        countsm += 1
 
-                    # elif ????:
-                    else:
+                    elif ordertype == "MO":
                         self._create_or_update_mo(elem, self.company)
                         countmfg += 1
+
                 except Exception as e:
                     logger.error("Exception %s" % e)
                     msg.append(str(e))
@@ -151,8 +108,13 @@ class importer(object):
 
         # Be polite, and reply to the post
         msg.append("Processed %s uploaded procurement orders" % countproc)
+        msg.append("Processed %s uploaded stock moves" % countsm)
         msg.append("Processed %s uploaded manufacturing orders" % countmfg)
         return "\n".join(msg)
+
+    def _create_or_update_po(self, elem, company, supplier_reference, product_supplier_dict):
+        self.env['purchase.order']._create_or_update_from_frepple_po(elem, company, supplier_reference,
+                                                                     product_supplier_dict)
 
     def _create_or_update_stock_move_line(self, elem):
         self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem)
