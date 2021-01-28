@@ -122,9 +122,11 @@ class ManufacturingOrder(models.Model):
             mo = self.search([('frepple_reference', '=', elem_reference)])
 
             if mo:
-                f = Form(mo)
+                with Form(mo) as f:
+                    for key, value in mo_values.items():
+                        setattr(f, key, value)
             else:
                 f = Form(self)
-            for key, value in mo_values.items():
-                setattr(f, key, value)
-            f.save()
+                for key, value in mo_values.items():
+                    setattr(f, key, value)
+                f.save()
