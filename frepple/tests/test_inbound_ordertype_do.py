@@ -91,6 +91,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -124,6 +125,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty, datetime_xml=datetime_str_xml)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -163,6 +165,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty + 3)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -211,6 +214,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty + 7)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 

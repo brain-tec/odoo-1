@@ -39,33 +39,20 @@ class PurchaseOrder(models.Model):
 
         uom_id, item_id = elem.get("item_id").split(",")
 
-        supplier_search_domain = [
-            ('id', '=', int(elem.get("supplier").split(" ", 1)[0])),
-        ]
-        supplier = ResPartner.search(supplier_search_domain)
+        supplier_id = int(elem.get("supplier").split(" ", 1)[0])
+        supplier = ResPartner.browse(supplier_id)
         if not supplier:
-            errors.append('No supplier was found for {}'.format(supplier_search_domain))
-        elif len(supplier) > 1:
-            errors.append('More than one supplier was found for {}'.format(supplier_search_domain))
+            errors.append('No supplier was found with id {}'.format(supplier_id))
 
-        product_search_domain = [
-            ('id', '=', int(item_id)),
-            ('name', '=', elem.get('item', '')),
-        ]
-        product = product_product.search(product_search_domain)
+        product_id = int(item_id)
+        product = product_product.browse(product_id)
         if not product:
-            errors.append('No product was found for {}'.format(product_search_domain))
-        elif len(product) > 1:
-            errors.append('More than one product was found for {}'.format(product_search_domain))
+            errors.append('No product was found with id {}'.format(product_id))
 
-        uom_search_domain = [
-            ('id', '=', int(uom_id)),
-        ]
-        uom = uom_uom.search(uom_search_domain)
+        uom_id = int(uom_id)
+        uom = uom_uom.browse(uom_id)
         if not uom:
-            errors.append('No uom was found for {}'.format(uom_search_domain))
-        elif len(uom) > 1:
-            errors.append('More than one uom was found for {}'.format(uom_search_domain))
+            errors.append('No uom was found with id {}'.format(uom_id))
 
         # TODO Odoo has no place to store the location and criticality
         # int(elem.get('location_id')),

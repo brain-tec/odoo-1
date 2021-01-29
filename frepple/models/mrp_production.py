@@ -42,63 +42,25 @@ class ManufacturingOrder(models.Model):
 
         uom_id, item_id = elem.get("item_id").split(",")
 
-        # Determines the product.
-        product_search_domain = [
-            ('id', '=', int(item_id)),
-            ('name', '=', elem.get('item', '')),
-        ]
-        product = product_product.search(product_search_domain)
+        product_id = int(item_id)
+        product = product_product.browse(product_id)
         if not product:
-            errors.append('No product was found for {}'.format(product_search_domain))
-        elif len(product) > 1:
-            errors.append('More than one product was found for {}'.format(product_search_domain))
+            errors.append('No product was found with id {}'.format(product_id))
 
-        # Determines the uom.
-        uom_search_domain = [
-            ('id', '=', int(uom_id)),
-        ]
-        uom = uom_uom.search(uom_search_domain)
+        uom_id = int(uom_id)
+        uom = uom_uom.browse(uom_id)
         if not uom:
-            errors.append('No uom was found for {}'.format(uom_search_domain))
-        elif len(uom) > 1:
-            errors.append('More than one uom was found for {}'.format(uom_search_domain))
+            errors.append('No uom was found with id {}'.format(uom_id))
 
-        # # Determines the origin location.
-        # location_search_domain = [
-        #     ('id', '=', elem.get('origin_id', 0)),
-        #     ('name', '=', elem.get('origin', '')),
-        # ]
-        # from_location = stock_location.search(location_search_domain)
-        # if not from_location:
-        #     errors.append('No location was found for {}'.format(location_search_domain))
-        # elif len(from_location) > 1:
-        #     errors.append('More than one location was found for {}'.format(location_search_domain))
-
-        # Determines the destination location.
-        location_search_domain = [
-            ('id', '=', int(elem.get('location_id', 0))),
-            ('name', '=', elem.get('location', '')),
-        ]
-        to_location = stock_location.search(location_search_domain)
+        location_id = int(elem.get('location_id'))
+        to_location = stock_location.browse(location_id)
         if not to_location:
-            errors.append('No location was found for {}'.format(location_search_domain))
-        elif len(to_location) > 1:
-            errors.append('More than one location was found for {}'.format(location_search_domain))
+            errors.append('No location was found with id {}'.format(location_id))
 
-        # if not from_location:
-        #     errors.append('No origin location found.')
-        if not to_location:
-            errors.append('No destination location found.')
-
-        # Determines the bom.
-        bom_search_domain = [
-            ('id', '=', int(elem.get("operation").split(" ", 1)[0])),
-        ]
-        bom = mrp_bom.search(bom_search_domain)
+        bom_id = int(elem.get("operation").split(" ", 1)[0])
+        bom = mrp_bom.browse(bom_id)
         if not bom:
-            errors.append('No bom was found for {}'.format(bom_search_domain))
-        elif len(bom) > 1:
-            errors.append('More than one bom was found for {}'.format(bom_search_domain))
+            errors.append('No bom was found with id {}'.format(bom_id))
 
         if errors:
             _logger.error('The following errors were found when processing <operationplan> with '
