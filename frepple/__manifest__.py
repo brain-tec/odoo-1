@@ -30,6 +30,7 @@
         "views/mrp_workcenter_skill.xml",
         "views/mrp_routing_workcenter_inherit.xml",
         "views/mrp_production.xml",
+        "views/stock_move_line_views.xml",
     ],
     "demo": ["data/demo.xml"],
     "test": [],

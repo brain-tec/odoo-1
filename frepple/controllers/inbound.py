@@ -90,7 +90,7 @@ class importer(object):
                         countproc += 1
 
                     elif ordertype == "DO":
-                        self._create_or_update_stock_move_line(elem)
+                        self._create_or_update_stock_move_line(elem, self.company)
                         countsm += 1
 
                     elif ordertype == "MO":
@@ -116,8 +116,8 @@ class importer(object):
         self.env['purchase.order']._create_or_update_from_frepple_po(elem, company, supplier_reference,
                                                                      product_supplier_dict)
 
-    def _create_or_update_stock_move_line(self, elem):
-        self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem)
+    def _create_or_update_stock_move_line(self, elem, company):
+        self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem, company)
 
     def _create_or_update_mo(self, elem, company):
         self.env['mrp.production']._create_or_update_from_frepple_mo(elem, company)

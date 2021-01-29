@@ -31,7 +31,7 @@ class TestInboundOrdertypeDo(TestBase):
                     <operationplan reference="{reference}" ordertype="DO"
                       start="{datetime}" end="{datetime}"
                       quantity="{qty:0.6f}" status="proposed"
-                      item="{product_name}" item_id="{product_id}"
+                      item="{product_name}" item_id="{uom_id},{product_id}"
                       origin="{origin_name}" origin_id="{origin_id}"
                       destination="{location_name}" destination_id="{location_id}"
                       criticality="1"
@@ -46,7 +46,8 @@ class TestInboundOrdertypeDo(TestBase):
                    origin_name=source_location.name,
                    origin_id=source_location.id,
                    qty=qty,
-                   datetime=datetime_xml)
+                   datetime=datetime_xml,
+                   uom_id=product.uom_id.id)
         fd, xml_file_path = mkstemp(prefix='frepple_inbound_xml_', dir="/tmp")
         f = open(xml_file_path, 'w')
         f.write(xml_content)
@@ -91,6 +92,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -124,6 +126,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty, datetime_xml=datetime_str_xml)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -163,6 +166,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty + 3)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
@@ -211,6 +215,7 @@ class TestInboundOrdertypeDo(TestBase):
             ref, self.product, self.source_loc, self.dest_loc, qty=qty + 7)
         f = open(xml_file, 'r')
         self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
         self.importer.run()
         f.close()
 
