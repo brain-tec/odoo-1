@@ -31,7 +31,7 @@ class TestInboundOrdertypeDo(TestBase):
                     <operationplan reference="{reference}" ordertype="DO"
                       start="{datetime}" end="{datetime}"
                       quantity="{qty:0.6f}" status="proposed"
-                      item="{product_name}" item_id="{product_id}"
+                      item="{product_name}" item_id="{uom_id},{product_id}"
                       origin="{origin_name}" origin_id="{origin_id}"
                       destination="{location_name}" destination_id="{location_id}"
                       criticality="1"
@@ -46,7 +46,8 @@ class TestInboundOrdertypeDo(TestBase):
                    origin_name=source_location.name,
                    origin_id=source_location.id,
                    qty=qty,
-                   datetime=datetime_xml)
+                   datetime=datetime_xml,
+                   uom_id=product.uom_id.id)
         fd, xml_file_path = mkstemp(prefix='frepple_inbound_xml_', dir="/tmp")
         f = open(xml_file_path, 'w')
         f.write(xml_content)
