@@ -1316,6 +1316,10 @@ class exporter(object):
             location_origin = move_line.location_id.get_warehouse_stock_location()
             location_dest = move_line.location_dest_id.get_warehouse_stock_location()
 
+            # frepple cannot work with DOs having the same origin and destination, so skip those
+            if location_origin == location_dest:
+                continue
+
             # We do this to ensure a matching between the outgoing and the incoming software.
             if not move_line.frepple_reference:
                 move_line.frepple_reference = move_line.id
