@@ -1119,6 +1119,8 @@ class exporter(object):
                         qty_done += (self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
                                      / factor)
                     qty -= qty_done
+                    if qty <= 0:
+                        continue
                 yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
