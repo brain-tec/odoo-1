@@ -1061,7 +1061,7 @@ class exporter(object):
         m = self.env["mrp.production"]
         sml = self.env["stock.move.line"]
         # Adapting search to some existing states in v13
-        recs = m.search([("state", "in", ["confirmed", "planned", "progress", "to_close"])])
+        recs = m.search([("state", "not in", ["draft", "done", "cancel"])])
         fields = [
             "bom_id",
             "date_start",
