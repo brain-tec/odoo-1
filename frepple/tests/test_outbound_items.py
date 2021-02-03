@@ -19,6 +19,24 @@ class TestOutboundItems(TestBase):
         test_warehouse.code = 'TC_WH'
         self.stock_location = test_warehouse.lot_stock_id
 
+    def _get_supplier_info(self,sellers, suppliers, product):
+        stock_rules = self.env['stock.rule'].search(
+            [('action', '=', 'buy'), ('route_id', 'in', product.product_tmpl_id.route_ids.ids)])
+
+        supplier_info = ""
+        for i in range(0, len(sellers)):
+            seller = sellers[i]
+            supplier = suppliers[i]
+            for rule in stock_rules:
+                supplier_info += '\n'.join([
+                    '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
+                        seller.delay, seller.sequence, seller.price),
+                    '<location name="{}"/>'.format(rule.location_id.complete_name),
+                    '<supplier name="{} {}"/>'.format(supplier.id, supplier.name),
+                    '</itemsupplier>\n'])
+        supplier_info = supplier_info[:-1]  # Removing last \n
+        return supplier_info
+
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_no_subcategory(self):
         """ Tests a product with no subcategories.
@@ -32,6 +50,10 @@ class TestOutboundItems(TestBase):
             'TC_Supplier_2', product=product_1, priority=2, price=13, delay=2)
 
         xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
+        sellers = [seller_1, seller_2]
+        suppliers = [supplier_1, supplier_2]
+        supplier_info = self._get_supplier_info(sellers, suppliers, product_1)
+
         xml_str_expected = '\n'.join([
             '<!-- products -->',
             '<items>',
@@ -41,16 +63,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
-            '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
-            '</itemsupplier>',
+            supplier_info,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
@@ -71,6 +84,9 @@ class TestOutboundItems(TestBase):
             'TC_Supplier_1', product=product_a_1, priority=1, price=7, delay=3)
         supplier_2, seller_2 = self._create_supplier_seller(
             'TC_Supplier_2', product=product_a_1, priority=2, price=13, delay=2)
+        sellers_a = [seller_1, seller_2]
+        suppliers_a = [supplier_1, supplier_2]
+        supplier_info_a = self._get_supplier_info(sellers_a, suppliers_a, product_a_1)
 
         category_a_sub = self._create_category('TC_Category_A_Sub', parent=category_a)
         product_a_sub_1 = self._create_product('TC_Product_A_Sub_1', category=category_a_sub, price=5)
@@ -78,6 +94,9 @@ class TestOutboundItems(TestBase):
             'TC_Supplier_3', product=product_a_sub_1, priority=10, price=70, delay=30)
         supplier_4, seller_4 = self._create_supplier_seller(
             'TC_Supplier_4', product=product_a_sub_1, priority=20, price=130, delay=20)
+        sellers_a_sub = [seller_3, seller_4]
+        suppliers_a_sub = [supplier_3, supplier_4]
+        supplier_info_a_sub = self._get_supplier_info(sellers_a_sub, suppliers_a_sub, product_a_sub_1)
 
         xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
@@ -89,16 +108,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
-            '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
-            '</itemsupplier>',
+            supplier_info_a,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -108,16 +118,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_3.delay, seller_3.sequence, seller_3.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_3.id, supplier_3.name),
-            '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_4.delay, seller_4.sequence, seller_4.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_4.id, supplier_4.name),
-            '</itemsupplier>',
+            supplier_info_a_sub,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -128,7 +129,6 @@ class TestOutboundItems(TestBase):
             '</items>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)
-        self.assertTrue(True)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_with_subcategory_two_levels(self):
@@ -140,6 +140,9 @@ class TestOutboundItems(TestBase):
             'TC_Supplier_1', product=product_a_1, priority=1, price=7, delay=3)
         supplier_2, seller_2 = self._create_supplier_seller(
             'TC_Supplier_2', product=product_a_1, priority=2, price=13, delay=2)
+        sellers_a_1 = [seller_1, seller_2]
+        suppliers_a_1 = [supplier_1, supplier_2]
+        supplier_info_a_1 = self._get_supplier_info(sellers_a_1, suppliers_a_1, product_a_1)
 
         category_a_sub = self._create_category('TC_Category_A_Sub', parent=category_a)
         product_a_sub_1 = self._create_product('TC_Product_A_Sub_1', category=category_a_sub, price=5)
@@ -147,19 +150,34 @@ class TestOutboundItems(TestBase):
             'TC_Supplier_3', product=product_a_sub_1, priority=10, price=70, delay=30)
         supplier_4, seller_4 = self._create_supplier_seller(
             'TC_Supplier_4', product=product_a_sub_1, priority=20, price=130, delay=20)
+        sellers_a_sub_1 = [seller_3, seller_4]
+        suppliers_a_sub_1 = [supplier_3, supplier_4]
+        supplier_info_a_sub_1 = self._get_supplier_info(sellers_a_sub_1, suppliers_a_sub_1, product_a_sub_1)
 
         category_a_sub_sub = self._create_category('TC_Category_A_Sub_Sub', parent=category_a_sub)
         product_a_sub_sub_1 = self._create_product('TC_Product_A_Sub_Sub_1', category=category_a_sub_sub, price=7)
         supplier_5, seller_5 = self._create_supplier_seller(
             'TC_Supplier_5', product=product_a_sub_sub_1, priority=10, price=70, delay=30)
+        sellers_a_sub_sub_1 = [seller_5]
+        suppliers_a_sub_sub_1 = [supplier_5]
+        supplier_info_a_sub_sub_1 = self._get_supplier_info(sellers_a_sub_sub_1, suppliers_a_sub_sub_1,
+                                                            product_a_sub_sub_1)
+
         product_a_sub_sub_2 = self._create_product('TC_Product_A_Sub_Sub_2', category=category_a_sub_sub, price=7)
         supplier_6, seller_6 = self._create_supplier_seller(
             'TC_Supplier_6', product=product_a_sub_sub_2, priority=20, price=130, delay=20)
+        sellers_a_sub_sub_2 = [seller_6]
+        suppliers_a_sub_sub_2 = [supplier_6]
+        supplier_info_a_sub_sub_2 = self._get_supplier_info(sellers_a_sub_sub_2, suppliers_a_sub_sub_2,
+                                                            product_a_sub_sub_2)
 
         category_b = self._create_category('TC_Category_B')
         product_b_1 = self._create_product('TC_Product_B_1', category=category_b, price=5)
         supplier_7, seller_7 = self._create_supplier_seller(
             'TC_Supplier_7', product=product_b_1, priority=1, price=7, delay=3)
+        sellers_b_1 = [seller_7]
+        suppliers_b_1 = [supplier_7]
+        supplier_info_b_1 = self._get_supplier_info(sellers_b_1, suppliers_b_1, product_b_1)
 
         xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
@@ -171,16 +189,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_1.delay, seller_1.sequence, seller_1.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_1.id, supplier_1.name),
-            '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_2.delay, seller_2.sequence, seller_2.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_2.id, supplier_2.name),
-            '</itemsupplier>',
+            supplier_info_a_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -190,16 +199,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_3.delay, seller_3.sequence, seller_3.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_3.id, supplier_3.name),
-            '</itemsupplier>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_4.delay, seller_4.sequence, seller_4.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_4.id, supplier_4.name),
-            '</itemsupplier>',
+            supplier_info_a_sub_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -209,22 +209,14 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_5.delay, seller_5.sequence, seller_5.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_5.id, supplier_5.name),
-            '</itemsupplier>',
+            supplier_info_a_sub_sub_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_6.delay, seller_6.sequence, seller_6.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_6.id, supplier_6.name),
-            '</itemsupplier>',
+            supplier_info_a_sub_sub_2,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -240,11 +232,7 @@ class TestOutboundItems(TestBase):
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_b_1.name, product_b_1.list_price, self.kgm_uom.id, product_b_1.id),
             '<itemsuppliers>',
-            '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="0.000000" cost="{:0.6f}">'.format(
-                seller_7.delay, seller_7.sequence, seller_7.price),
-            '<location name="{}"/>'.format(self.stock_location.complete_name),
-            '<supplier name="{} {}"/>'.format(supplier_7.id, supplier_7.name),
-            '</itemsupplier>',
+            supplier_info_b_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
@@ -253,7 +241,6 @@ class TestOutboundItems(TestBase):
             '</items>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)
-        self.assertTrue(True)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_inactive(self):

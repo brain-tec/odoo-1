@@ -212,7 +212,7 @@ class TestInboundOrdertypeDo(TestBase):
         ]), picking)
 
         _, xml_file = self._create_xml(
-            ref, self.product, self.source_loc, self.dest_loc, qty=qty + 7)
+            ref, self.product, self.source_loc, self.dest_loc, qty=qty + 7, datetime_xml=datetime_str_odoo)
         f = open(xml_file, 'r')
         self.importer.datafile = f
         self.importer.company = self.env.user.company_id
