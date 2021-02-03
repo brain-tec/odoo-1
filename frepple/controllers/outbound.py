@@ -1078,6 +1078,9 @@ class exporter(object):
             if i["bom_id"]:
                 # Open orders
                 location = self.map_locations.get(i["location_dest_id"][0], None)
+                if not location:
+                    continue
+
                 item = (
                     self.product_product[i["product_id"][0]]
                     if i["product_id"][0] in self.product_product
@@ -1085,18 +1088,20 @@ class exporter(object):
                 )
                 if not item:
                     continue
-                operation = u"%d %s @ %s" % (
-                    i["bom_id"][0],
-                    item["name"],
-                    i["location_dest_id"][1],
-                )
+
+                operation_ids = [int(x.split(' ')[0]) for x in self.operations]
+                # Working with ids for bom_ids instead of with text, as it might lead to problems
+                # due to changes in name_get for instance
+                bom_id = i["bom_id"][0]
+                if bom_id not in operation_ids:
+                    continue
+                operation_index = operation_ids.index(bom_id)
+                operation = list(self.operations)[operation_index]
+
                 startdate = i["date_start"] or i["date_planned_start"] or None
                 if not startdate:
                     continue
-                # Working with ids for bom_ids instead of with text, as it might lead to problems
-                # due to changes in name_get for instance
-                if not location or i["bom_id"][0] not in [int(x.split(' ')[0]) for x in self.operations]:
-                    continue
+
                 factor = (
                     self.bom_producedQty[(operation, item["name"])]
                     if (operation, i["name"]) in self.bom_producedQty
