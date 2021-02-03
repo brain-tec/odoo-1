@@ -1127,7 +1127,7 @@ class exporter(object):
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
-                    i["location_dest_id"][1]
+                    quoteattr(i["location_dest_id"][1])
                 )
         yield "</operationplans>\n"
 
