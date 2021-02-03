@@ -1119,11 +1119,15 @@ class exporter(object):
                         qty_done += (self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
                                      / factor)
                     qty -= qty_done
-                yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
+                    # in case qty <= 0 we should not output that MO at all
+                    if qty <= 0:
+                        continue
+                yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/><location name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
+                    i["location_dest_id"][1]
                 )
         yield "</operationplans>\n"
 
@@ -1313,6 +1317,10 @@ class exporter(object):
                 self.uom[product.product_tmpl_id.uom_id.id]['category']]
             location_origin = move_line.location_id.get_warehouse_stock_location()
             location_dest = move_line.location_dest_id.get_warehouse_stock_location()
+
+            # frepple cannot work with DOs having the same origin and destination, so skip those
+            if location_origin == location_dest:
+                continue
 
             # We do this to ensure a matching between the outgoing and the incoming software.
             if not move_line.frepple_reference:

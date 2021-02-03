@@ -24,6 +24,10 @@ class TestInboundOrdertypeDo(TestBase):
         self.bom = self._create_bom(self.product, [self.sub_product_1, self.sub_product_2])
         self.dest_loc = self._create_location('ASM/Stock')
         self.source_loc = self._create_location('Source Location')
+        warehouse = self.env.ref('stock.warehouse0')
+        warehouse.lot_stock_id = self.dest_loc
+        warehouse.manu_type_id.default_location_src_id = self.source_loc
+        warehouse.manu_type_id.default_location_dest_id = self.dest_loc
 
     def _create_xml(self, reference, product, bom, source_location, destination_location, qty, datetime_xml=None):
         if datetime_xml is None:
@@ -103,4 +107,9 @@ class TestInboundOrdertypeDo(TestBase):
 
         mrp_production = mrpProduction.search([('origin', '=', "frePPLe")])
         self.assertEqual(len(mrp_production), 1)
+        self.assertEqual(mrp_production.picking_type_id.code, 'mrp_operation')
+        self.assertEqual(mrp_production.picking_type_id.warehouse_id.lot_stock_id.id, self.dest_loc.id)
+        self.assertEqual(mrp_production.location_src_id.complete_name, self.source_loc.name)
+        self.assertEqual(mrp_production.location_dest_id.complete_name, self.dest_loc.name)
         self.assertEqual(mrp_production.move_raw_ids.mapped('product_id.name'), self.bom.mapped('bom_line_ids.product_id.name'))
+        self.assertEqual(mrp_production.move_raw_ids.mapped('product_uom_qty'), [qty, qty])

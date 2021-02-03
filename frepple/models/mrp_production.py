@@ -34,6 +34,7 @@ class ManufacturingOrder(models.Model):
         uom_uom = self.env['uom.uom']
         stock_location = self.env['stock.location']
         mrp_bom = self.env['mrp.bom']
+        stock_warehouse = self.env['stock.warehouse']
 
         elem_reference = elem.get('id')
 
@@ -53,9 +54,18 @@ class ManufacturingOrder(models.Model):
             errors.append('No uom was found with id {}'.format(uom_id))
 
         location_id = int(elem.get('location_id'))
-        to_location = stock_location.browse(location_id)
-        if not to_location:
+        location = stock_location.browse(location_id)
+        if not location:
             errors.append('No location was found with id {}'.format(location_id))
+
+        if location:
+            warehouse = stock_warehouse.search([('lot_stock_id', '=', location.id)])
+            if not warehouse:
+                errors.append('No warehouse was found with Location Stock having id {}'.format(location_id))
+            picking_type = warehouse.manu_type_id
+            if not picking_type:
+                errors.append('No Operation Type was found with type Manufacturing associated to warehouse '
+                              'with id {}'.format(warehouse.id))
 
         bom_id = int(elem.get("operation").split(" ", 1)[0])
         bom = mrp_bom.browse(bom_id)
@@ -68,27 +78,30 @@ class ManufacturingOrder(models.Model):
         else:
             # TODO no place to store the criticality
             # # elem.get('criticality'),
-            mo_values = {
-                'frepple_reference': elem_reference,
-                'product_qty': elem.get('quantity'),
-                'date_planned_start': elem.get("start").replace('T', ' '),
-                'date_planned_finished': elem.get("end").replace('T', ' '),
-                'product_id': product,
-                'company_id': company,
-                'product_uom_id': uom,
-                'location_src_id': to_location,
-                'bom_id': bom,
-                'origin': "frePPLe"
-            }
+            # location is not set as both scr and dest locations are set by onchange of picking_type_id
+            # Order is relevant in this list, as onchanges of those fields will be called in that order
+            # bom & picking_type_id should be called before qty otherwise it's reset to 1 and uom as well is reset
+            mo_values = [
+                ('company_id', company),
+                ('product_id', product),
+                ('picking_type_id', picking_type),
+                ('bom_id', bom),
+                ('product_uom_id', uom),
+                ('product_qty', elem.get('quantity')),
+                ('frepple_reference', elem_reference),
+                ('date_planned_start', elem.get("start").replace('T', ' ')),
+                ('date_planned_finished', elem.get("end").replace('T', ' ')),
+                ('origin', "frePPLe"),
+            ]
 
             mo = self.search([('frepple_reference', '=', elem_reference)])
 
             if mo:
                 with Form(mo) as f:
-                    for key, value in mo_values.items():
+                    for key, value in mo_values:
                         setattr(f, key, value)
             else:
                 f = Form(self)
-                for key, value in mo_values.items():
+                for key, value in mo_values:
                     setattr(f, key, value)
                 f.save()
