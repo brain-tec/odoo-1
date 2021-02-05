@@ -473,6 +473,14 @@ class exporter(object):
         # Read the product templates
         self.product_product = {}
         self.product_template_product = {}
+        self.category_parent = {}
+
+        m = self.env["product.category"]
+        fields = ["name", "parent_id"]
+        recs = m.search([])
+        for i in recs.read(fields):
+            if i["parent_id"]:
+                self.category_parent[i["name"]] = i["parent_id"]
         m = self.env["product.template"]
         fields = [
             "purchase_ok",
@@ -483,6 +491,7 @@ class exporter(object):
             "uom_id",
             "seller_ids",
             "standard_price",
+            "categ_id",
         ]
         recs = m.search([])
         self.product_templates = {}
@@ -550,12 +559,21 @@ class exporter(object):
                     prod_obj = {"name": name, "template": i["product_tmpl_id"][0]}
                     self.product_product[i["id"]] = prod_obj
                     self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
-                    yield '<item name=%s cost="%f" subcategory="%s,%s">\n' % (
+                    yield '<item name=%s cost="%f" category=%s subcategory="%s,%s">\n' % (
                         quoteattr(name),
                         (tmpl["list_price"] or 0)
                         / self.convert_qty_uom(
                             1.0, tmpl["uom_id"][0], i["product_tmpl_id"][0]
                         ),
+                        quoteattr(
+                        "%s%s"
+                        % (
+                            ("%s/" % self.category_parent(tmpl["categ_id"][1]))
+                            if tmpl["categ_id"][1] in self.category_parent
+                            else "",
+                            tmpl["categ_id"][1],
+                        )
+                    ),
                         self.uom_categories[self.uom[tmpl["uom_id"][0]]["category"]],
                         i["id"],
                     )
@@ -608,6 +626,11 @@ class exporter(object):
         yield "<!-- bills of material -->\n"
         yield "<operations>\n"
         self.operations = set()
+
+        # dictionary used to divide the confirmed MO quantities
+        # key is tuple (operation name, produced item)
+        # value is quantity in Operation Materials.
+        self.bom_producedQty = {}
 
         # Read all active manufacturing routings
         m = self.env["mrp.routing"]
@@ -718,14 +741,14 @@ class exporter(object):
                     quoteattr(product_buf["name"]),
                     quoteattr(location),
                 )
+                convertedQty = self.convert_qty_uom(
+                    i["product_qty"], i["product_uom_id"][0], i["product_tmpl_id"][0]
+                )
                 yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
-                    self.convert_qty_uom(
-                        i["product_qty"],
-                        i["product_uom_id"][0],
-                        i["product_tmpl_id"][0],
-                    ),
+                    convertedQty,
                     quoteattr(product_buf["name"]),
                 )
+                self.bom_producedQty[(operation, product_buf["name"])] = convertedQty
 
                 # Build consuming flows.
                 # If the same component is consumed multiple times in the same BOM
@@ -824,6 +847,9 @@ class exporter(object):
                             * uom_factor,
                             quoteattr(product_buf["name"]),
                         )
+                        self.bom_producedQty[
+                            ("%s - %s" % (operation, step[2]), product_buf["name"])
+                        ] = (i["product_qty"] * i["product_efficiency"] * uom_factor)
                         # Add byproduct flows
                         if i.get("sub_products", None):
                             for j in subproduct_model.browse(i["sub_products"]).read(
@@ -1142,14 +1168,13 @@ class exporter(object):
         Mapping:
         mrp.production.bom_id mrp.production.bom_id.name @ mrp.production.location_dest_id -> operationplan.operation
         convert mrp.production.product_qty and mrp.production.product_uom -> operationplan.quantity
-        mrp.production.date_planned -> operationplan.end
         mrp.production.date_planned -> operationplan.start
         '1' -> operationplan.status = "confirmed"
         """
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
         m = self.env["mrp.production"]
-        recs = m.search([("state", "in", ["progress", "confirmed", "planned"])])
+        recs = m.search([("state", "in", ["in_production", "confirmed", "ready"])])
         fields = [
             "bom_id",
             "date_start",
@@ -1165,29 +1190,47 @@ class exporter(object):
             if i["bom_id"]:
                 # Open orders
                 location = self.map_locations.get(i["location_dest_id"][0], None)
-                operation = u"%d %s @ %s" % (i["bom_id"][0], i["bom_id"][1], location)
-                startdate = i["date_start"] or i["date_planned_start"] or None
-                if not startdate:
+                item = (
+                    self.product_product[i["product_id"][0]]
+                    if i["product_id"][0] in self.product_product
+                    else None
+                )
+                if not item:
+                    continue
+                operation = u"%d %s @ %s" % (
+                    i["bom_id"][0],
+                    item["name"],
+                    i["location_dest_id"][1],
+                )
+                try:
+                    startdate = (i["date_start"] or i["date_planned_start"]).replace(
+                        " ", "T"
+                    )
+                except Exception:
                     continue
                 if not location or operation not in self.operations:
                     continue
-                qty = self.convert_qty_uom(
-                    i["product_qty"],
-                    i["product_uom_id"][0],
-                    self.product_product[i["product_id"][0]]["template"],
+                factor = (
+                    self.bom_producedQty[(operation, item["name"])]
+                    if (operation, i["name"]) in self.bom_producedQty
+                    else 1
                 )
-
-                yield '<operationplan reference=%s start="%s" end="%s" quantity="%s" status="%s"><operation name=%s/></operationplan>\n' % (
+                qty = (
+                    self.convert_qty_uom(
+                        i["product_qty"],
+                        i["product_uom_id"][0],
+                        self.product_product[i["product_id"][0]]["template"],
+                    )
+                    / factor
+                )
+                yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
-                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
-                    startdate.strftime("%Y-%m-%dT%H:%M:%S"),
+                    startdate,
                     qty,
-                    "confirmed"
-                    if i["state"] in ("progress", "planned")
-                    else "approved",
                     quoteattr(operation),
                 )
         yield "</operationplans>\n"
+
 
     def export_orderpoints(self):
         """
