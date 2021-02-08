@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class importer(object):
-    def __init__(self, req, database=None, company=None, mode=1):
+    def __init__(self, req, database=None, company=None, mode=1, imported_pos=None, imported_pickings=None):
         self.env = req.env
         self.database = database
         self.company = company
@@ -39,63 +39,86 @@ class importer(object):
         #    In this mode mode we are not erasing any previous proposals.
         self.mode = mode
 
+        # Dictionary that stores as key the supplier id and as value the associated PO id.
+        # This dict is used to aggregate the exported PO lines for a same supplier inside a same PO
+        if imported_pos is None:
+            imported_pos = {}
+        self.imported_pos = imported_pos
+
+        # Dictionary that stores as key the source and destination locations of the picking,
+        # and as value the associated picking id.
+        # This dict is used to aggregate the exported stock moves for a same pair of locations inside
+        # a same picking
+        if imported_pickings is None:
+            imported_pickings = {}
+        self.imported_pickings = {}
+
+    def _cancel_draft_frepple_POs(self):
+        # Deleting draft Frepple POs created in previous import, and removing them
+        # from the dictionary of imported pos
+        recs = self.env["purchase.order"].search([("state", "=", "draft"),
+                                                  ("origin", "=", "frePPLe")])
+        recs.unlink()
+        for rec in recs:
+            rec_key = list(self.imported_pos.keys())[list(self.imported_pos.values()).index(rec.id)]
+            del self.imported_pos[rec_key]
+        return recs
+
+    def _cancel_draft_frepple_MOs(self):
+        # Deleting draft Frepple MOs created in previous import
+        recs = self.env["mrp.production"].search([("state", "=", "draft"),
+                                                  ("origin", "=", "frePPLe")])
+        recs.unlink()
+        return recs
+
+    def _cancel_draft_frepple_DOs(self):
+        # Deleting draft Frepple pickings created in previous import, and removing them
+        # from the dictionary of imported pickings
+        recs = self.env["stock.picking"].search([("state", "=", "draft"),
+                                                 ("origin", "=", "frePPLe")])
+        recs.unlink()
+        for rec in recs:
+            rec_key = list(self.imported_pickings.keys())[list(self.imported_pickings.values()).index(rec.id)]
+            del self.imported_pickings[rec_key]
+        return recs
+
     def run(self):
         msg = []
 
-        mfg_order = self.env["mrp.production"]
         if self.mode == 1:
-            # Cancel previous draft purchase quotations
-            m = self.env["purchase.order"]
-            recs = m.search([("state", "=", "draft"), ("origin", "=", "frePPLe")])
-            recs.write({"state": "cancel"})
-            recs.unlink()
-            msg.append("Removed %s old draft purchase orders" % len(recs))
+            # Cancel previous draft pickings
+            cancelled_DOs = self._cancel_draft_frepple_DOs()
+            msg.append("Removed %s old draft pickings" % len(cancelled_DOs))
+
+            # Cancel previous draft purchase orders
+            cancelled_POs = self._cancel_draft_frepple_POs()
+            msg.append("Removed %s old draft purchase orders" % len(cancelled_POs))
 
             # Cancel previous draft manufacturing orders
-            recs = mfg_order.search(
-                [
-                    "|",
-                    ("state", "=", "draft"),
-                    ("state", "=", "cancel"),
-                    ("origin", "=", "frePPLe"),
-                ]
-            )
-            recs.write({"state": "cancel"})
-            recs.unlink()
-            msg.append("Removed %s old draft manufacturing orders" % len(recs))
+            cancelled_MOs = self._cancel_draft_frepple_MOs()
+            msg.append("Removed %s old draft manufacturing orders" % len(cancelled_MOs))
 
         # Parsing the XML data file
-        countproc = 0
-        countsm = 0
-        countmfg = 0
-
-        # dictionary that stores as key the supplier id and the associated po id
-        # this dict is used to aggregate the exported POs for a same supplier
-        # into one PO in odoo with multiple lines
-        supplier_reference = {}
-
-        # dictionary that stores as key a tuple (product id, supplier id)
-        # and as value a poline odoo object
-        # this dict is used to aggregate POs for the same product supplier
-        # into one PO with sum of quantities and min date
-        product_supplier_dict = {}
+        count_po_line = 0
+        count_move = 0
+        count_mo = 0
 
         for event, elem in iterparse(self.datafile, events=("start", "end")):
             if event == "end" and elem.tag == "operationplan":
                 try:
-                    ordertype = elem.get("ordertype")
+                    order_type = elem.get("ordertype")
 
-                    if ordertype == "PO":
-                        self._create_or_update_po(elem, self.company, supplier_reference, product_supplier_dict)
-                        countproc += 1
+                    if order_type == "PO":
+                        self._create_or_update_po_line(elem, self.company, self.imported_pos)
+                        count_po_line += 1
 
-                    elif ordertype == "DO":
-                        self._create_or_update_stock_move_line(elem, self.company)
-                        countsm += 1
+                    elif order_type == "DO":
+                        self._create_or_update_stock_move(elem, self.company, self.imported_pickings)
+                        count_move += 1
 
-                    elif ordertype == "MO":
+                    elif order_type == "MO":
                         self._create_or_update_mo(elem, self.company)
-                        countmfg += 1
+                        count_mo += 1
 
                 except Exception as e:
                     logger.error("Exception %s" % e)
@@ -107,17 +130,16 @@ class importer(object):
                 root = elem
 
         # Be polite, and reply to the post
-        msg.append("Processed %s uploaded procurement orders" % countproc)
-        msg.append("Processed %s uploaded stock moves" % countsm)
-        msg.append("Processed %s uploaded manufacturing orders" % countmfg)
+        msg.append("Processed %s uploaded PO lines" % count_po_line)
+        msg.append("Processed %s uploaded Stock Moves" % count_move)
+        msg.append("Processed %s uploaded Manufacturing Orders" % count_mo)
         return "\n".join(msg)
 
-    def _create_or_update_po(self, elem, company, supplier_reference, product_supplier_dict):
-        self.env['purchase.order']._create_or_update_from_frepple_po(elem, company, supplier_reference,
-                                                                     product_supplier_dict)
+    def _create_or_update_po_line(self, elem, company, imported_pos):
+        self.env['purchase.order.line']._create_or_update_from_frepple_po_line(elem, company, imported_pos)
 
-    def _create_or_update_stock_move_line(self, elem, company):
-        self.env['stock.move.line']._create_or_update_from_frepple_operation_plan(elem, company)
+    def _create_or_update_stock_move(self, elem, company, imported_pickings):
+        self.env['stock.move']._create_or_update_from_frepple_stock_move(elem, company, imported_pickings)
 
     def _create_or_update_mo(self, elem, company):
         self.env['mrp.production']._create_or_update_from_frepple_mo(elem, company)

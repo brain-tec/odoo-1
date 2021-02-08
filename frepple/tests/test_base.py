@@ -37,6 +37,19 @@ class TestBase(TransactionCase):
             self.kgm_uom.category_id.id: self.kgm_uom.id,
         }
 
+    def _create_move(self, from_location, to_location, product, defaults=None):
+        defaults_move = defaults if defaults else {}
+        move_values = {
+            'name': 'TC_Ref #1',
+            'location_id': from_location.id,
+            'location_dest_id': to_location.id,
+            'product_id': product.id,
+            'product_uom': product.uom_id.id,
+            'product_uom_qty': 1.0,
+        }
+        move_values.update(defaults_move)
+        return self.env['stock.move'].create(move_values)
+
     def _create_move_line(self, from_location, to_location, product, defaults_move=None, defaults_move_line=None):
         defaults_move = defaults_move if defaults_move else {}
         defaults_move_line = defaults_move_line if defaults_move_line else {}
