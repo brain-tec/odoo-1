@@ -94,15 +94,16 @@ class PurchaseOrderLine(models.Model):
 
             po_line_values = self._get_po_line_values(elem, product, uom)
 
-            if supplier.id not in imported_pos:
+            po_key = (supplier.id, location.id)
+            if po_key not in imported_pos:
 
                 f = Form(PurchaseOrder)
                 for key, value in po_values:
                     setattr(f, key, value)
                 po = f.save()
-                imported_pos[supplier.id] = po.id
+                imported_pos[po_key] = po.id
 
-            po = PurchaseOrder.browse(imported_pos[supplier.id])
+            po = PurchaseOrder.browse(imported_pos[po_key])
             with Form(po) as f:
                 with f.order_line.new() as line_f:
                     for line_key, line_value in po_line_values:
