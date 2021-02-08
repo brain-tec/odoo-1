@@ -23,6 +23,10 @@ class TestInboundOrdertypePo(TestBase):
             'Supplier_1', product=self.product, priority=1, price=7, delay=3)
         self.dest_loc = self._create_location('ASM/Stock')
         self.source_loc = self._create_location('Source Location')
+        warehouse = self.env.ref('stock.warehouse0')
+        warehouse.lot_stock_id = self.dest_loc
+        warehouse.in_type_id.default_location_src_id = self.source_loc
+        warehouse.in_type_id.default_location_dest_id = self.dest_loc
 
     def _create_xml(self, reference, product, supplier, source_location, destination_location, qty, datetime_xml=None):
         if datetime_xml is None:
@@ -108,3 +112,5 @@ class TestInboundOrdertypePo(TestBase):
         po = purchaseOrder.search([('origin', '=', "frePPLe")])
         self.assertEqual(len(po), 1)
         self.assertEqual(po.order_line.product_id.name, self.product.name)
+        self.assertEqual(po.order_line.product_qty, qty)
+        self.assertEqual(po.order_line.product_uom.id, self.product.uom_id.id)
