@@ -113,7 +113,7 @@ class exporter(object):
                 yield i
             for i in self.export_onhand():
                 yield i
-            yield self.export_move_lines()
+            yield self.export_moves()
             yield self.export_stock_rules()
 
         # Footer
@@ -1119,11 +1119,11 @@ class exporter(object):
                 # we should rather decrease it with the qty already produced
                 if i["finished_move_line_ids"]:
                     move_lines = sml.browse(i["finished_move_line_ids"])
-                    qty_done = 0
+                    product_uom_qty = 0
                     for ml in move_lines:
-                        qty_done += (self.convert_qty_uom(ml.qty_done, ml.product_uom_id.id, ml.product_id.id)
+                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id, ml.product_id.id)
                                      / factor)
-                    qty -= qty_done
+                    qty -= product_uom_qty
                     # in case qty <= 0 we should not output that MO at all
                     if qty <= 0:
                         continue
@@ -1286,25 +1286,25 @@ class exporter(object):
         xml_str.append('</itemdistributions>')
         return '\n'.join(xml_str)
 
-    def export_move_lines(self, ctx=None):
-        """ Extracts the move lines, according to the domain set on the res.company.
+    def export_moves(self, ctx=None):
+        """ Extracts the moves, according to the domain set on the res.company.
             Domains having the same location as From & To are discarded always.
         """
         if ctx is None:
             ctx = {}
 
         xml_str = [
-            '<!-- Stock Move Lines -->',
+            '<!-- Stock Moves -->',
             '<operationplans>',
         ]
 
-        move_lines = self.env['stock.move.line'].search(
+        moves = self.env['stock.move'].search(
             ast.literal_eval(self.env.user.company_id.internal_moves_domain),
             order='id').filtered(lambda move: move.location_id != move.location_dest_id)
-        if 'test_export_move_lines' in ctx:
-            move_lines = move_lines.filtered(lambda move_line: move_line.reference.startswith(ctx['test_prefix']))
+        if 'test_export_moves' in ctx:
+            moves = moves.filtered(lambda move_line: move_line.reference.startswith(ctx['test_prefix']))
 
-        # Status between stock.move.line in Odoo and in frePPLe differ.
+        # Status between stock.move in Odoo and in frePPLe differ.
         # The following dictionary maps Odoo's status into frePPLe's status.
         status_mapping = {
             'draft': 'proposed',
@@ -1316,20 +1316,20 @@ class exporter(object):
             'cancel': 'closed',
         }
 
-        for move_line in move_lines:
-            product = move_line.product_id
+        for move in moves:
+            product = move.product_id
             ref_uom_for_uom_category_id = self.uom_categories[
                 self.uom[product.product_tmpl_id.uom_id.id]['category']]
-            location_origin = move_line.location_id.get_warehouse_stock_location()
-            location_dest = move_line.location_dest_id.get_warehouse_stock_location()
+            location_origin = move.location_id.get_warehouse_stock_location()
+            location_dest = move.location_dest_id.get_warehouse_stock_location()
 
             # frepple cannot work with DOs having the same origin and destination, so skip those
             if location_origin == location_dest:
                 continue
 
             # We do this to ensure a matching between the outgoing and the incoming software.
-            if not move_line.frepple_reference:
-                move_line.frepple_reference = move_line.id
+            if not move.frepple_reference:
+                move.frepple_reference = move.id
 
             xml_str.append(
                 '<operationplan '
@@ -1338,12 +1338,12 @@ class exporter(object):
                 'start="{start}" '
                 'quantity="{quantity}" '
                 'status="{status}">'.format(
-                    reference=move_line.frepple_reference,
+                    reference=move.frepple_reference,
                     start=odoo_fields.Datetime.context_timestamp(
-                        move_line, move_line.date
+                        move, move.date_expected
                     ).strftime("%Y-%m-%dT%H:%M:%S"),
-                    quantity=move_line.qty_done,
-                    status=status_mapping.get(move_line.state, 'closed')))
+                    quantity=move.product_uom_qty,
+                    status=status_mapping.get(move.state, 'closed')))
             xml_str.extend([
                 '<item name={product_name} subcategory="{subcategory}" description="Product"/>'.format(
                     product_name=quoteattr(product.name), subcategory='{},{}'.format(

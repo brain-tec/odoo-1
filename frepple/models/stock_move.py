@@ -28,11 +28,10 @@ class StockMove(models.Model):
         StockPicking = self.env['stock.picking']
         ProductProduct = self.env['product.product']
         StockLocation = self.env['stock.location']
-        StockWarehouse = self.env['stock.warehouse']
         UomUom = self.env['uom.uom']
 
         elem_reference = elem.get('reference')
-        elem_date = (elem.get('start') or elem.get('end', '')).replace('T', ' ')
+        elem_date = (elem.get('start')).replace('T', ' ')
         uom_id, item_id = elem.get("item_id").split(",")
 
         # If we find at least one error, we inform and skip the element update/creation.
@@ -81,9 +80,10 @@ class StockMove(models.Model):
 
                 # no need to set location_id and location_dest_id as they are set from picking type
                 # with onchange
+                # No need to set scheduled_date as elem_date, as it will take automatically the earliest date
+                # from all move expected dates
                 picking_values = [
                     ['picking_type_id', picking_type_id],
-                    ['scheduled_date', elem_date],
                     ['origin', 'frePPLe']
                 ]
                 f_picking = Form(StockPicking)
@@ -101,7 +101,7 @@ class StockMove(models.Model):
                 ['product_id', product],
                 ['product_uom', uom],
                 ['product_uom_qty', elem.get('quantity')],
-                ['date_expected', elem_date],  # Not sure Matt
+                ['date_expected', elem_date],
                 ['frepple_reference', elem_reference],
                 ['location_id', from_location],     # Should be automatically set by picking type
                 ['location_dest_id', to_location],  # Should be automatically set by picking type

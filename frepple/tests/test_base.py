@@ -124,21 +124,26 @@ class TestBase(TransactionCase):
             'bom_line_ids': bom_line_ids
         })
 
-    def _create_supplier_seller(self, name, product, priority, price, delay):
-        supplier = self.env['res.partner'].create({
-            'name': name,
-            'supplier_rank': 1,
-        })
+    def _create_seller(self, supplier, product, priority, price, delay, date_start, date_end):
         seller = self.env['product.supplierinfo'].create({
             'name': supplier.id,
             'product_id': product.id,
             'product_tmpl_id': product.product_tmpl_id.id,
-            'currency_id': self.env.ref('base.EUR').id,
             'min_qty': 0.0,
             'sequence': priority,
             'price': price,
             'delay': delay,
+            'date_start': date_start,
+            'date_end': date_end,
         })
+        return seller
+
+    def _create_supplier_seller(self, name, product, priority, price, delay, date_start=False, date_end=False):
+        supplier = self.env['res.partner'].create({
+            'name': name,
+            'supplier_rank': 1,
+        })
+        seller = self._create_seller(supplier, product, priority, price, delay, date_start, date_end)
         return supplier, seller
 
     def _create_warehouse(self, name, values=None):

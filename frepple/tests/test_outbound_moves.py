@@ -24,13 +24,13 @@ class TestOutboundMoveLines(TestBase):
         """
         location = self._create_location('Origin Location #1')
         product = self._create_product('Product #1', price=7)
-        self._create_move_line(location, location, product)
+        self._create_move(location, location, product)
 
         self.assertEqual(self.env.user.company_id.internal_moves_domain, '[]')
-        xml_str_actual = self.exporter.export_move_lines(
-            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+        xml_str_actual = self.exporter.export_moves(
+            ctx={'test_export_moves': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
-            '<!-- Stock Move Lines -->',
+            '<!-- Stock Moves -->',
             '<operationplans>',
             '</operationplans>',
         ])
@@ -49,17 +49,17 @@ class TestOutboundMoveLines(TestBase):
         warehouse_dest.lot_stock_id = dest_location
 
         product = self._create_product('Product #1', price=7)
-        move_line = self._create_move_line(orig_location, dest_location, product)
+        move = self._create_move(orig_location, dest_location, product)
 
         self.assertEqual(self.env.user.company_id.internal_moves_domain, '[]')
-        xml_str_actual = self.exporter.export_move_lines(
-            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+        xml_str_actual = self.exporter.export_moves(
+            ctx={'test_export_moves': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([
-            '<!-- Stock Move Lines -->',
+            '<!-- Stock Moves -->',
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
-                move_line.id,
-                fields.Datetime.context_timestamp(move_line, move_line.date).strftime("%Y-%m-%dT%H:%M:%S"),
+                move.id,
+                fields.Datetime.context_timestamp(move, move.date).strftime("%Y-%m-%dT%H:%M:%S"),
             ),
             '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
                 product_name=product.name, subcategory='{},{}'.format(self.kgm_uom.id, product.id)),
@@ -94,18 +94,18 @@ class TestOutboundMoveLines(TestBase):
 
         product_1 = self._create_product('Product #1', price=7)
         product_2 = self._create_product('Product #2', price=13)
-        move_line_1 = self._create_move_line(orig_location_1, dest_location_1, product_1)
-        move_line_2 = self._create_move_line(orig_location_2, dest_location_2, product_2)
+        move_1 = self._create_move(orig_location_1, dest_location_1, product_1)
+        move_2 = self._create_move(orig_location_2, dest_location_2, product_2)
 
         self.assertEqual(self.env.user.company_id.internal_moves_domain, '[]')
-        xml_str_actual_1 = self.exporter.export_move_lines(
-            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+        xml_str_actual_1 = self.exporter.export_moves(
+            ctx={'test_export_moves': True, 'test_prefix': 'TC_'})
         xml_str_expected_1 = '\n'.join([
-            '<!-- Stock Move Lines -->',
+            '<!-- Stock Moves -->',
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
-                move_line_1.id,
-                fields.Datetime.context_timestamp(move_line_1, move_line_1.date).strftime("%Y-%m-%dT%H:%M:%S"),
+                move_1.id,
+                fields.Datetime.context_timestamp(move_1, move_1.date).strftime("%Y-%m-%dT%H:%M:%S"),
             ),
             '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
                 product_name=product_1.name, subcategory='{},{}'.format(self.kgm_uom.id, product_1.id)),
@@ -115,8 +115,8 @@ class TestOutboundMoveLines(TestBase):
                 location_name=orig_location_1.complete_name, location_id=orig_location_1.id),
             '</operationplan>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
-                move_line_2.id,
-                fields.Datetime.context_timestamp(move_line_2, move_line_2.date).strftime("%Y-%m-%dT%H:%M:%S"),
+                move_2.id,
+                fields.Datetime.context_timestamp(move_2, move_2.date).strftime("%Y-%m-%dT%H:%M:%S"),
             ),
             '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
                 product_name=product_2.name, subcategory='{},{}'.format(self.kgm_uom.id, product_2.id)),
@@ -130,14 +130,14 @@ class TestOutboundMoveLines(TestBase):
         self.assertEqual(xml_str_actual_1, xml_str_expected_1)
 
         self.env.user.company_id.internal_moves_domain = "[('product_id', '=', {})]".format(product_1.id)
-        xml_str_actual_2 = self.exporter.export_move_lines(
-            ctx={'test_export_move_lines': True, 'test_prefix': 'TC_'})
+        xml_str_actual_2 = self.exporter.export_moves(
+            ctx={'test_export_moves': True, 'test_prefix': 'TC_'})
         xml_str_expected_2 = '\n'.join([
-            '<!-- Stock Move Lines -->',
+            '<!-- Stock Moves -->',
             '<operationplans>',
             '<operationplan ordertype="DO" reference="{}" start="{}" quantity="1.0" status="proposed">'.format(
-                move_line_1.id,
-                fields.Datetime.context_timestamp(move_line_1, move_line_1.date).strftime("%Y-%m-%dT%H:%M:%S"),
+                move_1.id,
+                fields.Datetime.context_timestamp(move_1, move_1.date).strftime("%Y-%m-%dT%H:%M:%S"),
             ),
             '<item name="{product_name}" subcategory="{subcategory}" description="Product"/>'.format(
                 product_name=product_1.name, subcategory='{},{}'.format(self.kgm_uom.id, product_1.id)),

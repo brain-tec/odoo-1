@@ -25,9 +25,36 @@ class PurchaseOrderLine(models.Model):
             ["product_id", product],
             ["product_qty", elem.get("quantity")],
             ["product_uom", uom],
-            ["date_planned", elem.get("end")],
+            ["date_planned", (elem.get('start')).replace('T', ' ')],
             ["frepple_reference", elem.get('reference')]
         ]
+
+    def _change_price_according_to_date_planned(self):
+        seller = self.product_id._select_seller(
+            partner_id=self.partner_id,
+            quantity=self.product_qty,
+            date=self.date_planned and self.date_planned.date(),
+            uom_id=self.product_uom,
+            params={'order_id': self.order_id})
+
+        if not seller:
+            if self.product_id.seller_ids.filtered(lambda s: s.name.id == self.partner_id.id):
+                self.price_unit = 0.0
+            return
+
+        price_unit = self.env['account.tax']._fix_tax_included_price_company(seller.price,
+                                                                             self.product_id.supplier_taxes_id,
+                                                                             self.taxes_id,
+                                                                             self.company_id) if seller else 0.0
+        if price_unit and seller and self.order_id.currency_id and seller.currency_id != self.order_id.currency_id:
+            price_unit = seller.currency_id._convert(
+                price_unit, self.order_id.currency_id, self.order_id.company_id,
+                self.date_order or fields.Date.today())
+
+        if seller and self.product_uom and seller.product_uom != self.product_uom:
+            price_unit = seller.product_uom._compute_price(price_unit, self.product_uom)
+
+        self.price_unit = price_unit
 
     @api.model
     def _create_or_update_from_frepple_po_line(self, elem, company, imported_pos):
@@ -108,3 +135,12 @@ class PurchaseOrderLine(models.Model):
                 with f.order_line.new() as line_f:
                     for line_key, line_value in po_line_values:
                         setattr(line_f, line_key, line_value)
+
+            # The unit price is changed to that of the supplier according to the planned date of the line.
+            # In the core it has been computed according to the PO order date
+            po_line = po.order_line.filtered(lambda x: x.frepple_reference == elem.get('reference'))
+            po_line._change_price_according_to_date_planned()
+
+            # The PO order date will be the earlist planned date of the po lines
+            if po.order_date > po_line.date_planned:
+                po.order_date = po_line.date_planned
