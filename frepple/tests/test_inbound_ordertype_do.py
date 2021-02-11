@@ -10,6 +10,7 @@ import os
 from unittest import skipIf
 from odoo.addons.frepple.tests.test_base import TestBase
 from odoo import fields
+from dateutil.relativedelta import relativedelta
 
 UNDER_DEVELOPMENT = False
 UNDER_DEVELOPMENT_MSG = 'Test skipped because of being under development'
@@ -59,18 +60,6 @@ class TestInboundOrdertypeDo(TestBase):
         os.close(fd)
         return xml_content, xml_file_path
 
-    def _assert_expected(self, picking, move, expected_qty):
-        """ We are always asserting the same. So the assertions are extracted here.
-        """
-        self.assertEqual(len(picking), 1)
-        self.assertEqual(len(picking.move_line_ids), 0)
-        self.assertEqual(len(picking.move_lines), 1)
-        self.assertEqual(move.product_id, self.product)
-        self.assertEqual(move.product_uom_qty, expected_qty)
-        self.assertEqual(picking.location_dest_id, self.dest_loc)
-        self.assertEqual(picking.location_id, self.source_loc)
-        self.assertEqual(move.picking_id, picking)
-
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_ordertype_do_new_picking_new_move(self):
         """ Tests an input XML that creates a new move and a new picking.
@@ -87,8 +76,11 @@ class TestInboundOrdertypeDo(TestBase):
             ('location_dest_id', '=', self.dest_loc.id),
         ]))
 
+        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(minutes=15))
+        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
+
         _, xml_file = self._create_xml(
-            ref, self.product, self.source_loc, self.dest_loc, qty=qty)
+            ref, self.product, self.source_loc, self.dest_loc, qty=qty, datetime_xml=datetime_str_xml)
         f = open(xml_file, 'r')
         self.importer.datafile = f
         self.importer.company = self.env.user.company_id
@@ -110,16 +102,20 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(picking.location_dest_id, self.dest_loc)
         self.assertEqual(picking.location_id, self.source_loc)
         self.assertEqual(move.picking_id, picking)
+        # There was no picking nor move. The new picking has just one move, so its scheduled date
+        # matches the expected date of the new move created
+        self.assertEqual(picking.scheduled_date, move.date_expected)
+        # New move stores as date_expected the right value
+        self.assertEqual(fields.Datetime.to_string(move.date_expected), datetime_str_odoo)
 
-    def _do_existing_picking_new_move_importer(self, existing_ref, ref, qty, importer_mode):
+    def _do_existing_picking_new_move_importer(self, existing_ref, ref, qty, importer_mode, datetime_str_xml):
         stock_move = self.env['stock.move']
 
-        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now())
-        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
-
         # A picking already exists.
+        # 'scheduled_date': datetime_str_odoo No need to assign scheduled date to picking as
+        # it will take the earliest from moves
         picking = self._create_internal_picking(
-            self.source_loc, self.dest_loc, defaults={'scheduled_date': datetime_str_odoo, 'origin': 'frePPLe'})
+            self.source_loc, self.dest_loc, defaults={'origin': 'frePPLe'})
         self.assertFalse(picking.move_lines)
         self.assertFalse(picking.move_line_ids)
 
@@ -149,8 +145,11 @@ class TestInboundOrdertypeDo(TestBase):
         ref = 'ref-002'
         qty = 200
 
-        existing_picking, existing_move = self._do_existing_picking_new_move_importer(existing_ref, ref, qty,
-                                                                                      importer_mode=2)
+        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(minutes=15))
+        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
+
+        existing_picking, existing_move = self._do_existing_picking_new_move_importer(
+            existing_ref, ref, qty, importer_mode=2, datetime_str_xml=datetime_str_xml)
 
         stock_picking = self.env['stock.picking']
         stock_move = self.env['stock.move']
@@ -173,6 +172,11 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(existing_picking.location_dest_id, self.dest_loc)
         self.assertEqual(existing_picking.location_id, self.source_loc)
         self.assertEqual(new_move.picking_id, existing_picking)
+        # Date of the picking is the minimum of the two moves. As we are creating the new one 15 min later,
+        # that has to match the time of the existing move
+        self.assertEqual(existing_picking.scheduled_date, existing_move.date_expected)
+        # New move stores as date_expected the right value (15 min later than the existing move)
+        self.assertEqual(fields.Datetime.to_string(new_move.date_expected), datetime_str_odoo)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_ordertype_do_existing_picking_new_move_importer_mode_1(self):
@@ -183,8 +187,11 @@ class TestInboundOrdertypeDo(TestBase):
         ref = 'ref-002'
         qty = 200
 
-        existing_picking, existing_move = self._do_existing_picking_new_move_importer(existing_ref, ref, qty,
-                                                                                      importer_mode=1)
+        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(minutes=15))
+        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
+
+        existing_picking, existing_move = self._do_existing_picking_new_move_importer(
+            existing_ref, ref, qty, importer_mode=1, datetime_str_xml=datetime_str_xml)
 
         stock_picking = self.env['stock.picking']
         stock_move = self.env['stock.move']
@@ -208,3 +215,8 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(frepple_pickings.location_dest_id, self.dest_loc)
         self.assertEqual(frepple_pickings.location_id, self.source_loc)
         self.assertEqual(new_move.picking_id, frepple_pickings)
+        # As existing picking and move were deleted, the new picking has just one move, so its scheduled date
+        # matches the expected date of the new move created
+        self.assertEqual(frepple_pickings.scheduled_date, new_move.date_expected)
+        # New move stores as date_expected the right value (15 min later than the existing move)
+        self.assertEqual(fields.Datetime.to_string(new_move.date_expected), datetime_str_odoo)
