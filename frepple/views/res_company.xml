@@ -15,7 +15,7 @@
                         <field name="frepple_server"/>
                         <field name="sol_domain" widget="domain" options="{'model': 'sale.order.line'}"/>
                         <field name="frepple_bom_dummy_route_id"/>
-                        <field name="internal_moves_domain" widget="domain" options="{'model': 'stock.move.line'}"/>
+                        <field name="internal_moves_domain" widget="domain" options="{'model': 'stock.move'}"/>
                         <field name="stock_rules_domain" widget="domain" options="{'model': 'stock.rule'}"/>
                         <field name="tz_for_exporting"/>
                     </group>
