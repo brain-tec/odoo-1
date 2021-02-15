@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 class StockMove(models.Model):
     _inherit = 'stock.move'
 
-    frepple_reference = fields.Char('Reference (frePPLe)')
+    frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     @api.model
     def _create_or_update_from_frepple_stock_move(self, elem, company, imported_pickings):
