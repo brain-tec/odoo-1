@@ -1308,9 +1308,9 @@ class exporter(object):
         # The following dictionary maps Odoo's status into frePPLe's status.
         status_mapping = {
             'draft': 'proposed',
-            'waiting': 'approved',
-            'confirmed': 'approved',
-            'partially_available': 'approved',
+            'waiting': 'confirmed',
+            'confirmed': 'confirmed',
+            'partially_available': 'confirmed',
             'assigned': 'confirmed',
             'done': 'completed',
             'cancel': 'closed',
