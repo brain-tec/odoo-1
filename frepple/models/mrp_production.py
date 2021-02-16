@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 class ManufacturingOrder(models.Model):
     _inherit = 'mrp.production'
 
-    frepple_reference = fields.Char('Reference (frePPLe)')
+    frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     @api.model
     def _create_or_update_from_frepple_mo(self, elem, company):

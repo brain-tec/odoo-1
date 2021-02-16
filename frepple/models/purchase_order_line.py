@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
-    frepple_reference = fields.Char('Reference (frePPLe)')
+    frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     def _get_po_line_values(self, elem, product, uom):
 
