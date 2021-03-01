@@ -101,6 +101,11 @@ class SaleOrderLine(models.Model):
 
             name = '%s %d' % (sale_order.name, so_line_data['id'])
             product = product_product.browse(so_line_data['product_id'][0])
+            # Just for testing purposes we skip SO lines having a product not created from test, so that
+            # lines such as delivery costs or others created by other modules we don't even know here are not
+            # affecting the comparison between expected and real xml output
+            if 'test_prefix' in self.env.context and not product.name.startswith(self.env.context['test_prefix']):
+                continue
             location = sale_order.warehouse_id.lot_stock_id.complete_name
             customer_name = so_line._get_customer_name_for_demands()
             due = getattr(sale_order, 'commitment_date', False) or sale_order.date_order
