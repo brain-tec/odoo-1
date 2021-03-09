@@ -1019,9 +1019,8 @@ class exporter(object):
             if j["state"] == "done":
                 continue
 
-            location_name = self.env['res.company'].search([
-                ('name', '=', self.company),
-            ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
+            location_name = \
+                self.env['purchase.order'].browse(j["id"]).picking_type_id.warehouse_id.lot_stock_id.get_warehouse_stock_location().complete_name
             # location = self.mfg_location  # Original frePPLe code.
             if location_name and item and i["product_qty"] > i["qty_received"]:
                 start = odoo_fields.Datetime.context_timestamp(m, j["date_order"]).strftime("%Y-%m-%dT%H:%M:%S")
