@@ -12,7 +12,7 @@ from odoo.addons.frepple.tests.test_base import TestBase
 from odoo import fields
 from dateutil.relativedelta import relativedelta
 
-UNDER_DEVELOPMENT = False
+UNDER_DEVELOPMENT = True
 UNDER_DEVELOPMENT_MSG = 'Test skipped because of being under development'
 
 
@@ -97,6 +97,60 @@ class TestInboundOrdertypePo(TestBase):
         os.close(fd)
         return xml_content, xml_file_path
 
+    def _create_xml_line(self, reference, product, supplier, source_location, destination_location, qty, datetime_xml):
+        xml_content = '''
+                    <operationplan  
+                      ordertype="PO"
+                      reference="{reference}"
+                      item="{product_name}" 
+                      item_id="{uom_id},{product_id}"
+                      start="{datetime}" 
+                      end="{datetime}"
+                      quantity="{qty:0.6f}"
+                      origin="{origin_name}" 
+                      origin_id="{origin_id}"
+                      location="{location_name}" 
+                      location_id="{location_id}"
+                      supplier="{supplier}"
+                      criticality="0"
+                    />'''.format(reference=reference,
+                   product_name=product.name,
+                   product_id=product.id,
+                   location_name=destination_location.name,
+                   location_id=destination_location.id,
+                   origin_name=source_location.name,
+                   origin_id=source_location.id,
+                   qty=qty,
+                   datetime=datetime_xml,
+                   supplier="{0} {1}".format(supplier.id, supplier.name),
+                   uom_id=product.uom_id.id)
+        return xml_content
+
+    def _create_xml_with_many_lines(self, ref_1, ref_2, product, supplier, source_location, destination_location,
+                                    qty1, qty2, datetime_xml=None):
+        if datetime_xml is None:
+            datetime_xml = fields.Datetime.to_string(fields.Datetime.now())
+
+        xml_initial_content = '''<?xml version="1.0" encoding="UTF-8" ?>
+            <plan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" source="odoo_1">
+                <operationplans>'''
+        op_1_content = self._create_xml_line(ref_1, product, supplier, source_location, destination_location,
+                                             qty1, datetime_xml=datetime_xml)
+        op_2_content = self._create_xml_line(ref_2, product, supplier, source_location, destination_location,
+                                             qty2, datetime_xml=datetime_xml)
+        xml_final_content = '''
+                </operationplans>
+            </plan>
+        '''
+
+        xml_content = "{0}{1}{2}{3}".format(xml_initial_content, op_1_content, op_2_content, xml_final_content)
+        fd, xml_file_path = mkstemp(prefix='frepple_inbound_xml_', dir="/tmp")
+        f = open(xml_file_path, 'w')
+        f.write(xml_content)
+        f.close()
+        os.close(fd)
+        return xml_content, xml_file_path
+
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_ordertype_po(self):
         """ Tests an input XML that creates a new move and a new picking.
@@ -135,3 +189,44 @@ class TestInboundOrdertypePo(TestBase):
         # unlike in standard odoo where it should be according to the PO order date
         self.assertEqual(po.order_line.price_unit, self.seller2.price)
         self.assertEqual(po.order_line.frepple_reference, ref)
+
+    #@skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_ordertype_po_many_lines(self):
+        """ Tests an input XML that creates a new move and a new picking.
+        """
+        purchaseOrder = self.env['purchase.order']
+
+        ref_1 = 'ref-001'
+        ref_2 = 'ref-002'
+        qty_1 = 100
+        qty_2 = 200
+
+        self.assertFalse(purchaseOrder.search([('origin', '=', "frePPLe")]))
+
+        # The PO line will be planned for 2 days after the PO is created.
+        # That's important as we have a supplier with a different pricing between the day after and 3 days
+        # after the PO was created, then that supplier will be chosen and we do some checks about pricing
+        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
+        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
+
+        _, xml_file = self._create_xml_with_many_lines(
+            ref_1, ref_2, self.product, self.supplier, self.source_loc, self.dest_loc, qty_1, qty_2,
+            datetime_xml=datetime_str_xml)
+        f = open(xml_file, 'r')
+        self.importer.datafile = f
+        self.importer.company = self.env.user.company_id
+        self.importer.run()
+        f.close()
+
+        po = purchaseOrder.search([('origin', '=', "frePPLe")])
+        self.assertEqual(len(po), 1)
+        self.assertEqual(po.order_line.product_id.name, self.product.name)
+        self.assertEqual(po.order_line.product_qty, qty_1 + qty_2)
+        self.assertEqual(po.order_line.product_uom.id, self.product.uom_id.id)
+        # The planned date of the PO line is respected to that specified by frepple, instead of changing
+        # to another taking into account the delay of the supplier and the date order of the PO
+        self.assertEqual(fields.Datetime.to_string(po.order_line.date_planned), datetime_str_odoo)
+        # The price is finally assigned as the one of the supplier according to the planned date of the line,
+        # unlike in standard odoo where it should be according to the PO order date
+        self.assertEqual(po.order_line.price_unit, self.seller.price)
+        self.assertEqual(po.order_line.frepple_reference, ','.join([ref_1, ref_2]))

@@ -18,6 +18,23 @@ class PurchaseOrderLine(models.Model):
 
     frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
+    def _get_po_line_update_values(self, po_line, elem):
+        received_date = elem.get('start').replace('T', ' ')
+        date_planned = po_line.date_planned
+        if date_planned:
+            date_planned = min(date_planned, fields.Datetime.from_string(received_date))
+        else:
+            date_planned = received_date
+        frepple_reference_list = po_line.frepple_reference.split(',')
+        frepple_reference_list.append(elem.get('reference'))
+        frepple_reference = ','.join(frepple_reference_list)
+        # name and price are automatically set by onchange of product_id
+        return [
+            ["product_qty", po_line.product_qty + float(elem.get("quantity"))],
+            ["date_planned", date_planned],
+            ["frepple_reference", frepple_reference]
+        ]
+
     def _get_po_line_values(self, elem, product, uom):
 
         # name and price are automatically set by onchange of product_id
@@ -119,8 +136,6 @@ class PurchaseOrderLine(models.Model):
                 ("origin", "frePPLe"),
             ]
 
-            po_line_values = self._get_po_line_values(elem, product, uom)
-
             po_key = (supplier.id, location.id)
             if po_key not in imported_pos:
 
@@ -131,14 +146,26 @@ class PurchaseOrderLine(models.Model):
                 imported_pos[po_key] = po.id
 
             po = PurchaseOrder.browse(imported_pos[po_key])
-            with Form(po) as f:
-                with f.order_line.new() as line_f:
-                    for line_key, line_value in po_line_values:
-                        setattr(line_f, line_key, line_value)
+
+            if product not in po.mapped('order_line.product_id'):
+                po_line_values = self._get_po_line_values(elem, product, uom)
+
+                with Form(po) as f:
+                    with f.order_line.new() as line_f:
+                        for line_key, line_value in po_line_values:
+                            setattr(line_f, line_key, line_value)
+            else:
+                po_line = po.order_line.filtered(lambda x: x.product_id.id == product.id)
+                po_line_values = self._get_po_line_update_values(po_line, elem)
+                with Form(po) as f:
+                    index = po.order_line.ids.index(po_line.id)
+                    with f.order_line.edit(index) as line_f:
+                        for line_key, line_value in po_line_values:
+                            setattr(line_f, line_key, line_value)
 
             # The unit price is changed to that of the supplier according to the planned date of the line.
             # In the core it has been computed according to the PO order date
-            po_line = po.order_line.filtered(lambda x: x.frepple_reference == elem.get('reference'))
+            po_line = po.order_line.filtered(lambda x: x.frepple_reference in elem.get('reference'))
             po_line._change_price_according_to_date_planned()
 
             # The PO order date will be the earlist planned date of the po lines
