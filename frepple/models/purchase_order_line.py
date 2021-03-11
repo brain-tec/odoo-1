@@ -28,7 +28,6 @@ class PurchaseOrderLine(models.Model):
         frepple_reference_list = po_line.frepple_reference.split(',')
         frepple_reference_list.append(elem.get('reference'))
         frepple_reference = ','.join(frepple_reference_list)
-        # name and price are automatically set by onchange of product_id
         return [
             ["product_qty", po_line.product_qty + float(elem.get("quantity"))],
             ["date_planned", date_planned],
@@ -165,9 +164,9 @@ class PurchaseOrderLine(models.Model):
 
             # The unit price is changed to that of the supplier according to the planned date of the line.
             # In the core it has been computed according to the PO order date
-            po_line = po.order_line.filtered(lambda x: x.frepple_reference in elem.get('reference'))
+            po_line = po.order_line.filtered(lambda x: elem.get('reference') in x.frepple_reference)
             po_line._change_price_according_to_date_planned()
 
-            # The PO order date will be the earlist planned date of the po lines
-            if po.order_date > po_line.date_planned:
-                po.order_date = po_line.date_planned
+            # The PO order date will be the earliest planned date of the po lines
+            if po.date_order > po_line.date_planned:
+                po.date_order = po_line.date_planned
