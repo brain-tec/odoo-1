@@ -18,7 +18,7 @@ class PurchaseOrderLine(models.Model):
 
     frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
-    def _get_po_line_update_values(self, po_line, elem):
+    def _get_po_line_update_values(self, po_line, elem, uom):
         received_date = elem.get('start').replace('T', ' ')
         date_planned = po_line.date_planned
         if date_planned:
@@ -155,7 +155,7 @@ class PurchaseOrderLine(models.Model):
                             setattr(line_f, line_key, line_value)
             else:
                 po_line = po.order_line.filtered(lambda x: x.product_id.id == product.id)
-                po_line_values = self._get_po_line_update_values(po_line, elem)
+                po_line_values = self._get_po_line_update_values(po_line, elem, uom)
                 with Form(po) as f:
                     index = po.order_line.ids.index(po_line.id)
                     with f.order_line.edit(index) as line_f:
