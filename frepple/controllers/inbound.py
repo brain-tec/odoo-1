@@ -58,10 +58,12 @@ class importer(object):
         # from the dictionary of imported pos
         recs = self.env["purchase.order"].search([("state", "=", "draft"),
                                                   ("origin", "=", "frePPLe")])
+        recs.button_cancel()
         recs.unlink()
         for rec in recs:
-            rec_key = list(self.imported_pos.keys())[list(self.imported_pos.values()).index(rec.id)]
-            del self.imported_pos[rec_key]
+            if len(self.imported_pos) > 0:
+                rec_key = list(self.imported_pos.keys())[list(self.imported_pos.values()).index(rec.id)]
+                del self.imported_pos[rec_key]
         return recs
 
     def _cancel_draft_frepple_MOs(self):
@@ -78,8 +80,9 @@ class importer(object):
                                                  ("origin", "=", "frePPLe")])
         recs.unlink()
         for rec in recs:
-            rec_key = list(self.imported_pickings.keys())[list(self.imported_pickings.values()).index(rec.id)]
-            del self.imported_pickings[rec_key]
+            if len(self.imported_pickings) > 0:
+                rec_key = list(self.imported_pickings.keys())[list(self.imported_pickings.values()).index(rec.id)]
+                del self.imported_pickings[rec_key]
         return recs
 
     def run(self):
