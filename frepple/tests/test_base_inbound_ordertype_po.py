@@ -41,7 +41,7 @@ class TestBaseInboundOrdertypePo(TestBase):
         xml_content = '''
                     <operationplan  
                       ordertype="PO"
-                      reference="{reference}"
+                      id="{reference}"
                       item="{product_name}" 
                       item_id="{uom_id},{product_id}"
                       start="{datetime}" 
@@ -93,7 +93,7 @@ class TestBaseInboundOrdertypePo(TestBase):
                 <operationplans>'''
         xml_lines = []
         for item in lines:
-            xml_line = self._create_xml_line(item['reference'], item['product'], item['supplier'],
+            xml_line = self._create_xml_line(item['id'], item['product'], item['supplier'],
                                              item['source_location'], item['destination_location'],
                                              item['qty'], item['datetime_xml'])
             xml_lines.append(xml_line)
@@ -133,7 +133,7 @@ class TestBaseInboundOrdertypePo(TestBase):
         datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
 
         _, xml_file = self._create_xml(
-            [{'reference': ref, 'product': self.product, 'supplier': self.supplier,
+            [{'id': ref, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty,
               'datetime_xml': datetime_str_xml}]
         )
@@ -184,13 +184,13 @@ class TestBaseInboundOrdertypePo(TestBase):
         datetime_str_xml_2 = datetime_str_odoo_2.replace(' ', 'T')
 
         _, xml_file = self._create_xml(
-            [{'reference': ref_product2, 'product': self.product2, 'supplier': self.supplier,
+            [{'id': ref_product2, 'product': self.product2, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_product2,
               'datetime_xml': datetime_str_xml_1},
-             {'reference': ref_1, 'product': self.product, 'supplier': self.supplier,
+             {'id': ref_1, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_1,
               'datetime_xml': datetime_str_xml_1},
-             {'reference': ref_2, 'product': self.product, 'supplier': self.supplier,
+             {'id': ref_2, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_2,
               'datetime_xml': datetime_str_xml_2}]
         )
