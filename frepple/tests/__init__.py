@@ -11,6 +11,7 @@ from . import test_outbound_locations
 from . import test_outbound_moves
 from . import test_outbound_stock_rules
 from . import test_outbound_saleorders
+from . import test_base_inbound_ordertype_po
 from . import test_inbound_ordertype_po
 from . import test_inbound_ordertype_do
 from . import test_inbound_ordertype_mo
