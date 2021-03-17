@@ -153,7 +153,9 @@ class TestBaseInboundOrdertypePo(TestBase):
         self.assertEqual(fields.Datetime.to_string(po.order_line.date_planned), datetime_str_odoo)
         # The price is finally assigned as the one of the supplier according to the planned date of the line,
         # unlike in standard odoo where it should be according to the PO order date
-        self.assertEqual(po.order_line.price_unit, self.seller2.price)
+        self.assertAlmostEqual(po.order_line.price_unit,
+                               self.seller2.product_uom._compute_price(
+                                   self.seller2.price, po.order_line.product_uom), 2)
         self.assertEqual(po.order_line.frepple_reference, ref)
         return po
 
@@ -215,3 +217,4 @@ class TestBaseInboundOrdertypePo(TestBase):
                                self.seller2.product_uom._compute_price(
                                     self.seller2.price, order_line_summarized.product_uom), 2)
         self.assertEqual(order_line_summarized.frepple_reference, ','.join([ref_1, ref_2]))
+        return po
