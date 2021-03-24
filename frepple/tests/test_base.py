@@ -93,7 +93,7 @@ class TestBase(TransactionCase):
             create_values['parent_id'] = parent.id
         return self.env['product.category'].create(create_values)
 
-    def _create_product(self, name, price, category=None):
+    def _create_product(self, name, price, category=None, tracking=False):
         """ Creates a product that can be purchased that has kg as its UoM.
         """
         kgm_uom = self.env.ref('uom.product_uom_kgm')
@@ -104,6 +104,7 @@ class TestBase(TransactionCase):
             'uom_id': kgm_uom.id,
             'uom_po_id': kgm_uom.id,
             'purchase_ok': True,
+            'tracking': tracking,
         }
         if category:
             create_values['categ_id'] = category.id
@@ -218,7 +219,10 @@ class TestBase(TransactionCase):
             })]
         })
         inventory.action_start()
-        inventory.action_validate()
+        res = inventory.action_validate()
+        if isinstance(res, dict):
+            wiz = self.env['stock.track.confirmation'].browse(res['res_id'])
+            wiz.action_confirm()
         return inventory
 
     def _create_internal_picking(self, location_src, location_dest, defaults=None):
