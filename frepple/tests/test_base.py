@@ -93,7 +93,7 @@ class TestBase(TransactionCase):
             create_values['parent_id'] = parent.id
         return self.env['product.category'].create(create_values)
 
-    def _create_product(self, name, price, category=None, tracking=False):
+    def _create_product(self, name, price, category=None, tracking=None):
         """ Creates a product that can be purchased that has kg as its UoM.
         """
         kgm_uom = self.env.ref('uom.product_uom_kgm')
@@ -103,9 +103,10 @@ class TestBase(TransactionCase):
             'type': 'product',
             'uom_id': kgm_uom.id,
             'uom_po_id': kgm_uom.id,
-            'purchase_ok': True,
-            'tracking': tracking,
+            'purchase_ok': True
         }
+        if tracking:
+            create_values['tracking'] = tracking
         if category:
             create_values['categ_id'] = category.id
         return self.env['product.product'].create(create_values)
