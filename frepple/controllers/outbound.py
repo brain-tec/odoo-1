@@ -303,9 +303,9 @@ class exporter(object):
         Generate a list of warehouse locations to frePPLe, based on the
         stock.warehouse model.
 
-        We assume the location name to be unique. This is NOT guarantueed by Odoo.
+        We assume the location name to be unique. This is NOT guaranteed by Odoo.
 
-        The field subategory is used to store the id of the warehouse. This makes
+        The field subcategory is used to store the id of the warehouse. This makes
         it easier for frePPLe to send back planning results directly with an
         odoo location identifier.
 
@@ -493,7 +493,7 @@ class exporter(object):
             "standard_price",
             "categ_id",
         ]
-        recs = m.search([])
+        recs = m.search([("type", "!=", "service")])
         self.product_templates = {}
         for i in recs.read(fields):
             self.product_templates[i["id"]] = i
@@ -711,7 +711,7 @@ class exporter(object):
                 i["product_tmpl_id"][0], None
             )  # TODO avoid multiple bom on single template
             if not product_buf:
-                logger.warn(
+                logger.warning(
                     "skipping %s %s" % (i["product_tmpl_id"][0], i["routing_id"])
                 )
                 continue
@@ -849,7 +849,7 @@ class exporter(object):
                         )
                         self.bom_producedQty[
                             ("%s - %s" % (operation, step[2]), product_buf["name"])
-                        ] = (i["product_qty"] * i["product_efficiency"] * uom_factor)
+                        ] = (i["product_qty"] * getattr(i, "product_efficiency", 1.0) * uom_factor)
                         # Add byproduct flows
                         if i.get("sub_products", None):
                             for j in subproduct_model.browse(i["sub_products"]).read(
@@ -942,7 +942,7 @@ class exporter(object):
         """
         # Get all sales order lines
         m = self.env["sale.order.line"]
-        recs = m.search([])
+        recs = m.search([("product_id", "!=", False)])
         fields = [
             "qty_delivered",
             "state",
@@ -1203,7 +1203,7 @@ class exporter(object):
                     i["location_dest_id"][1],
                 )
                 try:
-                    startdate = (i["date_start"] or i["date_planned_start"]).replace(
+                    startdate = str(i["date_start"] or i["date_planned_start"]).replace(
                         " ", "T"
                     )
                 except Exception:
