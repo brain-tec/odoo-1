@@ -1126,12 +1126,14 @@ class exporter(object):
                     # in case qty <= 0 we should not output that MO at all
                     if qty <= 0:
                         continue
+
+                location_dest = self.env['stock.location'].browse(i['location_dest_id'])
                 yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/><location name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
-                    quoteattr(i["location_dest_id"][1])
+                    quoteattr(location_dest.get_warehouse_stock_location().complete_name)
                 )
         yield "</operationplans>\n"
 
