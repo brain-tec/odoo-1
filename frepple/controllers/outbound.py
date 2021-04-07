@@ -593,7 +593,7 @@ class exporter(object):
                 xml_str.extend([
                     '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
                     'cost="{:0.6f}"{}{}>'.format(
-                        supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
+                        supplier.delay, supplier.sequence or 1, supplier.min_qty or 0, supplier.price,
                         effective_end_str, effective_start_str),
                     '<location name="{}"/>'.format(rule.location_id.complete_name),
                     '<supplier name={}/>'.format(quoteattr(supplier_name)),
