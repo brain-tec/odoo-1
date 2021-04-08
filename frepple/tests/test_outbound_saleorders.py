@@ -55,6 +55,30 @@ class TestOutboundItems(TestBase):
         self.assertRegex(xml_str_actual.replace('\n', ''), xml_str_expected)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_saleorder_translated(self):
+        """Test the generation of a <demand> with the product translated"""
+        self._set_export_language('es_ES')
+        self.env['ir.translation'].create({
+            'lang': 'es_ES',
+            'name': 'product.template,name',
+            'src': 'TC_Product_1',
+            'value': 'TC_Product_1 ES',
+            'state': 'translated',
+            'type': 'model',
+            'res_id': self.product.product_tmpl_id.id,
+        })
+
+        # The following must be called always before calling a method for export
+        # in the tests. It is normally called when the endpoint /frepple is reached
+        # but here we have to do it explicitly because we are calling the
+        # particular export methods explicitly. It is needed to load the translations.
+        self.exporter.load_company()
+        self._create_quotation(self.customer, product=self.product, qty=1)
+        xml_str_actual = self.exporter.export_salesorders(ctx={'test_prefix': 'TC_'})
+        self.assertNotIn('<item name="TC_Product_1"/>', xml_str_actual)
+        self.assertIn('<item name="TC_Product_1 ES"/>', xml_str_actual)
+
+    @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_saleorder_different_uoms(self):
         """ Tests the generation of a <demand>, i.e. a sale.order.line, with a UOM
             that has to be converted to the reference UOM to display its result.

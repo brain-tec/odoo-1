@@ -77,12 +77,7 @@ class TestOutboundItems(TestBase):
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_translated(self):
         """ Tests a product with the name translated"""
-        self.env['res.lang'].load_lang('es_ES')
-        self.assertIn('es_ES', [lang[0] for lang in self.env['res.lang'].get_available()])
-        es_lang = self.env['res.lang']._lang_get('es_ES')
-
-        company = self.env["res.company"].search([], limit=1)
-        company.write({'frepple_export_language': es_lang})
+        self._set_export_language('es_ES')
 
         category_a = self._create_category('TC_Category_A')
         product_1 = self._create_product('TC_Product_1', category=category_a, price=5)
@@ -97,7 +92,10 @@ class TestOutboundItems(TestBase):
             'res_id': product_1.product_tmpl_id.id,
         })
 
-        self.exporter.company = company.name
+        # The following must be called always before calling a method for export
+        # in the tests. It is normally called when the endpoint /frepple is reached
+        # but here we have to do it explicitly because we are calling the
+        # particular export methods explicitly. It is needed to load the translations.
         self.exporter.load_company()
         xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
         xml_str_expected = '\n'.join([

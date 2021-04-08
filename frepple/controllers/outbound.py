@@ -365,7 +365,7 @@ class exporter(object):
             We filter on res.partner where customer = True.
         """
         ctx = ctx if ctx else {}
-        return self.env['res.partner'].with_context(ctx)._frepple_export_customers()
+        return self.env['res.partner'].with_context(**ctx)._frepple_export_customers()
 
     def export_suppliers(self):
         """
@@ -958,7 +958,7 @@ class exporter(object):
         (if sale.order.picking_policy = 'one' then same as demand.quantity else 1) -> demand.minshipment
         """
         ctx = ctx if ctx else {}
-        return self.env['sale.order.line'].with_context(ctx)._frepple_export()
+        return self.env['sale.order.line'].with_context(**ctx)._frepple_export()
 
     def export_purchaseorders(self):
         """
