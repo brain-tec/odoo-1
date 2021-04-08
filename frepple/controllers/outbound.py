@@ -129,6 +129,7 @@ class exporter(object):
             "calendar",
             "manufacturing_warehouse",
             "tz_for_exporting",
+            "frepple_export_language",
         ]
         self.company_id = 0
         for i in recs.read(fields):
@@ -146,6 +147,8 @@ class exporter(object):
             )
             ctx = self.env.context.copy()
             ctx['tz'] = i["tz_for_exporting"]
+            if i["frepple_export_language"]:
+                ctx['lang'] = self.env['res.lang'].browse(i["frepple_export_language"][0]).code
             self.env.context = frozendict(ctx)
         if not self.company_id:
             logger.warning("Can't find company '%s'" % self.company)
