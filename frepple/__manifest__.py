@@ -12,6 +12,7 @@
         "product",
         "purchase",
         "sale",
+        "sale_stock",
         "resource",
         "mrp",
         'stock',
