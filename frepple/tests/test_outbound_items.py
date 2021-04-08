@@ -75,6 +75,47 @@ class TestOutboundItems(TestBase):
         self.assertEqual(xml_str_actual, xml_str_expected)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_product_translated(self):
+        """ Tests a product with the name translated"""
+        self._set_export_language('es_ES')
+
+        category_a = self._create_category('TC_Category_A')
+        product_1 = self._create_product('TC_Product_1', category=category_a, price=5)
+        product_1.default_code = 'DEFAULT_CODE'
+        self.env['ir.translation'].create({
+            'lang': 'es_ES',
+            'name': 'product.template,name',
+            'src': 'TC_Product_1',
+            'value': 'TC_Product_1 ES',
+            'state': 'translated',
+            'type': 'model',
+            'res_id': product_1.product_tmpl_id.id,
+        })
+
+        # The following must be called always before calling a method for export
+        # in the tests. It is normally called when the endpoint /frepple is reached
+        # but here we have to do it explicitly because we are calling the
+        # particular export methods explicitly. It is needed to load the translations.
+        self.exporter.load_company()
+        xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
+        xml_str_expected = '\n'.join([
+            '<!-- products -->',
+            '<items>',
+            '<item name="{}" category="{}" description="category">'.format(
+                category_a.name, category_a.id),
+            '<members>',
+            '<item name="TC_Product_1 ES" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_1.list_price, self.kgm_uom.id, product_1.id),
+            '<stringproperty name="itemstatus" value="active"/>',
+            '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
+            '</item>',
+            '</members>',
+            '</item>',
+            '</items>',
+        ])
+        self.assertEqual(xml_str_actual, xml_str_expected)
+
+    @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_with_subcategory_one_level(self):
         """ Tests a category with one level
         """

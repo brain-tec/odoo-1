@@ -40,6 +40,9 @@ class ResCompany(models.Model):
     def _get_default_frepple_bom_dummy_route_id(self):
         return self.env.ref('frepple.dummy_mrp_routing_frepple', raise_if_not_found=False)
 
+    def _frepple_export_language(self):
+        return self.env['res.lang'].search([], limit=1)
+
     manufacturing_warehouse = fields.Many2one(
         "stock.warehouse", "Manufacturing warehouse", ondelete="set null"
     )
@@ -62,6 +65,11 @@ class ResCompany(models.Model):
     tz_for_exporting = fields.Selection(
         _tz_get, string='Timezone for exporting frePPLe', required=True, default='UTC',
     )
+    frepple_export_language = fields.Many2one(
+        'res.lang', string='Export Language', required=True,
+        default=lambda self: self._frepple_export_language(),
+        help='The language set here is the one that will be used '
+             'to export the content using frePPLe.')
 
     @api.model
     def getFreppleURL(self, navbar=True, _url="/"):

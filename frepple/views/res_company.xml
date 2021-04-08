@@ -18,6 +18,7 @@
                         <field name="internal_moves_domain" widget="domain" options="{'model': 'stock.move'}"/>
                         <field name="stock_rules_domain" widget="domain" options="{'model': 'stock.rule'}"/>
                         <field name="tz_for_exporting"/>
+                        <field name="frepple_export_language"/>
                     </group>
                 </page>
             </xpath>
