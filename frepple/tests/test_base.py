@@ -18,6 +18,8 @@ class TestBase(TransactionCase):
     def setUp(self):
         super(TestBase, self).setUp()
         self.exporter = exporter(req=self, uid=SUPERUSER_ID)
+        self.company = self.env["res.company"].search([], limit=1)
+        self.exporter.company = self.company.name
 
         self.httprequest = lambda: None  # See https://stackoverflow.com/a/2827734
         self.httprequest.files = {'frePPLe plan': False}
@@ -36,6 +38,13 @@ class TestBase(TransactionCase):
         self.exporter.uom_categories = {
             self.kgm_uom.category_id.id: self.kgm_uom.id,
         }
+
+    def _set_export_language(self, lang_code):
+        """Set the language of the export"""
+        self.env['res.lang'].load_lang(lang_code)
+        self.assertIn(lang_code, [lang[0] for lang in self.env['res.lang'].get_available()])
+        lang = self.env['res.lang']._lang_get(lang_code)
+        self.company.write({'frepple_export_language': lang})
 
     def _create_move(self, from_location, to_location, product, defaults=None):
         defaults_move = defaults if defaults else {}
