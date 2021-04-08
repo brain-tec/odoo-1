@@ -129,6 +129,7 @@ class exporter(object):
             "calendar",
             "manufacturing_warehouse",
             "tz_for_exporting",
+            "frepple_export_language",
         ]
         self.company_id = 0
         for i in recs.read(fields):
@@ -146,6 +147,8 @@ class exporter(object):
             )
             ctx = self.env.context.copy()
             ctx['tz'] = i["tz_for_exporting"]
+            if i["frepple_export_language"]:
+                ctx['lang'] = self.env['res.lang'].browse(i["frepple_export_language"][0]).code
             self.env.context = frozendict(ctx)
         if not self.company_id:
             logger.warning("Can't find company '%s'" % self.company)
@@ -593,7 +596,7 @@ class exporter(object):
                 xml_str.extend([
                     '<itemsupplier leadtime="P{}D" priority="{}" size_minimum="{:.6f}" '
                     'cost="{:0.6f}"{}{}>'.format(
-                        supplier.delay, supplier.sequence, supplier.min_qty or 0, supplier.price,
+                        supplier.delay, supplier.sequence or 1, supplier.min_qty or 0, supplier.price,
                         effective_end_str, effective_start_str),
                     '<location name="{}"/>'.format(rule.location_id.complete_name),
                     '<supplier name={}/>'.format(quoteattr(supplier_name)),
@@ -1126,12 +1129,14 @@ class exporter(object):
                     # in case qty <= 0 we should not output that MO at all
                     if qty <= 0:
                         continue
+
+                location_dest = self.env['stock.location'].browse(i['location_dest_id'])
                 yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/><location name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
                     quoteattr(operation),
-                    quoteattr(i["location_dest_id"][1])
+                    quoteattr(location_dest.get_warehouse_stock_location().complete_name)
                 )
         yield "</operationplans>\n"
 
