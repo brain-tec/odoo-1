@@ -1130,7 +1130,7 @@ class exporter(object):
                     if qty <= 0:
                         continue
 
-                location_dest = self.env['stock.location'].browse(i['location_dest_id'])
+                location_dest = self.env['stock.location'].browse(i['location_dest_id'][0])
                 yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/><location name=%s/></operationplan>\n' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
