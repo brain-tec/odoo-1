@@ -1,0 +1,28 @@
+<odoo>
+
+    <record id="company_form_frepple" model="ir.ui.view">
+        <field name="name">res.company.view.form</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="priority">55</field>
+        <field name="arch" type="xml">
+            <xpath expr="//page[1]" position="after">
+                <page string="FrePPLe">
+                    <group>
+                        <field name="calendar"/>
+                        <field name="manufacturing_warehouse"/>
+                        <field name="webtoken_key"/>
+                        <field name="frepple_server"/>
+                        <field name="sol_domain" widget="domain" options="{'model': 'sale.order.line'}"/>
+                        <field name="frepple_bom_dummy_route_id"/>
+                        <field name="internal_moves_domain" widget="domain" options="{'model': 'stock.move'}"/>
+                        <field name="stock_rules_domain" widget="domain" options="{'model': 'stock.rule'}"/>
+                        <field name="tz_for_exporting"/>
+                        <field name="frepple_export_language"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
