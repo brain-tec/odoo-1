@@ -18,7 +18,7 @@
         'stock',
         "uom",
     ],
-    "external_dependencies": {"python": ["pyjwt"]},
+    "external_dependencies": {"python": ["PyJWT"]},
     "data": [
         "data/mrp_routing.xml",
         "security/frepple_security.xml",
@@ -34,7 +34,6 @@
         "views/stock_picking_views.xml",
         "views/purchase_order_views.xml",
     ],
-    "demo": ["data/demo.xml"],
     "test": [],
     "installable": True,
     "auto_install": False,
