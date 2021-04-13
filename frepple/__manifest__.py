@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "frepple",
-    "version": "13.0.6.7.3",
+    "version": "13.0.6.7.4",
     "category": "Manufacturing",
     "summary": "Advanced planning and scheduling",
     "author": "frePPLe, brain-tec AG",
