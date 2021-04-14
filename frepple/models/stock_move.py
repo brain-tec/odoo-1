@@ -72,8 +72,8 @@ class StockMove(models.Model):
 
             if picking_key not in imported_pickings:
                 picking_type_id = self.env['stock.picking.type'].search(
-                    [('default_location_src_id', '=', from_location.id),
-                     ('default_location_dest_id', '=', to_location.id),
+                    [('default_location_src_id', 'child_of', from_location.id),
+                     ('default_location_dest_id', 'child_of', to_location.id),
                      ('code', '=', 'internal')], limit=1)
                 if not picking_type_id:
                     picking_type_id = self.env.ref('stock.picking_type_internal')
