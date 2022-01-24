@@ -712,6 +712,7 @@ class exporter(object):
             "routing_id",
             "type",
             "bom_line_ids",
+            "picking_type_id"
         ]
         for i in bom_recs.read(bom_fields):
             if not i['routing_id']:
@@ -719,20 +720,17 @@ class exporter(object):
 
             # Determine the location
             # We actually want the stock location of the warehouse the location belongs to.
-            if i["routing_id"]:
-                location_id = mrp_routings.get(i["routing_id"][0], None)
-                if not location_id:
-                    location_name = self.env['res.company'].search([
-                        ('name', '=', self.company),
-                    ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
-                    # location = self.mfg_location  # Original frePPLe code.
-                else:
-                    location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
-            else:
-                location_name = self.env['res.company'].search([
-                    ('name', '=', self.company),
-                ], limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
-                # location = self.mfg_location  # Original frePPLe code.
+            location_name = self.env['res.company'].search(
+                [('name', '=', self.company)],
+                limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
+            if i["picking_type_id"]:
+                picking_type = self.env['stock.picking.type'].browse(i["picking_type_id"][0])
+                if picking_type:
+                    location_name = picking_type.warehouse_id.lot_stock_id.complete_name
+            elif i["routing_id"]:
+                    location_id = mrp_routings.get(i["routing_id"][0], None)
+                    if location_id:
+                        location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
 
             # Determine operation name and item
             product_buf = self.product_template_product.get(
