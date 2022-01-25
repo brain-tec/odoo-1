@@ -19,7 +19,7 @@ class PurchaseOrderLine(models.Model):
     frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     def _get_po_line_update_values(self, po_line, elem, uom):
-        received_date = elem.get('start').replace('T', ' ')
+        received_date = elem.get('end').replace('T', ' ')
         date_planned = po_line.date_planned
         if date_planned:
             date_planned = min(date_planned, fields.Datetime.from_string(received_date))
