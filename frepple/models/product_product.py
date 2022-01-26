@@ -27,3 +27,6 @@ class ProductProduct(models.Model):
         if self.default_code:
             res.append(('stringproperty', 'internalreference', self.default_code))
         return res
+
+    def _get_weight(self):
+        return self.weight
