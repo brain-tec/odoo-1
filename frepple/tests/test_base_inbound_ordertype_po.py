@@ -37,15 +37,16 @@ class TestBaseInboundOrdertypePo(TestBase):
         warehouse.in_type_id.default_location_src_id = self.source_loc
         warehouse.in_type_id.default_location_dest_id = self.dest_loc
 
-    def _create_xml_line(self, reference, product, supplier, source_location, destination_location, qty, datetime_xml):
+    def _create_xml_line(self, reference, product, supplier, source_location, destination_location, qty,
+                         datetime_start_xml, datetime_end_xml,):
         xml_content = '''
                     <operationplan  
                       ordertype="PO"
                       id="{reference}"
                       item="{product_name}" 
                       item_id="{uom_id},{product_id}"
-                      start="{datetime}" 
-                      end="{datetime}"
+                      start="{datetime_start}" 
+                      end="{datetime_end}"
                       quantity="{qty:0.6f}"
                       origin="{origin_name}" 
                       origin_id="{origin_id}"
@@ -61,7 +62,8 @@ class TestBaseInboundOrdertypePo(TestBase):
                    origin_name=source_location.name,
                    origin_id=source_location.id,
                    qty=qty,
-                   datetime=datetime_xml,
+                   datetime_start=datetime_start_xml,
+                   datetime_end=datetime_end_xml,
                    supplier="{0} {1}".format(supplier.id, supplier.name),
                    uom_id=product.uom_id.id)
         return xml_content
@@ -95,7 +97,7 @@ class TestBaseInboundOrdertypePo(TestBase):
         for item in lines:
             xml_line = self._create_xml_line(item['id'], item['product'], item['supplier'],
                                              item['source_location'], item['destination_location'],
-                                             item['qty'], item['datetime_xml'])
+                                             item['qty'], item['datetime_start_xml'], item['datetime_end_xml'])
             xml_lines.append(xml_line)
         xml_lines_content = ''.join(xml_lines)
         xml_final_content = '''
@@ -129,13 +131,15 @@ class TestBaseInboundOrdertypePo(TestBase):
         # The PO line will be planned for 2 days after the PO is created.
         # That's important as we have a supplier with a different pricing between the day after and 3 days
         # after the PO was created, then that supplier will be chosen and we do some checks about pricing
-        datetime_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
-        datetime_str_xml = datetime_str_odoo.replace(' ', 'T')
+        datetime_start_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=1))
+        datetime_start_str_xml = datetime_start_str_odoo.replace(' ', 'T')
+        datetime_end_str_odoo = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
+        datetime_end_str_xml = datetime_end_str_odoo.replace(' ', 'T')
 
         _, xml_file = self._create_xml(
             [{'id': ref, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty,
-              'datetime_xml': datetime_str_xml}]
+              'datetime_start_xml': datetime_start_str_xml, 'datetime_end_xml': datetime_end_str_xml}]
         )
         f = open(xml_file, 'r')
         self.importer.datafile = f
@@ -150,7 +154,7 @@ class TestBaseInboundOrdertypePo(TestBase):
         self.assertEqual(po.order_line.product_uom.id, self._get_uom())
         # The planned date of the PO line is respected to that specified by frepple, instead of changing
         # to another taking into account the delay of the supplier and the date order of the PO
-        self.assertEqual(fields.Datetime.to_string(po.order_line.date_planned), datetime_str_odoo)
+        self.assertEqual(fields.Datetime.to_string(po.order_line.date_planned), datetime_end_str_odoo)
         # The price is finally assigned as the one of the supplier according to the planned date of the line,
         # unlike in standard odoo where it should be according to the PO order date
         self.assertAlmostEqual(po.order_line.price_unit,
@@ -178,21 +182,25 @@ class TestBaseInboundOrdertypePo(TestBase):
         # They are planned for 2 different dates tpo play with the different pricing of the supplier according to
         # dates
         # Both PO lines for product will be summarized in one, and it will keep the oldest planned date
-        datetime_str_odoo_1 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
-        datetime_str_xml_1 = datetime_str_odoo_1.replace(' ', 'T')
-        datetime_str_odoo_2 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=3))
-        datetime_str_xml_2 = datetime_str_odoo_2.replace(' ', 'T')
+        datetime_start_str_odoo_1 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=1))
+        datetime_start_str_xml_1 = datetime_start_str_odoo_1.replace(' ', 'T')
+        datetime_end_str_odoo_1 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
+        datetime_end_str_xml_1 = datetime_end_str_odoo_1.replace(' ', 'T')
+        datetime_start_str_odoo_2 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=2))
+        datetime_start_str_xml_2 = datetime_start_str_odoo_2.replace(' ', 'T')
+        datetime_end_str_odoo_2 = fields.Datetime.to_string(fields.Datetime.now() + relativedelta(days=3))
+        datetime_end_str_xml_2 = datetime_end_str_odoo_2.replace(' ', 'T')
 
         _, xml_file = self._create_xml(
             [{'id': ref_product2, 'product': self.product2, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_product2,
-              'datetime_xml': datetime_str_xml_1},
+              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1,},
              {'id': ref_1, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_1,
-              'datetime_xml': datetime_str_xml_1},
+              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1,},
              {'id': ref_2, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_2,
-              'datetime_xml': datetime_str_xml_2}]
+              'datetime_start_xml': datetime_start_str_xml_2, 'datetime_end_xml': datetime_end_str_xml_2}]
         )
         f = open(xml_file, 'r')
         self.importer.datafile = f
@@ -210,7 +218,7 @@ class TestBaseInboundOrdertypePo(TestBase):
         # The planned date of the PO line is respected to that specified by frepple, instead of changing
         # to another taking into account the delay of the supplier and the date order of the PO
         # It is in addition the oldest of the two received dates from frepple for both summarized lines
-        self.assertEqual(fields.Datetime.to_string(order_line_summarized.date_planned), datetime_str_odoo_1)
+        self.assertEqual(fields.Datetime.to_string(order_line_summarized.date_planned), datetime_end_str_odoo_1)
         # The price is finally assigned as the one of the supplier according to the planned date of the line,
         # unlike in standard odoo where it should be according to the PO order date
         self.assertAlmostEqual(order_line_summarized.price_unit,
