@@ -135,6 +135,7 @@ class XMLController(odoo.http.Controller):
             for i in recs:
                 company = i
             if not company:
+                logger.warning("Invalid company name argument %s " % company_name)
                 return Response("Invalid company name argument", 401)
 
             # Verify that the data was posted from frePPLe and nobody else
@@ -145,6 +146,7 @@ class XMLController(odoo.http.Controller):
                 )
                 logger.warning(str(decoded))
                 if self.user != decoded.get("user", None):
+                    logger.warning("Incorrect or missing webtoken %s " % decoded.get("user", None))
                     return Response("Incorrect or missing webtoken", 401)
             except Exception as e:
                 logger.warning("Incorrect or missing webtoken %s " % e)
@@ -173,4 +175,5 @@ class XMLController(odoo.http.Controller):
                     description="Error processing data posted by frePPLe: check the Odoo log file for more details"
                 )
         else:
+            logger.warning("Only GET and POST requests are accepted")
             raise MethodNotAllowed("Only GET and POST requests are accepted")
