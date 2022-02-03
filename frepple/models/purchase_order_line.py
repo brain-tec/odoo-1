@@ -41,7 +41,7 @@ class PurchaseOrderLine(models.Model):
             ["product_id", product],
             ["product_qty", elem.get("quantity")],
             ["product_uom", uom],
-            ["date_planned", (elem.get('start')).replace('T', ' ')],
+            ["date_planned", (elem.get('end')).replace('T', ' ')],
             ["frepple_reference", elem.get('id')]
         ]
 
