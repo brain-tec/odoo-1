@@ -62,9 +62,40 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
             '<itemsuppliers>',
             supplier_info,
             '</itemsuppliers>',
+            '<stringproperty name="itemstatus" value="active"/>',
+            '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
+            '</item>',
+            '</members>',
+            '</item>',
+            '</items>',
+        ])
+        self.assertEqual(xml_str_actual, xml_str_expected)
+
+
+    @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
+    def test_product_weight(self):
+        """ Tests a product's weight exported information.
+        """
+        category_a = self._create_category('TC_Category_A')
+        product_1 = self._create_product('TC_Product_1', category=category_a, price=5)
+        product_1.weight = 0.23
+        product_1.default_code = 'DEFAULT_CODE'
+
+        xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
+
+        xml_str_expected = '\n'.join([
+            '<!-- products -->',
+            '<items>',
+            '<item name="{}" category="{}" description="category">'.format(
+                category_a.name, category_a.id),
+            '<members>',
+            '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_1.weight),
             '<stringproperty name="itemstatus" value="active"/>',
             '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
             '</item>',
@@ -106,6 +137,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="TC_Product_1 ES" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_1.list_price, self.kgm_uom.id, product_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
             '<stringproperty name="itemstatus" value="active"/>',
             '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
             '</item>',
@@ -148,6 +180,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_a,
             '</itemsuppliers>',
@@ -158,6 +191,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_a_sub,
             '</itemsuppliers>',
@@ -229,6 +263,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_a_1,
             '</itemsuppliers>',
@@ -239,6 +274,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_a_sub_1,
             '</itemsuppliers>',
@@ -249,6 +285,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_sub_sub_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_a_sub_sub_1,
             '</itemsuppliers>',
@@ -256,6 +293,7 @@ class TestOutboundItems(TestBase):
             '</item>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id),
+            '<weight>{:0.6f}</weight>'.format(product_a_sub_sub_2._get_weight()),
             '<itemsuppliers>',
             supplier_info_a_sub_sub_2,
             '</itemsuppliers>',
@@ -272,6 +310,7 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_b_1.name, product_b_1.list_price, self.kgm_uom.id, product_b_1.id),
+            '<weight>{:0.6f}</weight>'.format(product_b_1._get_weight()),
             '<itemsuppliers>',
             supplier_info_b_1,
             '</itemsuppliers>',
