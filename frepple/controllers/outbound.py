@@ -570,6 +570,10 @@ class exporter(object):
         warehouse_domain = []
         if 'test_prefix' in ctx:
             warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
+
+        weight = product._get_weight()
+        xml_str.append('<weight>%f</weight>' % weight)
+
         # in the export of product master data the supplierinfo is also exported. to make sure frepple has all
         # the right routes to source the products, we were exporting each supplierinfo once for each warehouse.
         # Here we changed the implementation as not all products can be purchased for every warehouse.
@@ -1026,20 +1030,18 @@ class exporter(object):
             if location_name and item and i["product_qty"] > i["qty_received"]:
                 start = odoo_fields.Datetime.context_timestamp(m, j["date_order"]).strftime("%Y-%m-%dT%H:%M:%S")
                 end = odoo_fields.Datetime.context_timestamp(m, i["date_planned"]).strftime("%Y-%m-%dT%H:%M:%S")
-                weight = self.env['product.product'].browse(i["product_id"][0])._get_weight()
 
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
                     i["product_uom"][0],
                     i["product_id"][0],
                 )
-                yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s><weight>%f</weight></item><location name=%s/><supplier name=%s/>" % (
+                yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
                     quoteattr("%s - %s" % (j["name"], i["id"])),
                     start,
                     end,
                     qty,
                     quoteattr(item["name"]),
-                    weight,
                     quoteattr(location_name),
                     quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
                 )
