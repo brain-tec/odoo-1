@@ -161,6 +161,8 @@ class TestBaseInboundOrdertypePo(TestBase):
                                self.seller2.product_uom._compute_price(
                                    self.seller2.price, po.order_line.product_uom), 2)
         self.assertEqual(po.order_line.frepple_reference, ref)
+        self.assertEqual(fields.Datetime.to_string(po.date_planned), datetime_end_str_odoo)
+        self.assertEqual(fields.Datetime.to_string(po.date_order), datetime_start_str_odoo)
         return po
 
     def _ordertype_po_many_lines(self):
@@ -225,4 +227,6 @@ class TestBaseInboundOrdertypePo(TestBase):
                                self.seller2.product_uom._compute_price(
                                     self.seller2.price, order_line_summarized.product_uom), 2)
         self.assertEqual(order_line_summarized.frepple_reference, ','.join([ref_1, ref_2]))
+        self.assertEqual(fields.Datetime.to_string(po.date_planned), datetime_end_str_odoo_1)
+        self.assertEqual(fields.Datetime.to_string(po.date_order), datetime_start_str_odoo_1)
         return po

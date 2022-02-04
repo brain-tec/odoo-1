@@ -73,7 +73,7 @@ class PurchaseOrderLine(models.Model):
         self.price_unit = price_unit
 
     @api.model
-    def _create_or_update_from_frepple_po_line(self, elem, company, imported_pos):
+    def _create_or_update_from_frepple_po_line(self, elem, company, imported_pos, po_dates):
         """ Receives an XML subtree from an input file from frePPLe,
             in particular an <operationplan>, and creates a purchase.order.line
             for it inside a PO. A PO is created/selected for each supplier gathering all their PO lines
@@ -167,6 +167,20 @@ class PurchaseOrderLine(models.Model):
             po_line = po.order_line.filtered(lambda x: elem.get('id') in x.frepple_reference)
             po_line._change_price_according_to_date_planned()
 
-            # The PO order date will be the earliest planned date of the po lines
-            if po.date_order > po_line.date_planned:
-                po.date_order = po_line.date_planned
+            # The PO receipt date will be the earliest planned date of the po lines
+            # The PO order date will be the earliest start date of the po lines
+            # Updating the dictionary that will be used in the run method to update the dates in the PO
+            # Otherwise updating the lines from the PO line was causing issues
+            # as the date_planned as soon as it's assigned to the PO makes the PO line date_planned readonly
+            # and the date_order cannot be stored in the PO line, as there it's readonly and related to the one
+            # from the PO
+            date_order = fields.Datetime.from_string(elem.get('start').replace('T', ' '))
+            if po.id not in po_dates:
+                po_dates[po.id] = {'date_planned': po_line.date_planned,
+                                   'date_order': date_order
+                                   }
+            else:
+                if po_dates[po.id]['date_planned'] > po_line.date_planned:
+                    po_dates[po.id].update({'date_planned': po_line.date_planned})
+                if po_dates[po.id]['date_order'] > date_order:
+                    po_dates[po.id].update({'date_order': date_order})

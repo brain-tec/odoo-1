@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class importer(object):
-    def __init__(self, req, database=None, company=None, mode=1, imported_pos=None, imported_pickings=None):
+    def __init__(self, req, database=None, company=None, mode=1, imported_pos=None, imported_pickings=None,
+                 po_dates=None):
         self.env = req.env
         self.database = database
         self.company = company
@@ -44,6 +45,12 @@ class importer(object):
         if imported_pos is None:
             imported_pos = {}
         self.imported_pos = imported_pos
+
+        # Dictionary that stores as key the PO id and as value the earliest date from the PO lines
+        # to be assigned to the PO for date_planned and date_order.
+        if po_dates is None:
+            po_dates = {}
+        self.po_dates = po_dates
 
         # Dictionary that stores as key the source and destination locations of the picking,
         # and as value the associated picking id.
@@ -112,7 +119,7 @@ class importer(object):
                     order_type = elem.get("ordertype")
 
                     if order_type == "PO":
-                        self._create_or_update_po_line(elem, self.company, self.imported_pos)
+                        self._create_or_update_po_line(elem, self.company, self.imported_pos, self.po_dates)
                         count_po_line += 1
 
                     elif order_type == "DO":
@@ -132,14 +139,21 @@ class importer(object):
                 # Remember the root element
                 root = elem
 
+        PurchaseOrder = self.env['purchase.order']
+        for po_id, dates in self.po_dates.items():
+            po = PurchaseOrder.browse(po_id)
+            po.write({'date_planned': dates['date_planned'],
+                      'date_order': dates['date_order']})
+
         # Be polite, and reply to the post
         msg.append("Processed %s uploaded PO lines" % count_po_line)
         msg.append("Processed %s uploaded Stock Moves" % count_move)
         msg.append("Processed %s uploaded Manufacturing Orders" % count_mo)
         return "\n".join(msg)
 
-    def _create_or_update_po_line(self, elem, company, imported_pos):
-        self.env['purchase.order.line']._create_or_update_from_frepple_po_line(elem, company, imported_pos)
+    def _create_or_update_po_line(self, elem, company, imported_pos, po_dates):
+        self.env['purchase.order.line']._create_or_update_from_frepple_po_line(elem, company, imported_pos,
+                                                                               po_dates)
 
     def _create_or_update_stock_move(self, elem, company, imported_pickings):
         self.env['stock.move']._create_or_update_from_frepple_stock_move(elem, company, imported_pickings)
