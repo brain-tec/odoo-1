@@ -9,6 +9,7 @@ import os
 import logging
 from odoo import models, api, fields
 from odoo.tests import Form
+from odoo.addons.frepple.misc.helper_datetime import get_utc_date
 
 _logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class PurchaseOrderLine(models.Model):
     frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     def _get_po_line_update_values(self, po_line, elem, uom):
-        received_date = elem.get('end').replace('T', ' ')
+        received_date = get_utc_date(elem.get('end'), self.env.user.company_id.tz_for_exporting)
         date_planned = po_line.date_planned
         if date_planned:
             date_planned = min(date_planned, fields.Datetime.from_string(received_date))
@@ -37,11 +38,13 @@ class PurchaseOrderLine(models.Model):
     def _get_po_line_values(self, elem, product, uom):
 
         # name and price are automatically set by onchange of product_id
+        date_planned = get_utc_date(elem.get('end'), self.env.user.company_id.tz_for_exporting)
+
         return [
             ["product_id", product],
             ["product_qty", elem.get("quantity")],
             ["product_uom", uom],
-            ["date_planned", (elem.get('end')).replace('T', ' ')],
+            ["date_planned", date_planned],
             ["frepple_reference", elem.get('id')]
         ]
 
@@ -174,7 +177,7 @@ class PurchaseOrderLine(models.Model):
             # as the date_planned as soon as it's assigned to the PO makes the PO line date_planned readonly
             # and the date_order cannot be stored in the PO line, as there it's readonly and related to the one
             # from the PO
-            date_order = fields.Datetime.from_string(elem.get('start').replace('T', ' '))
+            date_order = get_utc_date(elem.get('start'), self.env.user.company_id.tz_for_exporting)
             if po.id not in po_dates:
                 po_dates[po.id] = {'date_planned': po_line.date_planned,
                                    'date_order': date_order
