@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
  Copyright (C) 2007-2013 by frePPLe bv
-
- All information contained herein is, and remains the property of frePPLe.
- You are allowed to use and modify the source code, as long as the
- software is used within your company.
- You are not allowed to distribute the software, either in the form of
- source code or in the form of compiled binaries.
+ This library is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Affero General Public License as published
+ by the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+ General Public License for more details.
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
-<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema'
-  elementFormDefault="unqualified" attributeFormDefault="unqualified" version="6.11.0">
+<xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema' elementFormDefault="unqualified" attributeFormDefault="unqualified">
 
   <!-- ACTION -->
   <xsd:simpleType name="action">
@@ -207,7 +210,6 @@
       <xsd:element name="detectproblems" type="xsd:boolean" />
       <xsd:element name="posttime" type="xsd:duration" />
       <xsd:element name="fence" type="xsd:duration" />
-      <xsd:element name="batchwindow" type="xsd:duration" />
       <xsd:element name="size_minimum" type="positiveDouble" />
       <xsd:element name="size_minimum_calendar" type="calendar" />
       <xsd:element name="size_multiple" type="positiveDouble" />
@@ -218,13 +220,13 @@
       <xsd:element name="operationplans" type="operationplanlist" />
       <xsd:element name="location" type="location" />
       <xsd:element name="available" type="calendar" />
+      <xsd:element name="search" type="search" />
     </xsd:choice>
     <xsd:attributeGroup ref="common_attributes" />
     <xsd:attribute name="duration" type="xsd:duration" />
     <xsd:attribute name="detectproblems" type="xsd:boolean" />
     <xsd:attribute name="posttime" type="xsd:duration" />
     <xsd:attribute name="fence" type="xsd:duration" />
-    <xsd:attribute name="batchwindow" type="xsd:duration" />
     <xsd:attribute name="size_minimum" type="positiveDouble" />
     <xsd:attribute name="size_multiple" type="positiveDouble" />
     <xsd:attribute name="size_maximum" type="positiveDouble" />
@@ -232,6 +234,7 @@
     <xsd:attribute name="priority" type="xsd:integer" />
     <xsd:attribute name="effective_start" type="xsd:dateTime" />
     <xsd:attribute name="effective_end" type="xsd:dateTime" />
+    <xsd:attribute name="search" type="search" />
   </xsd:complexType>
 
   <xsd:complexType name="operationlist">
@@ -278,7 +281,6 @@
     <xsd:complexContent>
       <xsd:extension base="operation">
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
-          <xsd:element name="search" type="search" />
           <xsd:element name="suboperations">
             <xsd:complexType>
               <xsd:sequence>
@@ -287,7 +289,6 @@
             </xsd:complexType>
           </xsd:element>
         </xsd:choice>
-        <xsd:attribute name="search" type="search" />
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
@@ -316,17 +317,17 @@
       </xsd:documentation>
     </xsd:annotation>
     <xsd:sequence minOccurs="1">
-    <xsd:choice minOccurs="0" maxOccurs="unbounded">     
-      <xsd:element name="priority" type="xsd:integer" />
-      <xsd:element name="effective_start" type="xsd:dateTime" />
-      <xsd:element name="effective_end" type="xsd:dateTime" />
-    </xsd:choice>
-    <xsd:element name="operation" type="operation" />
-    <xsd:choice minOccurs="0" maxOccurs="unbounded">     
-      <xsd:element name="priority" type="xsd:integer" />
-      <xsd:element name="effective_start" type="xsd:dateTime" />
-      <xsd:element name="effective_end" type="xsd:dateTime" />
-    </xsd:choice>
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element name="priority" type="xsd:integer" />
+        <xsd:element name="effective_start" type="xsd:dateTime" />
+        <xsd:element name="effective_end" type="xsd:dateTime" />
+      </xsd:choice>
+      <xsd:element name="operation" type="operation" />
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element name="priority" type="xsd:integer" />
+        <xsd:element name="effective_start" type="xsd:dateTime" />
+        <xsd:element name="effective_end" type="xsd:dateTime" />
+      </xsd:choice>
     </xsd:sequence>
   </xsd:complexType>
 
@@ -349,6 +350,9 @@
         </xsd:complexType>
       </xsd:element>
       <xsd:element name="cost" type="positiveDouble" />
+      <xsd:element name="weight" type="positiveDouble" />
+      <xsd:element name="volume" type="positiveDouble" />
+      <xsd:element name="uom" type="xsd:normalizedString" />
       <xsd:element name="itemsuppliers" type="itemsupplierlist" />
       <xsd:element name="itemdistributions" type="itemdistributionlist" />
     </xsd:choice>
@@ -361,13 +365,13 @@
       <xsd:extension base="item" />
     </xsd:complexContent>
   </xsd:complexType>
- 
+
   <xsd:complexType name="item_mts">
     <xsd:complexContent>
       <xsd:extension base="item" />
     </xsd:complexContent>
   </xsd:complexType>
-  
+
   <xsd:complexType name="itemlist">
     <xsd:sequence minOccurs="0" maxOccurs="unbounded">
       <xsd:element name="item" type="item" />
@@ -388,6 +392,9 @@
       <xsd:element name="leadtime" type="xsd:duration" />
       <xsd:element name="size_multiple" type="positiveDouble" />
       <xsd:element name="size_minimum" type="positiveDouble" />
+      <xsd:element name="size_maximum" type="positiveDouble" />
+      <xsd:element name="batchwindow" type="xsd:duration" />
+      <xsd:element name="extra_safety_leadtime" type="xsd:duration" />
       <xsd:element name="cost" type="positiveDouble" />
       <xsd:element name="priority" type="xsd:integer" />
       <xsd:element name="effective_start" type="xsd:dateTime" />
@@ -403,6 +410,8 @@
     <xsd:attribute name="leadtime" type="xsd:duration" />
     <xsd:attribute name="size_multiple" type="positiveDouble" />
     <xsd:attribute name="size_minimum" type="positiveDouble" />
+    <xsd:attribute name="size_maximum" type="positiveDouble" />
+    <xsd:attribute name="batchwindow" type="xsd:duration" />
     <xsd:attribute name="cost" type="positiveDouble" />
     <xsd:attribute name="priority" type="xsd:integer" />
     <xsd:attribute name="effective_start" type="xsd:dateTime" />
@@ -433,9 +442,9 @@
       <xsd:element name="leadtime" type="xsd:duration" />
       <xsd:element name="size_multiple" type="positiveDouble" />
       <xsd:element name="size_minimum" type="positiveDouble" />
+      <xsd:element name="batchwindow" type="xsd:duration" />
       <xsd:element name="cost" type="positiveDouble" />
       <xsd:element name="priority" type="xsd:integer" />
-      <xsd:element name="priority_push" type="xsd:integer" />
       <xsd:element name="effective_start" type="xsd:dateTime" />
       <xsd:element name="effective_end" type="xsd:dateTime" />
       <xsd:element name="resource" type="resource" />
@@ -449,9 +458,9 @@
     <xsd:attribute name="leadtime" type="xsd:duration" />
     <xsd:attribute name="size_multiple" type="positiveDouble" />
     <xsd:attribute name="size_minimum" type="positiveDouble" />
+    <xsd:attribute name="batchwindow" type="xsd:duration" />
     <xsd:attribute name="cost" type="positiveDouble" />
     <xsd:attribute name="priority" type="xsd:integer" />
-    <xsd:attribute name="priority_push" type="xsd:integer" />
     <xsd:attribute name="effective_start" type="xsd:dateTime" />
     <xsd:attribute name="effective_end" type="xsd:dateTime" />
     <xsd:attribute name="resource_qty" type="positiveDouble" />
@@ -651,6 +660,7 @@
       </xsd:element>
       <xsd:element name="location" type="location" />
       <xsd:element name="item" type="item" />
+      <xsd:element name="batch" type="xsd:normalizedString" />
       <xsd:element name="onhand" type="xsd:double" />
       <xsd:element name="minimum" type="xsd:double" />
       <xsd:element name="maximum" type="xsd:double" />
@@ -661,57 +671,14 @@
       <xsd:element name="flows" type="flowlist" />
       <xsd:element name="flowplans" type="flowplanlist" />
       <xsd:element name="tool" type="xsd:boolean" />
-	  <!-- Inventory planning extra fields -->
-      <xsd:element name="ip_flag" type="xsd:boolean" />
-      <xsd:element name="leadtime_deviation" type="xsd:duration" />
-      <xsd:element name="service_level" type="xsd:double" />
-      <xsd:element name="demand_deviation" type="xsd:double" />
-      <xsd:element name="roq_type" type="xsd:double" />
-      <xsd:element name="nostock" type="xsd:boolean" />
-      <xsd:element name="pushmode" type="xsd:boolean" />
-      <xsd:element name="roq_min_qty" type="xsd:double" />
-      <xsd:element name="roq_max_qty" type="xsd:double" />
-      <xsd:element name="roq_min_poc" type="xsd:duration" />
-      <xsd:element name="roq_max_poc" type="xsd:duration" />
-      <xsd:element name="ss_min_qty" type="xsd:double" />
-      <xsd:element name="ss_max_qty" type="xsd:double" />
-      <xsd:element name="ss_min_poc" type="xsd:duration" />
-      <xsd:element name="ss_max_poc" type="xsd:duration" />
-      <xsd:element name="leadtime" type="xsd:duration" />
-      <xsd:element name="roq_calculated" type="xsd:double" />
-      <xsd:element name="ss_calculated" type="xsd:double" />
-      <xsd:element name="roq" type="xsd:double" />
-      <xsd:element name="ss" type="xsd:double" />
-      <xsd:element name="demand" type="xsd:double" />
     </xsd:choice>
     <xsd:attributeGroup ref="common_attributes" />
+    <xsd:attribute name="batch" type="xsd:normalizedString" />
     <xsd:attribute name="onhand" type="xsd:double" />
     <xsd:attribute name="minimum" type="xsd:double" />
     <xsd:attribute name="maximum" type="xsd:double" />
     <xsd:attribute name="detectproblems" type="xsd:boolean" />
     <xsd:attribute name="tool" type="xsd:boolean" />
-    <!-- Inventory planning extra fields -->
-    <xsd:attribute name="ip_flag" type="xsd:boolean" />
-    <xsd:attribute name="leadtime_deviation" type="xsd:duration" />
-    <xsd:attribute name="service_level" type="xsd:double" />
-    <xsd:attribute name="demand_deviation" type="xsd:double" />
-    <xsd:attribute name="roq_type" type="xsd:double" />
-    <xsd:attribute name="nostock" type="xsd:boolean" />
-    <xsd:attribute name="pushmode" type="xsd:boolean" />
-    <xsd:attribute name="roq_min_qty" type="xsd:double" />
-    <xsd:attribute name="roq_max_qty" type="xsd:double" />
-    <xsd:attribute name="roq_min_poc" type="xsd:duration" />
-    <xsd:attribute name="roq_max_poc" type="xsd:duration" />
-    <xsd:attribute name="ss_min_qty" type="xsd:double" />
-    <xsd:attribute name="ss_max_qty" type="xsd:double" />
-    <xsd:attribute name="ss_min_poc" type="xsd:duration" />
-    <xsd:attribute name="ss_max_poc" type="xsd:duration" />
-    <xsd:attribute name="leadtime" type="xsd:duration" />
-    <xsd:attribute name="roq_calculated" type="xsd:double" />
-    <xsd:attribute name="ss_calculated" type="xsd:double" />
-    <xsd:attribute name="roq" type="xsd:double" />
-    <xsd:attribute name="ss" type="xsd:double" />
-    <xsd:attribute name="demand" type="xsd:double" />
   </xsd:complexType>
 
   <xsd:complexType name="bufferlist">
@@ -750,7 +717,7 @@
       <xsd:element name="stringproperty" type="stringproperty" />
       <xsd:element name="doubleproperty" type="doubleproperty" />
       <xsd:element name="dateproperty" type="dateproperty" />
-      <xsd:element name="source" type="xsd:normalizedString" />  
+      <xsd:element name="source" type="xsd:normalizedString" />
     </xsd:choice>
     <xsd:attribute name="quantity" type="xsd:double" />
     <xsd:attribute name="quantity_fixed" type="xsd:double" />
@@ -788,8 +755,8 @@
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
           <xsd:element name="transferbatch" type="xsd:double" />
         </xsd:choice>
-        <xsd:attribute name="transferbatch" type="xsd:double" /> 
-      </xsd:extension>     
+        <xsd:attribute name="transferbatch" type="xsd:double" />
+      </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
 
@@ -836,7 +803,7 @@
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
           <xsd:element name="offset" type="xsd:double" />
         </xsd:choice>
-        <xsd:attribute name="offset" type="xsd:double" />      
+        <xsd:attribute name="offset" type="xsd:double" />
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
@@ -847,7 +814,7 @@
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
           <xsd:element name="offset" type="xsd:duration" />
         </xsd:choice>
-        <xsd:attribute name="offset" type="xsd:duration" />      
+        <xsd:attribute name="offset" type="xsd:duration" />
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
@@ -858,7 +825,7 @@
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
           <xsd:element name="offset" type="xsd:duration" />
         </xsd:choice>
-        <xsd:attribute name="offset" type="xsd:duration" />      
+        <xsd:attribute name="offset" type="xsd:duration" />
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
@@ -880,7 +847,7 @@
       <xsd:element name="resource" type="resource" />
       <xsd:element name="status" type="xsd:string" />
       <xsd:element name="setuponly" type="xsd:boolean" />
-    </xsd:choice>    
+    </xsd:choice>
     <xsd:attribute name="date" type="xsd:dateTime" />
     <xsd:attribute name="quantity" type="xsd:double" />
     <xsd:attribute name="onhand" type="xsd:double" />
@@ -1060,7 +1027,8 @@
     </xsd:annotation>
     <xsd:choice minOccurs="0" maxOccurs="unbounded">
       <xsd:element name="ordertype" type="ordertype" />
-      <xsd:element name="id" type="xsd:normalizedString" /> <!-- Deprecated. Id is now an alias for reference -->
+      <xsd:element name="id" type="xsd:normalizedString" />
+      <!-- Deprecated. Id is now an alias for reference -->
       <xsd:element name="reference" type="xsd:normalizedString" />
       <xsd:element name="batch" type="xsd:normalizedString" />
       <xsd:element name="operation" type="operation" />
@@ -1068,6 +1036,7 @@
       <xsd:element name="start" type="xsd:dateTime" />
       <xsd:element name="end" type="xsd:dateTime" />
       <xsd:element name="quantity" type="positiveDouble" />
+      <xsd:element name="quantity_completed" type="positiveDouble" />
       <xsd:element name="status" type="xsd:normalizedString" />
       <xsd:element name="owner" type="operationplan" />
       <xsd:element name="feasible" type="xsd:boolean" />
@@ -1088,12 +1057,14 @@
       <xsd:element name="loadplans" type="loadplanlist" />
     </xsd:choice>
     <xsd:attribute name="ordertype" type="ordertype" />
-    <xsd:attribute name="id" type="xsd:normalizedString" /> <!-- Deprecated. Id is now an alias for reference -->
+    <xsd:attribute name="id" type="xsd:normalizedString" />
+    <!-- Deprecated. Id is now an alias for reference -->
     <xsd:attribute name="reference" type="xsd:normalizedString" />
     <xsd:attribute name="batch" type="xsd:normalizedString" />
     <xsd:attribute name="start" type="xsd:dateTime" />
     <xsd:attribute name="end" type="xsd:dateTime" />
     <xsd:attribute name="quantity" type="positiveDouble" />
+    <xsd:attribute name="quantity_completed" type="positiveDouble" />
     <xsd:attribute name="feasible" type="xsd:boolean" />
     <xsd:attribute name="criticality" type="xsd:double" />
     <xsd:attribute name="status" type="xsd:normalizedString" />
@@ -1135,88 +1106,6 @@
     </xsd:sequence>
   </xsd:complexType>
 
-  <!-- EXTRA DEFINITIONS IN THE ENTERPRISE EDITION BELOW THIS LINE -->
-
-  <xsd:simpleType name="positiveInt">
-    <xsd:restriction base="xsd:int">
-      <xsd:minInclusive value="0" />
-    </xsd:restriction>
-  </xsd:simpleType>
-
-  <!-- FORECAST -->
-  <xsd:complexType name="demand_forecast">
-    <xsd:complexContent>
-      <xsd:extension base="demand">
-        <xsd:choice minOccurs="0" maxOccurs="unbounded">
-          <xsd:element name="calendar" type="calendar" />
-          <xsd:element name="horizon_future" type="positiveInt" />
-          <xsd:element name="horizon_history" type="positiveInt" />
-          <xsd:element name="discrete" type="xsd:boolean" />
-          <xsd:element name="planned" type="xsd:boolean" />
-          <xsd:element name="methods" type="xsd:string" />
-          <xsd:element name="buckets" type="demand_forecastbucketlist" />
-        </xsd:choice>
-        <xsd:attribute name="discrete" type="xsd:boolean" />
-        <xsd:attribute name="planned" type="xsd:boolean" />
-        <xsd:attribute name="methods" type="xsd:unsignedLong" />
-      </xsd:extension>
-    </xsd:complexContent>
-  </xsd:complexType>
-
-  <xsd:complexType name="demand_forecastbucket">
-    <xsd:choice minOccurs="0" maxOccurs="unbounded">
-      <xsd:element name="name" type="xsd:normalizedString" minOccurs="0" />
-      <xsd:element name="forecasttotal" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecasttotalvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastconsumed" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastconsumedvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastbaseline" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastbaselinevalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastoverride" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastoverridevalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastplanned" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="forecastplannedvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersopen" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersopenvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="orderstotal" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="orderstotalvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersadjustment" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersadjustmentvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersplanned" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="ordersplannedvalue" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="quantity" type="positiveDouble" minOccurs="0" />
-      <xsd:element name="start" type="xsd:dateTime" minOccurs="0"/>
-      <xsd:element name="end" type="xsd:dateTime" minOccurs="0"/>
-    </xsd:choice>
-    <xsd:attribute name="name" type="xsd:normalizedString" />
-    <xsd:attribute name="forecasttotal" type="positiveDouble" />
-    <xsd:attribute name="forecasttotalvalue" type="positiveDouble" />
-    <xsd:attribute name="forecastconsumed" type="positiveDouble" />
-    <xsd:attribute name="forecastconsumedvalue" type="positiveDouble" />
-    <xsd:attribute name="forecastbaseline" type="positiveDouble" />
-    <xsd:attribute name="forecastbaselinevalue" type="positiveDouble" />
-    <xsd:attribute name="forecastoverride" type="positiveDouble" />
-    <xsd:attribute name="forecastoverridevalue" type="positiveDouble" />
-    <xsd:attribute name="ordersopen" type="positiveDouble" />
-    <xsd:attribute name="ordersopenvalue" type="positiveDouble" />
-    <xsd:attribute name="orderstotal" type="positiveDouble" />
-    <xsd:attribute name="orderstotalvalue" type="positiveDouble" />
-    <xsd:attribute name="ordersadjustment" type="positiveDouble" />
-    <xsd:attribute name="ordersadjustmentvalue" type="positiveDouble" />
-    <xsd:attribute name="quantity" type="positiveDouble" />
-    <xsd:attribute name="consumed" type="positiveDouble" />
-    <xsd:attribute name="start" type="xsd:dateTime" />
-    <xsd:attribute name="end" type="xsd:dateTime" />
-  </xsd:complexType>
-
-  <xsd:complexType name="demand_forecastbucketlist">
-    <xsd:choice minOccurs="0" maxOccurs="unbounded">
-      <xsd:element name="bucket" type="demand_forecastbucket" />
-    </xsd:choice>
-  </xsd:complexType>
-
-  <!-- EXTRA DEFINITIONS IN THE ENTERPRISE EDITION END HERE -->
-
   <!-- Define the root element and its contents. -->
   <xsd:element name="plan">
     <xsd:annotation>
@@ -1232,9 +1121,9 @@
         <xsd:element name="source" type="xsd:normalizedString" />
         <xsd:element name="current" type="xsd:dateTime" />
         <xsd:element name="logfile" type="xsd:normalizedString" />
-        <xsd:element name="plannable" type="xsd:boolean" />
         <xsd:element name="detectproblems" type="xsd:boolean" />
         <xsd:element name="calendar" type="calendar" />
+        <xsd:element name="individualPoolResources" type="xsd:boolean" />
         <!-- OBJECT LISTS -->
         <xsd:element name="locations" type="locationlist" />
         <xsd:element name="customers" type="customerlist" />
@@ -1259,8 +1148,8 @@
       <xsd:attribute name="source" type="xsd:normalizedString" />
       <xsd:attribute name="current" type="xsd:dateTime" />
       <xsd:attribute name="logfile" type="xsd:normalizedString" />
-      <xsd:attribute name="plannable" type="xsd:boolean" />
       <xsd:attribute name="detectproblems" type="xsd:boolean" />
+      <xsd:attribute name="individualPoolResources" type="xsd:boolean" />
     </xsd:complexType>
   </xsd:element>
 
@@ -1268,7 +1157,6 @@
     Frepple also recognizes the following XML processing instructions.
     Note that these instructions are never validated or checked by the parser.
     They are only processed inside frepple.
-
       <?python xxxx ?>
       Include Python code in your model.
   -->
