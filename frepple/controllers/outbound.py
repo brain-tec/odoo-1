@@ -564,14 +564,15 @@ class exporter(object):
         # UOM used as the reference for the category of the UOM set on the product's template,
         # and then the product's ID. ò_Ó
         ref_uom_for_uom_category_id = self.uom_categories[self.uom[product.product_tmpl_id.uom_id.id]['category']]
-        weight = product._get_weight()
-        xml_str = [
-            '<item name={} cost="{:0.6f}" subcategory="{},{}" description="product" weight="{:0.6f}">'.format(
-                quoteattr(product.name), product.list_price, ref_uom_for_uom_category_id, product.id, weight)]
+        xml_str = ['<item name={} cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+            quoteattr(product.name), product.list_price, ref_uom_for_uom_category_id, product.id)]
 
         warehouse_domain = []
         if 'test_prefix' in ctx:
             warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
+
+        weight = product._get_weight()
+        xml_str.append('<weight>%f</weight>' % weight)
 
         # in the export of product master data the supplierinfo is also exported. to make sure frepple has all
         # the right routes to source the products, we were exporting each supplierinfo once for each warehouse.
