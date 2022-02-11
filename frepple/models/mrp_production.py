@@ -9,6 +9,7 @@ import os
 import logging
 from odoo import models, api, fields
 from odoo.tests import Form
+from odoo.addons.frepple.misc.helper_datetime import get_utc_date
 
 _logger = logging.getLogger(__name__)
 
@@ -84,8 +85,9 @@ class ManufacturingOrder(models.Model):
                 ('product_uom_id', uom),
                 ('product_qty', elem.get('quantity')),
                 ('frepple_reference', elem_reference),
-                ('date_planned_start', elem.get("start").replace('T', ' ')),
-                ('date_planned_finished', elem.get("end").replace('T', ' ')),
+                ('date_planned_start', get_utc_date(elem.get('start'), self.env.user.company_id.tz_for_exporting)),
+                ('date_planned_finished',
+                 get_utc_date(elem.get('end'), self.env.user.company_id.tz_for_exporting)),
                 ('origin', "frePPLe"),
             ]
 

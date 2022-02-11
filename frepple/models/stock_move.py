@@ -9,6 +9,7 @@ import os
 import logging
 from odoo import models, api, fields
 from odoo.tests import Form
+from odoo.addons.frepple.misc.helper_datetime import get_utc_date
 
 _logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class StockMove(models.Model):
         UomUom = self.env['uom.uom']
 
         elem_reference = elem.get('reference')
-        elem_date = (elem.get('start')).replace('T', ' ')
+        elem_date = get_utc_date(elem.get('start'), self.env.user.company_id.tz_for_exporting)
         uom_id, item_id = elem.get("item_id").split(",")
 
         # If we find at least one error, we inform and skip the element update/creation.

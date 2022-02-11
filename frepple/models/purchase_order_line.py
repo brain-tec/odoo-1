@@ -9,6 +9,7 @@ import os
 import logging
 from odoo import models, api, fields
 from odoo.tests import Form
+from odoo.addons.frepple.misc.helper_datetime import get_utc_date
 
 _logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class PurchaseOrderLine(models.Model):
     frepple_reference = fields.Char('Reference (frePPLe)', copy=False)
 
     def _get_po_line_update_values(self, po_line, elem, uom):
-        received_date = elem.get('start').replace('T', ' ')
+        received_date = get_utc_date(elem.get('end'), self.env.user.company_id.tz_for_exporting)
         date_planned = po_line.date_planned
         if date_planned:
             date_planned = min(date_planned, fields.Datetime.from_string(received_date))
@@ -37,11 +38,13 @@ class PurchaseOrderLine(models.Model):
     def _get_po_line_values(self, elem, product, uom):
 
         # name and price are automatically set by onchange of product_id
+        date_planned = get_utc_date(elem.get('end'), self.env.user.company_id.tz_for_exporting)
+
         return [
             ["product_id", product],
             ["product_qty", elem.get("quantity")],
             ["product_uom", uom],
-            ["date_planned", (elem.get('start')).replace('T', ' ')],
+            ["date_planned", date_planned],
             ["frepple_reference", elem.get('id')]
         ]
 
@@ -73,7 +76,7 @@ class PurchaseOrderLine(models.Model):
         self.price_unit = price_unit
 
     @api.model
-    def _create_or_update_from_frepple_po_line(self, elem, company, imported_pos):
+    def _create_or_update_from_frepple_po_line(self, elem, company, imported_pos, po_dates):
         """ Receives an XML subtree from an input file from frePPLe,
             in particular an <operationplan>, and creates a purchase.order.line
             for it inside a PO. A PO is created/selected for each supplier gathering all their PO lines
@@ -167,6 +170,20 @@ class PurchaseOrderLine(models.Model):
             po_line = po.order_line.filtered(lambda x: elem.get('id') in x.frepple_reference)
             po_line._change_price_according_to_date_planned()
 
-            # The PO order date will be the earliest planned date of the po lines
-            if po.date_order > po_line.date_planned:
-                po.date_order = po_line.date_planned
+            # The PO receipt date will be the earliest planned date of the po lines
+            # The PO order date will be the earliest start date of the po lines
+            # Updating the dictionary that will be used in the run method to update the dates in the PO
+            # Otherwise updating the lines from the PO line was causing issues
+            # as the date_planned as soon as it's assigned to the PO makes the PO line date_planned readonly
+            # and the date_order cannot be stored in the PO line, as there it's readonly and related to the one
+            # from the PO
+            date_order = get_utc_date(elem.get('start'), self.env.user.company_id.tz_for_exporting)
+            if po.id not in po_dates:
+                po_dates[po.id] = {'date_planned': po_line.date_planned,
+                                   'date_order': date_order
+                                   }
+            else:
+                if po_dates[po.id]['date_planned'] > po_line.date_planned:
+                    po_dates[po.id].update({'date_planned': po_line.date_planned})
+                if po_dates[po.id]['date_order'] > date_order:
+                    po_dates[po.id].update({'date_order': date_order})
