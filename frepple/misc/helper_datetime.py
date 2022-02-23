@@ -15,4 +15,4 @@ def get_utc_date(date_str, tz_for_exporting):
     return fields.Datetime.to_string(pytz.timezone(tz_for_exporting).localize(received_date).astimezone(utc))
 
 def get_precision_digits(rounding):
-    return str(rounding).split('.')[1].index('1') + 1
+    return len(str(int(1**1/rounding)))-1
