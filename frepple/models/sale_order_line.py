@@ -7,6 +7,8 @@
 
 from odoo import fields, models, api, _
 from odoo.addons.frepple.misc.tree import Node
+from odoo.addons.frepple.misc.helper_datetime import get_precision_digits
+from odoo.tools import float_repr
 from collections import deque
 import ast
 import logging
@@ -112,16 +114,19 @@ class SaleOrderLine(models.Model):
 
             uom = self.env['uom.uom'].browse(so_line_data['product_uom'][0])
             try:
-                qty = uom._compute_quantity(product_uom_qty, product.uom_id, raise_if_failure=True)
+                qty = uom._compute_quantity(product_uom_qty, product.uom_id, raise_if_failure=True,
+                                            rounding_method="HALF-UP")
             except Exception:
                 qty = 0
                 _logger.warning(_("Can't convert from {} for product {} (ID={})").format(
                     uom.name, product.name, product.id))
 
+            precision_digits = get_precision_digits(product.uom_id.rounding)
+
             demand_node = Node(
                 'demand', odoo_record=so_line, attrs={
                     'name': name,
-                    'quantity': str(qty),
+                    'quantity': float_repr(qty, precision_digits),
                     'due': fields.Datetime.context_timestamp(sale_order, due).strftime('%Y-%m-%dT%H:%M:%S'),
                     'minshipment': sale_order.picking_policy == 'one' and qty or '1.0',
                     'status': frepple_status,

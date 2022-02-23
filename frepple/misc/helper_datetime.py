@@ -13,3 +13,6 @@ def get_utc_date(date_str, tz_for_exporting):
     """ Helper function to return the UTC string for a received date in the timezone specified for frepple """
     received_date = fields.Datetime.to_datetime(date_str.replace('T', ' '))
     return fields.Datetime.to_string(pytz.timezone(tz_for_exporting).localize(received_date).astimezone(utc))
+
+def get_precision_digits(rounding):
+    return str(rounding).split('.')[1].index('1') + 1
