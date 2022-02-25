@@ -190,16 +190,18 @@ class exporter(object):
                 "name": i["name"],
             }
 
-    def convert_qty_uom(self, qty, uom_id, product_id=None):
+    def convert_qty_uom(self, qty, uom_id, product_template_id=None, product_id=None):
         """
         Convert a quantity to the reference uom of the product.
         """
         if not uom_id:
             return qty
-        if not product_id:
+        if not (product_id or product_template_id):
             return qty * self.uom[uom_id]["factor"]
         else:
-            product = self.env['product.product'].browse(product_id)
+            product = self.env['product.template'].browse(product_template_id)
+            if product_id:
+                product = self.env['product.product'].browse(product_id)
             uom = self.env['uom.uom'].browse(uom_id)
 
             # I use the normal Odoo's conversion.
@@ -821,7 +823,7 @@ class exporter(object):
                             self.convert_qty_uom(
                                 j["product_qty"],
                                 j["product_uom"][0],
-                                j["product_id"][0],
+                                product_id=j["product_id"][0],
                             ),
                             quoteattr(product["name"]),
                         )
@@ -1120,8 +1122,8 @@ class exporter(object):
                     move_lines = sml.browse(i["finished_move_line_ids"])
                     product_uom_qty = 0
                     for ml in move_lines:
-                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id, ml.product_id.id)
-                                     / factor)
+                        product_uom_qty += (self.convert_qty_uom(
+                            ml.product_uom_qty, ml.product_uom_id.id, product_id=ml.product_id.id) / factor)
                     qty -= product_uom_qty
                     # in case qty <= 0 we should not output that MO at all
                     if qty <= 0:
