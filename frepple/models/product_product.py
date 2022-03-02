@@ -29,4 +29,5 @@ class ProductProduct(models.Model):
         return res
 
     def _get_weight(self):
+        self.ensure_one()
         return self.weight
