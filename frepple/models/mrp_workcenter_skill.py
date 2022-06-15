@@ -15,18 +15,12 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import logging
-import time
-
-from odoo import api, models, fields, exceptions
-
-_logger = logging.getLogger(__name__)
-
+from odoo import models, fields
 
 
 class WorkcenterSkill(models.Model):
     _name = "mrp.workcenter.skill"
-    _description="List of workcenter skill associations"
+    _description = "List of workcenter skill associations"
 
     workcenter = fields.Many2one("mrp.workcenter", "Work Center", required=True)
     skill = fields.Many2one("mrp.skill", "Skill", required=True)

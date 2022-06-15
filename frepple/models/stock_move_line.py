@@ -1,11 +1,7 @@
-import os
-import logging
-from odoo import models, api, fields
-
-_logger = logging.getLogger(__name__)
+from odoo import models, fields
 
 
 class StockMoveLine(models.Model):
-    _inherit = 'stock.move.line'
+    _inherit = "stock.move.line"
 
-    frepple_reference = fields.Char('Reference (frePPLe)')
+    frepple_reference = fields.Char("Reference (frePPLe)")
