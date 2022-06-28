@@ -328,7 +328,10 @@ class exporter(object):
         """
         Convert a quantity to the reference uom of the product template.
         """
-
+        try:
+            uom_id = uom_id[0]
+        except Exception as e:
+            pass
         if not uom_id:
             return qty
         if not product_template_id:
@@ -772,7 +775,7 @@ class exporter(object):
                 i["volume"] or 0,
                 i["weight"] or 0,
                 max(0, tmpl["list_price"] or 0)
-                / self.convert_qty_uom(1.0, tmpl["uom_id"][0], i["product_tmpl_id"][0]),
+                / self.convert_qty_uom(1.0, tmpl["uom_id"], i["product_tmpl_id"][0]),
                 quoteattr(
                     "%s%s"
                     % (
@@ -783,7 +786,7 @@ class exporter(object):
                     )
                 )
                 if tmpl["categ_id"]
-                else "",
+                else '""',
                 self.uom_categories[self.uom[tmpl["uom_id"][0]]["category"]],
                 i["id"],
             )
@@ -923,7 +926,7 @@ class exporter(object):
                 logger.warning("Skipping %s" % i["product_tmpl_id"][0])
                 continue
             uom_factor = self.convert_qty_uom(
-                1.0, i["product_uom_id"][0], i["product_tmpl_id"][0]
+                1.0, i["product_uom_id"], i["product_tmpl_id"][0]
             )
 
             # Loop over all subcontractors
@@ -938,13 +941,13 @@ class exporter(object):
             for subcontractor in subcontractors:
                 # Build operation. The operation can either be a summary operation or a detailed
                 # routing.
-                operation = u"%s @ %s %d" % (
+                operation = "%s @ %s %d" % (
                     product_buf["name"],
                     subcontractor.get("name", location),
                     i["id"],
                 )
                 if len(operation) > 300:
-                    suffix = u" @ %s %d" % (
+                    suffix = " @ %s %d" % (
                         subcontractor.get("name", location),
                         i["id"],
                     )
@@ -992,7 +995,7 @@ class exporter(object):
 
                     convertedQty = self.convert_qty_uom(
                         i["product_qty"],
-                        i["product_uom_id"][0],
+                        i["product_uom_id"],
                         i["product_tmpl_id"][0],
                     )
                     yield '<flows>\n<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
@@ -1030,7 +1033,7 @@ class exporter(object):
                         qty = sum(
                             self.convert_qty_uom(
                                 k["product_qty"],
-                                k["product_uom_id"][0],
+                                k["product_uom_id"],
                                 self.product_product[k["product_id"][0]]["template"],
                             )
                             for k in fl[j]
@@ -1062,7 +1065,7 @@ class exporter(object):
                                 else "flow_end",
                                 self.convert_qty_uom(
                                     j["product_qty"],
-                                    j["product_uom"][0],
+                                    j["product_uom"],
                                     j["product_id"][0],
                                 ),
                                 quoteattr(product["name"]),
@@ -1121,7 +1124,7 @@ class exporter(object):
                             continue
                         qty = self.convert_qty_uom(
                             j["product_qty"],
-                            j["product_uom_id"][0],
+                            j["product_uom_id"],
                             self.product_product[j["product_id"][0]]["template"],
                         )
                         if j["product_id"][0] in fl:
@@ -1269,7 +1272,7 @@ class exporter(object):
         yield "<demands>\n"
 
         for i in so_line:
-            name = u"%s %d" % (i["order_id"][1], i["id"])
+            name = "%s %d" % (i["order_id"][1], i["id"])
             batch = i["order_id"][1]
             product = self.product_product.get(i["product_id"][0], None)
             j = so[i["order_id"][0]]
@@ -1303,7 +1306,7 @@ class exporter(object):
                 status = "quote"  # Quotes do reserve capacity and materials
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"][0],
+                    i["product_uom"],
                     self.product_product[i["product_id"][0]]["template"],
                 )
             elif state == "sale":
@@ -1312,28 +1315,28 @@ class exporter(object):
                     status = "closed"
                     qty = self.convert_qty_uom(
                         i["product_uom_qty"],
-                        i["product_uom"][0],
+                        i["product_uom"],
                         self.product_product[i["product_id"][0]]["template"],
                     )
                 else:
                     status = "open"
                     qty = self.convert_qty_uom(
                         qty,
-                        i["product_uom"][0],
+                        i["product_uom"],
                         self.product_product[i["product_id"][0]]["template"],
                     )
             elif state in "done":
                 status = "closed"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"][0],
+                    i["product_uom"],
                     self.product_product[i["product_id"][0]]["template"],
                 )
             elif state == "cancel":
                 status = "canceled"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"][0],
+                    i["product_uom"],
                     self.product_product[i["product_id"][0]]["template"],
                 )
             else:
@@ -1464,7 +1467,7 @@ class exporter(object):
                 end = self.formatDateTime(i["date_planned"])
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
-                    i["product_uom"][0],
+                    i["product_uom"],
                     self.product_product[i["product_id"][0]]["template"],
                 )
                 yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
@@ -1519,7 +1522,7 @@ class exporter(object):
                 )
                 if not item or not location:
                     continue
-                operation = u"%s @ %s %d" % (
+                operation = "%s @ %s %d" % (
                     item["name"],
                     location,
                     i["bom_id"][0],
@@ -1540,7 +1543,7 @@ class exporter(object):
                 qty = (
                     self.convert_qty_uom(
                         i["product_qty"],
-                        i["product_uom_id"][0],
+                        i["product_uom_id"],
                         self.product_product[i["product_id"][0]]["template"],
                     )
                     / factor
@@ -1591,10 +1594,10 @@ class exporter(object):
                 continue
             uom_factor = self.convert_qty_uom(
                 1.0,
-                i["product_uom"][0],
+                i["product_uom"],
                 self.product_product[i["product_id"][0]]["template"],
             )
-            name = u"%s @ %s" % (item["name"], i["warehouse_id"][1])
+            name = "%s @ %s" % (item["name"], i["warehouse_id"][1])
             yield "<buffer name=%s><item name=%s/><location name=%s/>\n" '%s%s%s<booleanproperty name="ip_flag" value="true"/>\n' '<stringproperty name="roq_type" value="quantity"/>\n<stringproperty name="ss_type" value="quantity"/>\n' "</buffer>\n" % (
                 quoteattr(name),
                 quoteattr(item["name"]),
