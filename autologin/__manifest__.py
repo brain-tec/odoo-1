@@ -14,11 +14,12 @@ that needs open public access. Don't even think of deploying this
 module on an actual production environment.
         """,
     "author": "frePPLe",
+    "license": "AGPL-3",
     "category": "Uncategorized",
-    "version": "12.0.1",
+    "version": "15.0.1",
     "depends": ["base", "web"],
     "data": [],
     "demo": [],
-    "autoinstall": True,
+    "autoinstall": False,
     "installable": True,
 }
