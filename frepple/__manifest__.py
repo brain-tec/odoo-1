@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "frepple",
-    "version": "6.7.0",
+    "version": "15.0.0",
     "category": "Manufacturing",
     "summary": "Advanced planning and scheduling",
     "author": "frePPLe",
@@ -26,7 +26,7 @@
     "auto_install": False,
     "assets": {
         "web.assets_backend": [
-            "static/src/js/frepple.js",
+            "frepple/static/src/js/frepple.js",
         ],
     },
 }
