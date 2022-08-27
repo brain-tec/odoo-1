@@ -509,7 +509,11 @@ class exporter(object):
         offset = 0
         pagesize = 1000
         while True:
-            recs = m.search([("type", "!=", "service")], limit=pagesize, offset=offset)
+            recs = m.search(
+                [("type", "not in", ("service", "consu"))],
+                limit=pagesize,
+                offset=offset,
+            )
             if not recs:
                 break
             for i in recs.read(fields):
@@ -569,7 +573,9 @@ class exporter(object):
             for i in recs.read(fields):
                 yielded_header = False
                 try:
-                    tmpl = self.product_templates[i["product_tmpl_id"][0]]
+                    tmpl = self.product_templates.get(i["product_tmpl_id"][0], None)
+                    if not tmpl:
+                        continue
                     if i["code"]:
                         name = u"[%s] %s" % (i["code"], i["name"])
                     else:
@@ -712,6 +718,7 @@ class exporter(object):
             "type",
             "bom_line_ids",
             "sub_products",
+            "sequence",
         ]
         for i in bom_recs.read(bom_fields):
             # Determine the location
@@ -750,8 +757,9 @@ class exporter(object):
                 # CASE 1: A single operation used for the BOM
                 # All routing steps are collapsed in a single operation.
                 #
-                yield '<operation name=%s size_multiple="1" duration="%s" posttime="P%dD" xsi:type="operation_fixed_time">\n' "<item name=%s/><location name=%s/>\n" % (
+                yield '<operation name=%s priority="%s" size_multiple="1" duration="%s" posttime="P%dD" xsi:type="operation_fixed_time">\n' "<item name=%s/><location name=%s/>\n" % (
                     quoteattr(operation),
+                    i["sequence"] + 1,
                     self.convert_float_time(
                         self.product_templates[i["product_tmpl_id"][0]]["produce_delay"]
                     ),
@@ -833,8 +841,9 @@ class exporter(object):
                 # CASE 2: A routing operation is created with a suboperation for each
                 # routing step.
                 #
-                yield '<operation name=%s size_multiple="1" posttime="P%dD" xsi:type="operation_routing">' "<item name=%s/><location name=%s/>\n" % (
+                yield '<operation name=%s priority="%s" size_multiple="1" posttime="P%dD" xsi:type="operation_routing">' "<item name=%s/><location name=%s/>\n" % (
                     quoteattr(operation),
+                    i["sequence"] + 1,
                     self.manufacturing_lead,
                     quoteattr(product_buf["name"]),
                     quoteattr(location),
