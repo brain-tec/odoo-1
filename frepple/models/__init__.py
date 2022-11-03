@@ -1,3 +1,5 @@
+from .. import with_mrp
+
 from . import res_company
 from . import res_config_settings
 from . import res_partner
@@ -5,9 +7,14 @@ from . import sale_order_line
 from . import product_product
 from . import stock_location
 from . import stock_move
-from . import mrp_skill
-from . import mrp_workcenter_inherit
-from . import mrp_routing_workcenter_inherit
-from . import mrp_workcenter_skill
-from . import mrp_production
+from . import stock_move_line
 from . import purchase_order_line
+from . import product_supplierinfo_inherit
+
+
+if with_mrp:
+    from . import mrp_production
+    from . import mrp_skill
+    from . import mrp_workcenter_inherit
+    from . import mrp_routing_workcenter_inherit
+    from . import mrp_workcenter_skill

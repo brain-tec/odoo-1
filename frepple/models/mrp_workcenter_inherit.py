@@ -15,15 +15,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import logging
-import time
+from odoo import models, fields
 
-from odoo import api, models, fields, exceptions
 
-_logger = logging.getLogger(__name__)
-
-    
 class WorkcenterInherit(models.Model):
     _inherit = "mrp.workcenter"
-    
+
     owner = fields.Many2one("mrp.workcenter", "Owner", required=False)

@@ -7,7 +7,7 @@
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
-from odoo.addons.frepple.controllers.outbound import exporter
+from odoo.addons.frepple.controllers.outbound import exporter, Odoo_generator, XMLRPC_generator
 from odoo.addons.frepple.controllers.inbound import importer
 from odoo import SUPERUSER_ID
 
@@ -17,12 +17,14 @@ class TestBase(TransactionCase):
 
     def setUp(self):
         super(TestBase, self).setUp()
-        self.exporter = exporter(req=self, uid=SUPERUSER_ID)
+        self.httprequest = lambda: None  # See https://stackoverflow.com/a/2827734
+        self.httprequest.files = {'frePPLe plan': False}
+        self.httprequest.form = {'actual_user': self.env.user}
+
+        self.exporter = exporter(Odoo_generator(self.env), req=self, uid=SUPERUSER_ID)
         self.company = self.env["res.company"].search([], limit=1)
         self.exporter.company = self.company.name
 
-        self.httprequest = lambda: None  # See https://stackoverflow.com/a/2827734
-        self.httprequest.files = {'frePPLe plan': False}
         self.importer = importer(req=self)
 
         # We include just the values that we need here in exporter.uom (the info for the kilos).
@@ -41,7 +43,7 @@ class TestBase(TransactionCase):
 
     def _set_export_language(self, lang_code):
         """Set the language of the export"""
-        self.env['res.lang'].load_lang(lang_code)
+        self.env['res.lang']._activate_lang(lang_code)
         self.assertIn(lang_code, [lang[0] for lang in self.env['res.lang'].get_available()])
         lang = self.env['res.lang']._lang_get(lang_code)
         self.company.write({'frepple_export_language': lang})

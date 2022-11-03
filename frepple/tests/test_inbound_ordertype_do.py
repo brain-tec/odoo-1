@@ -104,9 +104,9 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(move.picking_id, picking)
         # There was no picking nor move. The new picking has just one move, so its scheduled date
         # matches the expected date of the new move created
-        self.assertEqual(picking.scheduled_date, move.date_expected)
-        # New move stores as date_expected the right value
-        self.assertEqual(fields.Datetime.to_string(move.date_expected), datetime_str_odoo)
+        self.assertEqual(picking.scheduled_date, move.date)
+        # New move stores as date the right value
+        self.assertEqual(fields.Datetime.to_string(move.date), datetime_str_odoo)
 
     def _do_existing_picking_new_move_importer(self, existing_ref, ref, qty, importer_mode, datetime_str_xml):
         stock_move = self.env['stock.move']
@@ -174,9 +174,9 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(new_move.picking_id, existing_picking)
         # Date of the picking is the minimum of the two moves. As we are creating the new one 15 min later,
         # that has to match the time of the existing move
-        self.assertEqual(existing_picking.scheduled_date, existing_move.date_expected)
-        # New move stores as date_expected the right value (15 min later than the existing move)
-        self.assertEqual(fields.Datetime.to_string(new_move.date_expected), datetime_str_odoo)
+        self.assertEqual(existing_picking.scheduled_date, existing_move.date)
+        # New move stores as date the right value (15 min later than the existing move)
+        self.assertEqual(fields.Datetime.to_string(new_move.date), datetime_str_odoo)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_ordertype_do_existing_picking_new_move_importer_mode_1(self):
@@ -217,6 +217,6 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(new_move.picking_id, frepple_pickings)
         # As existing picking and move were deleted, the new picking has just one move, so its scheduled date
         # matches the expected date of the new move created
-        self.assertEqual(frepple_pickings.scheduled_date, new_move.date_expected)
-        # New move stores as date_expected the right value (15 min later than the existing move)
-        self.assertEqual(fields.Datetime.to_string(new_move.date_expected), datetime_str_odoo)
+        self.assertEqual(frepple_pickings.scheduled_date, new_move.date)
+        # New move stores as date the right value (15 min later than the existing move)
+        self.assertEqual(fields.Datetime.to_string(new_move.date), datetime_str_odoo)

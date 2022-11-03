@@ -6,6 +6,7 @@
 ##############################################################################
 
 from unittest import skipIf
+from odoo.tools import frozendict
 from odoo.addons.frepple.tests.test_base import TestBase
 
 UNDER_DEVELOPMENT = False
@@ -108,7 +109,9 @@ class TestOutboundItems(TestBase):
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_translated(self):
         """ Tests a product with the name translated"""
+        original_ctx = self.env.context
         self._set_export_language('es_ES')
+        # self.env['res.lang']._activate_lang('es_ES')
 
         category_a = self._create_category('TC_Category_A')
         product_1 = self._create_product('TC_Product_1', category=category_a, price=5)
@@ -127,25 +130,29 @@ class TestOutboundItems(TestBase):
         # in the tests. It is normally called when the endpoint /frepple is reached
         # but here we have to do it explicitly because we are calling the
         # particular export methods explicitly. It is needed to load the translations.
-        self.exporter.load_company()
-        xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
-        xml_str_expected = '\n'.join([
-            '<!-- products -->',
-            '<items>',
-            '<item name="{}" category="{}" description="category">'.format(
-                category_a.name, category_a.id),
-            '<members>',
-            '<item name="TC_Product_1 ES" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_1.list_price, self.kgm_uom.id, product_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
-            '<stringproperty name="itemstatus" value="active"/>',
-            '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
-            '</item>',
-            '</members>',
-            '</item>',
-            '</items>',
-        ])
-        self.assertEqual(xml_str_actual, xml_str_expected)
+        try:
+            self.exporter.load_company()
+            xml_str_actual = self.exporter.export_items(ctx={'test_export_items': True, 'test_prefix': 'TC_'})
+            xml_str_expected = '\n'.join([
+                '<!-- products -->',
+                '<items>',
+                '<item name="{}" category="{}" description="category">'.format(
+                    category_a.name, category_a.id),
+                '<members>',
+                '<item name="TC_Product_1 ES" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
+                    product_1.list_price, self.kgm_uom.id, product_1.id),
+                '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
+                '<stringproperty name="itemstatus" value="active"/>',
+                '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
+                '</item>',
+                '</members>',
+                '</item>',
+                '</items>',
+            ])
+            self.assertEqual(xml_str_actual, xml_str_expected)
+        finally:
+            # Reset the exporting language back to en_US (es_ES is no longer loaded)
+            self.env.context = frozendict(original_ctx)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_with_subcategory_one_level(self):

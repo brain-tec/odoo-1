@@ -18,9 +18,12 @@
 from odoo import models, fields
 
 
-class Skill(models.Model):
-    _name = "mrp.skill"
-    _description = "List of skills that workcenters can have"
+class Product_SupplierInfo_Inherit(models.Model):
+    _inherit = "product.supplierinfo"
 
-    name = fields.Char("name", required=True)
-    description = fields.Char("description", required=False)
+    batching_window = fields.Integer(
+        "Batching window",
+        default=7,
+        help="Number of days to group proposed purchase into a single one.",
+        required=False,
+    )

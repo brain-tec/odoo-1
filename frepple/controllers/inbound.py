@@ -38,7 +38,19 @@ class importer(object):
         #  - Mode 2:
         #    Incremental export of some proposed transactions from frePPLe.
         #    In this mode mode we are not erasing any previous proposals.
-        self.mode = mode
+        self.mode = int(mode)
+
+        # User to be set as responsible on new objects in incremental exports
+        self.actual_user = req.httprequest.form.get("actual_user", None)
+        if self.mode == 2 and self.actual_user:
+            try:
+                self.actual_user = self.env["res.users"].search(
+                    [("login", "=", self.actual_user)]
+                )[0]
+            except Exception:
+                self.actual_user = None
+        else:
+            self.actual_user = None
 
         # Dictionary that stores as key the supplier id and as value the associated PO id.
         # This dict is used to aggregate the exported PO lines for a same supplier inside a same PO
@@ -112,6 +124,9 @@ class importer(object):
         count_po_line = 0
         count_move = 0
         count_mo = 0
+
+        # Mapping between frepple-generated MO reference and their odoo id.
+        mo_references = {}
 
         for event, elem in iterparse(self.datafile, events=("start", "end")):
             if event == "end" and elem.tag == "operationplan":

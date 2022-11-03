@@ -102,7 +102,7 @@ class StockMove(models.Model):
                 ['product_id', product],
                 ['product_uom', uom],
                 ['product_uom_qty', elem.get('quantity')],
-                ['date_expected', elem_date],
+                ['date', elem_date],
                 ['frepple_reference', elem_reference],
                 ['location_id', from_location],     # Should be automatically set by picking type
                 ['location_dest_id', to_location],  # Should be automatically set by picking type

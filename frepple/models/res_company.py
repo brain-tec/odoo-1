@@ -21,6 +21,7 @@ import time
 
 from odoo import api, models, fields, exceptions
 from odoo.addons.base.models.res_partner import _tz_get
+from .. import with_mrp
 
 _logger = logging.getLogger(__name__)
 
@@ -36,28 +37,38 @@ class ResCompany(models.Model):
     _name = "res.company"
     _inherit = "res.company"
 
-    @api.model
-    def _get_default_frepple_bom_dummy_route_id(self):
-        return self.env.ref('frepple.dummy_mrp_routing_frepple', raise_if_not_found=False)
+    # @api.model
+    # def _get_default_frepple_bom_dummy_route_id(self):
+    #     return self.env.ref('frepple.dummy_mrp_routing_frepple', raise_if_not_found=False)
 
     def _frepple_export_language(self):
         return self.env['res.lang'].search([], limit=1)
 
-    manufacturing_warehouse = fields.Many2one(
-        "stock.warehouse", "Manufacturing warehouse", ondelete="set null"
-    )
     calendar = fields.Many2one("resource.calendar", "Calendar", ondelete="set null")
+    if with_mrp:
+        manufacturing_warehouse = fields.Many2one(
+            "stock.warehouse", "Manufacturing warehouse", ondelete="set null"
+        )
+        calendar = fields.Many2one("resource.calendar", "Calendar", ondelete="set null")
     webtoken_key = fields.Char("Webtoken key", size=128)
     frepple_server = fields.Char("frePPLe web server", size=128)
+    disclose_stack_trace = fields.Boolean(
+        default=False,
+        help="Send stack trace to your frepple server upon connector exceptions.",
+    )
+    respect_reservations = fields.Boolean(
+        default=True,
+        help="When checked frepple respects the reservations. When unchecked frepple can reallocate material.",
+    )
     sol_domain = fields.Text(
         default="[('order_id.warehouse_id', '!=', False),"
                 "('order_id.partner_id', '!=', False),"
                 "('product_id', '!=', False)]",
         string="Sale Order Line Domain")
-    frepple_bom_dummy_route_id = fields.Many2one(
-        "mrp.routing", string='Dummy Route for BoM', required=True,
-        default=_get_default_frepple_bom_dummy_route_id,
-        help="See the configuration flag for frePPLe.")
+    # frepple_bom_dummy_route_id = fields.Many2one(
+    #     "mrp.routing", string='Dummy Route for BoM', required=True,
+    #     default=_get_default_frepple_bom_dummy_route_id,
+    #     help="See the configuration flag for frePPLe.")
     internal_moves_domain = fields.Text(
         "Internal Moves Domain", default="[]")
     stock_rules_domain = fields.Text(
@@ -82,9 +93,9 @@ class ResCompany(models.Model):
         encode_params = dict(
             exp=round(time.time()) + 600, user=self.env.user.login, navbar=navbar
         )
-        webtoken = jwt.encode(
-            encode_params, user_company_webtoken, algorithm="HS256"
-        )
+        webtoken = jwt.encode(encode_params, user_company_webtoken, algorithm="HS256")
+        if not isinstance(webtoken, str):
+            webtoken = webtoken.decode("ascii")
         server = self.env.user.company_id.frepple_server
         if not server:
             raise exceptions.UserError("FrePPLe server URL not configured")

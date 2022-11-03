@@ -8,6 +8,7 @@
 import re
 import odoo
 from unittest import skipIf
+from odoo.tools import frozendict
 from odoo.addons.frepple.tests.test_base import TestBase
 from odoo import fields
 
@@ -57,6 +58,7 @@ class TestOutboundItems(TestBase):
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_saleorder_translated(self):
         """Test the generation of a <demand> with the product translated"""
+        original_ctx = self.env.context
         self._set_export_language('es_ES')
         self.env['ir.translation'].create({
             'lang': 'es_ES',
@@ -72,11 +74,15 @@ class TestOutboundItems(TestBase):
         # in the tests. It is normally called when the endpoint /frepple is reached
         # but here we have to do it explicitly because we are calling the
         # particular export methods explicitly. It is needed to load the translations.
-        self.exporter.load_company()
-        self._create_quotation(self.customer, product=self.product, qty=1)
-        xml_str_actual = self.exporter.export_salesorders(ctx={'test_prefix': 'TC_'})
-        self.assertNotIn('<item name="TC_Product_1"/>', xml_str_actual)
-        self.assertIn('<item name="TC_Product_1 ES"/>', xml_str_actual)
+        try:
+            self.exporter.load_company()
+            self._create_quotation(self.customer, product=self.product, qty=1)
+            xml_str_actual = self.exporter.export_salesorders(ctx={'test_prefix': 'TC_'})
+            self.assertNotIn('<item name="TC_Product_1"/>', xml_str_actual)
+            self.assertIn('<item name="TC_Product_1 ES"/>', xml_str_actual)
+            # Reset the exporting language back to en_US (es_ES is no longer loaded)
+        finally:
+            self.env.context = frozendict(original_ctx)
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_saleorder_different_uoms(self):
