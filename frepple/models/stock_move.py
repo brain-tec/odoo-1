@@ -97,7 +97,7 @@ class StockMove(models.Model):
 
             # The move will be always new, as the frepple reference is new each time
             # Coming from a picking the locations are set from the picking, as well as date and date_expected
-            #['date', elem_date],
+            # ['date', elem_date],
             move_values = [
                 ['product_id', product],
                 ['product_uom', uom],

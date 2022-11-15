@@ -20,7 +20,7 @@ class TestOutboundItems(TestBase):
         test_warehouse.code = 'TC_WH'
         self.stock_location = test_warehouse.lot_stock_id
 
-    def _get_supplier_info(self,sellers, suppliers, product):
+    def _get_supplier_info(self, sellers, suppliers, product):
         stock_rules = self.env['stock.rule'].search(
             [('action', '=', 'buy'), ('route_id', 'in', product.product_tmpl_id.route_ids.ids)])
 
@@ -75,7 +75,6 @@ class TestOutboundItems(TestBase):
             '</items>',
         ])
         self.assertEqual(xml_str_actual, xml_str_expected)
-
 
     @skipIf(UNDER_DEVELOPMENT, UNDER_DEVELOPMENT_MSG)
     def test_product_weight(self):

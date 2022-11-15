@@ -22,7 +22,6 @@ import pytz
 import xmlrpc.client
 from xml.sax.saxutils import quoteattr
 from datetime import datetime, timedelta
-from operator import itemgetter
 import odoo
 from odoo import fields as odoo_fields
 from odoo.tools import frozendict
@@ -363,7 +362,7 @@ class exporter(object):
         """
         try:
             uom_id = uom_id[0]
-        except Exception as e:
+        except Exception:
             pass
         if not uom_id:
             return qty
@@ -377,7 +376,7 @@ class exporter(object):
             # If it fails, I return what the original frePPLe code returns.
             try:
                 return uom._compute_quantity(qty, product.uom_id, raise_if_failure=True)
-            except:
+            except Exception:
                 logger.warning(
                     "Can't convert from %s for product %s"
                     % (self.uom[uom_id]["name"], product_id)
@@ -512,12 +511,14 @@ class exporter(object):
                 priority_leave = 10
                 if cal_tz[i] != self.timezone:
                     logger.warning(
-                        "timezone is different on workcenter %s and connector user. Working hours will not be synced correctly to frepple."
+                        "timezone is different on workcenter %s and connector user. "
+                        "Working hours will not be synced correctly to frepple."
                         % i
                     )
                 yield '<calendar name=%s default="0"><buckets>\n' % quoteattr(i)
                 for j in calendars[i]:
-                    yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
+                    yield '''<bucket start="%s" end="%s" value="%s" days="%s" priority="%s"
+                     starttime="%s" endtime="%s"/>\n''' % (
                         self.formatDateTime(j["date_from"], cal_tz[i])
                         if not j["attendance"]
                         else (
@@ -781,7 +782,9 @@ class exporter(object):
             product_data = {'name': product.name, 'template': product_template_id}
             self.product_product[product.id] = product_data
             self.product_template_product[product.product_tmpl_id.id] = product_data
-        for supplier in self.env['product.supplierinfo'].with_context(active_test=False).search(search_domain_suppliers):
+        for supplier in self.env['product.supplierinfo'].with_context(active_test=False).search(
+                search_domain_suppliers
+        ):
             self.product_supplier.setdefault(supplier.product_tmpl_id.id, []).append(
                 (supplier.name, supplier.delay, supplier.min_qty, supplier.date_end,
                  supplier.date_start, supplier.price, supplier.sequence))
@@ -829,8 +832,9 @@ class exporter(object):
             warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
 
         weight = product._get_weight()
-        if weight:
-            xml_str.append('<weight>%f</weight>' % weight)
+        # if weight:
+        #     xml_str.append('<weight>%f</weight>' % weight)
+        xml_str.append('<weight>%f</weight>' % weight)
 
         # in the export of product master data the supplierinfo is also exported. to make sure frepple has all
         # the right routes to source the products, we were exporting each supplierinfo once for each warehouse.
@@ -870,7 +874,7 @@ class exporter(object):
 
         xml_str.extend(self._frepple_generate_common_fields_xml(product))
         xml_str.append('</item>')
-        return
+        return xml_str
 
     def export_boms(self):
         """
@@ -929,14 +933,6 @@ class exporter(object):
             else:
                 mrp_routing_workcenters[i["bom_id"][0]] = [i]
 
-        # The mrp.routing is not mandatory in Odoo for an mrp.bom,
-        # but is required by frePPLe when exporting an mrp.bom, thus
-        # we use the dummy one defined in the company if none is
-        # indicated.
-        company = self.env['res.company'].browse(self.company_id)
-        # dummy_mrp_route = company.frepple_bom_dummy_route_id
-        # dummy_mrp_route_m2o_read = (dummy_mrp_route.id, dummy_mrp_route.name)
-
         # Loop over all bom records
         for i in self.generator.getData(
             "mrp.bom",
@@ -962,9 +958,9 @@ class exporter(object):
                 if picking_type:
                     location_name = picking_type.warehouse_id.lot_stock_id.complete_name
             elif i["routing_id"]:
-                    location_id = mrp_routings.get(i["routing_id"][0], None)
-                    if location_id:
-                        location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
+                location_id = mrp_routings.get(i["routing_id"][0], None)
+                if location_id:
+                    location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
 
             # Determine operation name and item
             product_buf = self.product_product.get(product_id, None)
@@ -996,7 +992,10 @@ class exporter(object):
                         # All routing steps are collapsed in a single operation.
                         #
                         if subcontractor:
-                            yield '<operation name=%s size_multiple="1" category="subcontractor" subcategory=%s duration="P%dD" posttime="P%dD" xsi:type="operation_fixed_time" priority="%s" size_minimum="%s">\n' "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s size_multiple="1" category="subcontractor"' \
+                                  ' subcategory=%s duration="P%dD" posttime="P%dD"' \
+                                  ' xsi:type="operation_fixed_time" priority="%s"' \
+                                  ' size_minimum="%s">\n' "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 quoteattr(subcontractor["name"]),
                                 subcontractor.get("delay", 0),
@@ -1013,7 +1012,9 @@ class exporter(object):
                                 ]
                                 / 1440.0
                             )
-                            yield '<operation name=%s size_multiple="1" duration_per="%s" posttime="P%dD" priority="%s" xsi:type="operation_time_per">\n' "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s size_multiple="1" duration_per="%s"' \
+                                  ' posttime="P%dD" priority="%s" xsi:type="operation_time_per">\n'\
+                                  "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 self.convert_float_time(duration_per)
                                 if duration_per and duration_per > 0
@@ -1326,7 +1327,8 @@ class exporter(object):
         purchase.order.line.product_id -> operationplan.item
         purchase.order.company.mfg_location -> operationplan.location
         purchase.order.partner_id -> operationplan.supplier
-        convert purchase.order.line.product_uom_qty - purchase.order.line.qty_received and purchase.order.line.product_uom -> operationplan.quantity
+        convert purchase.order.line.product_uom_qty - purchase.order.line.qty_received and
+        purchase.order.line.product_uom -> operationplan.quantity
         purchase.order.date_planned -> operationplan.end
         purchase.order.date_planned -> operationplan.start
         'PO' -> operationplan.ordertype
@@ -1342,9 +1344,11 @@ class exporter(object):
                         "order_id.state",
                         "not in",
                         # Comment out on of the following alternative approaches:
-                        # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
+                        # Alternative I: don't send RFQs to frepple because that supply isn't
+                        # certain to be available yet.
                         ("draft", "sent", "bid", "confirmed", "cancel"),
-                        # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
+                        # Alternative II: send RFQs to frepple to avoid that the same
+                        # purchasing proposal is generated again by frepple.
                         # ("bid", "confirmed", "cancel"),
                     ),
                     ("order_id.state", "=", False),
@@ -1392,7 +1396,9 @@ class exporter(object):
                 continue
 
             location_name = \
-                self.env['purchase.order'].browse(j["id"]).picking_type_id.warehouse_id.lot_stock_id.get_warehouse_stock_location().complete_name
+                self.env['purchase.order'].browse(
+                    j["id"]
+                ).picking_type_id.warehouse_id.lot_stock_id.get_warehouse_stock_location().complete_name
             # location = self.mfg_location  # Original frePPLe code.
             if location_name and item and i["product_qty"] > i["qty_received"]:
                 start = odoo_fields.Datetime.context_timestamp(m, j["date_order"]).strftime("%Y-%m-%dT%H:%M:%S")
@@ -1403,15 +1409,17 @@ class exporter(object):
                     i["product_uom"][0],
                     i["product_id"][0],
                 )
-                yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
-                    quoteattr("%s - %s" % (j["name"], i["id"])),
-                    start,
-                    end,
-                    qty,
-                    quoteattr(item["name"]),
-                    quoteattr(location_name),
-                    quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
-                )
+                yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s"' \
+                      ' quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/>" \
+                      "<supplier name=%s/></operationplan>\n" % (
+                            quoteattr("%s - %s" % (j["name"], i["id"])),
+                            start,
+                            end,
+                            qty,
+                            quoteattr(item["name"]),
+                            quoteattr(location_name),
+                            quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
+                        )
         yield "</operationplans>\n"
 
         # Create purchasing operations from stock moves
@@ -1456,17 +1464,19 @@ class exporter(object):
                 end = self.formatDateTime(i["date"])
                 qty = i["product_qty"] - i["quantity_done"]
                 if qty >= 0:
-                    yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
-                        quoteattr(
-                            "%s - %s - %s" % (j["name"], i["picking_id"][1], i["id"])
-                        ),
-                        start,
-                        end,
-                        qty,
-                        quoteattr(item["name"]),
-                        quoteattr(location),
-                        quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
-                    )
+                    yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f"' \
+                          ' status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" \
+                          "</operationplan>\n" % (
+                                quoteattr(
+                                    "%s - %s - %s" % (j["name"], i["picking_id"][1], i["id"])
+                                ),
+                                start,
+                                end,
+                                qty,
+                                quoteattr(item["name"]),
+                                quoteattr(location),
+                                quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
+                            )
             yield "</operationplans>\n"
 
     def export_manufacturingorders(self):
@@ -1477,7 +1487,8 @@ class exporter(object):
         which have a bom specified.
 
         Mapping:
-        mrp.production.bom_id mrp.production.bom_id.name @ mrp.production.location_dest_id -> operationplan.operation
+        mrp.production.bom_id mrp.production.bom_id.name @ mrp.production.location_dest_id ->
+        operationplan.operation
         convert mrp.production.product_qty and mrp.production.product_uom -> operationplan.quantity
         mrp.production.date_planned -> operationplan.start
         '1' -> operationplan.status = "confirmed"
@@ -1548,8 +1559,8 @@ class exporter(object):
                     move_lines = sml.browse(i["finished_move_line_ids"])
                     product_uom_qty = 0
                     for ml in move_lines:
-                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id, ml.product_id.id)
-                                     / factor)
+                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id,
+                                                                 ml.product_id.id) / factor)
                     qty -= product_uom_qty
                     # in case qty <= 0 we should not output that MO at all
                     if qty <= 0:
@@ -1557,21 +1568,25 @@ class exporter(object):
 
                 location_dest = self.env['stock.location'].browse(i['location_dest_id'][0])
                 # Option 1: compute MO end date based on the start date
-                yield '<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed"><operation name=%s/><location name=%s/></operationplan>\n' % (
+                yield '''<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed">
+                <operation name=%s/><location name=%s/></operationplan>\n''' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
-                    # "approved",  # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
+                    # "approved",  # In the "approved" status, frepple can still
+                    # reschedule the MO in function of material and capacity
                     "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
                     quoteattr(operation),
                     quoteattr(location_dest.get_warehouse_stock_location().complete_name)
                 )
                 # Option 2: compute MO start date based on the end date
-                # yield '<operationplan type="MO" reference=%s end="%s" quantity="%s" status="%s"><operation name=%s/><flowplans>\n' % (
+                # yield '<operationplan type="MO" reference=%s end="%s" quantity="%s" status="%s">
+                # <operation name=%s/><flowplans>\n' % (
                 #     quoteattr(i["name"]),
                 #     enddate,
                 #     qty,
-                #     # "approved",  # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
+                #     # "approved",  # In the "approved" status, frepple can still
+                #     reschedule the MO in function of material and capacity
                 #     "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
                 #     quoteattr(operation),
                 # )
@@ -1647,7 +1662,6 @@ class exporter(object):
                 yield "<!-- order points -->\n"
                 yield "<calendars>\n"
                 first = False
-            warehouse = self.env['stock.warehouse'].browse(i['warehouse_id'][0])
             item = self.product_product.get(
                 i["product_id"] and i["product_id"][0] or 0, None
             )
@@ -1662,7 +1676,8 @@ class exporter(object):
             if i["product_min_qty"]:
                 yield """
                 <calendar name=%s default="0"><buckets>
-                <bucket start="2000-01-01T00:00:00" end="2030-01-01T00:00:00" value="%s" days="127" priority="998" starttime="PT0M" endtime="PT1440M"/>
+                <bucket start="2000-01-01T00:00:00" end="2030-01-01T00:00:00" value="%s" days="127" priority="998"
+                 starttime="PT0M" endtime="PT1440M"/>
                 </buckets>
                 </calendar>\n
                 """ % (
@@ -1672,7 +1687,8 @@ class exporter(object):
             if i["product_max_qty"] - i["product_min_qty"] > 0:
                 yield """
                 <calendar name=%s default="0"><buckets>
-                <bucket start="2000-01-01T00:00:00" end="2030-01-01T00:00:00" value="%s" days="127" priority="998" starttime="PT0M" endtime="PT1440M"/>
+                <bucket start="2000-01-01T00:00:00" end="2030-01-01T00:00:00" value="%s" days="127" priority="998"
+                 starttime="PT0M" endtime="PT1440M"/>
                 </buckets>
                 </calendar>\n
                 """ % (

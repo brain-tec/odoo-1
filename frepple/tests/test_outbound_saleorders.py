@@ -39,7 +39,7 @@ class TestOutboundItems(TestBase):
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="1.000" '
+            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="1.00" '
             'status="quote">'.format(
                 name='{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due=fields.Datetime.context_timestamp(quotation, due).strftime("%Y-%m-%dT%H:%M:%S"),
@@ -100,7 +100,7 @@ class TestOutboundItems(TestBase):
         xml_str_expected = ''.join(map(re.escape, [
             '<!-- sales order lines -->',
             '<demands>',
-            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="0.500" '
+            '<demand due="{due}" minshipment="1.0" name="{name}" priority="10" quantity="0.50" '
             'status="quote">'.format(
                 name='{} {}'.format(quotation.name, quotation.order_line[0].id),
                 due=fields.Datetime.context_timestamp(quotation, due).strftime("%Y-%m-%dT%H:%M:%S"),

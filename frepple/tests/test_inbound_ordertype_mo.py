@@ -34,34 +34,34 @@ class TestInboundOrdertypeDo(TestBase):
             datetime_xml = fields.Datetime.to_string(fields.Datetime.now())
         """
             Example
-            <operationplan 
-             ordertype="MO" 
+            <operationplan
+             ordertype="MO"
              id="186182386060"
-             item="CAFE ROYAL DG R Box x96 x16 x6" 
+             item="CAFE ROYAL DG R Box x96 x16 x6"
              location="ASM/Stock"
-             location_id="8" 
-             operation="957 CAFE ROYAL DG R Box x96 x16 x6 @ ASM/Stock" 
-             start="2021-02-07 00:00:00" 
-             end="2021-02-08 00:00:00" 
+             location_id="8"
+             operation="957 CAFE ROYAL DG R Box x96 x16 x6 @ ASM/Stock"
+             start="2021-02-07 00:00:00"
+             end="2021-02-08 00:00:00"
              quantity="60.00000000"
-             item_id="1,3563" 
-             criticality="0"/>             
+             item_id="1,3563"
+             criticality="0"/>
             """
 
         xml_content = '''<?xml version="1.0" encoding="UTF-8" ?>
             <plan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" source="odoo_1">
                 <operationplans>
-                    <operationplan  
+                    <operationplan
                       ordertype="MO"
                       id="{id}"
-                      item="{product_name}" 
+                      item="{product_name}"
                       item_id="{uom_id},{product_id}"
-                      start="{datetime}" 
+                      start="{datetime}"
                       end="{datetime}"
                       quantity="{qty:0.6f}"
-                      origin="{origin_name}" 
+                      origin="{origin_name}"
                       origin_id="{origin_id}"
-                      location="{location_name}" 
+                      location="{location_name}"
                       location_id="{location_id}"
                       operation="{operation}"
                       criticality="0"
@@ -111,5 +111,6 @@ class TestInboundOrdertypeDo(TestBase):
         self.assertEqual(mrp_production.picking_type_id.warehouse_id.lot_stock_id.id, self.dest_loc.id)
         self.assertEqual(mrp_production.location_src_id.complete_name, self.source_loc.name)
         self.assertEqual(mrp_production.location_dest_id.complete_name, self.dest_loc.name)
-        self.assertEqual(mrp_production.move_raw_ids.mapped('product_id.name'), self.bom.mapped('bom_line_ids.product_id.name'))
+        self.assertEqual(mrp_production.move_raw_ids.mapped('product_id.name'),
+                         self.bom.mapped('bom_line_ids.product_id.name'))
         self.assertEqual(mrp_production.move_raw_ids.mapped('product_uom_qty'), [qty, qty])

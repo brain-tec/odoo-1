@@ -7,8 +7,7 @@
 
 from unittest import skipIf
 from odoo.addons.frepple.tests.test_base_inbound_ordertype_po import TestBaseInboundOrdertypePo
-#from tempfile import mkstemp
-#import os
+
 
 UNDER_DEVELOPMENT = False
 UNDER_DEVELOPMENT_MSG = 'Test skipped because of being under development'

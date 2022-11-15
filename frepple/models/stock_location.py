@@ -5,7 +5,7 @@
 # See LICENSE file for full licensing details.
 ##############################################################################
 
-from odoo import models, fields, tools
+from odoo import models, tools
 
 
 class StockLocation(models.Model):

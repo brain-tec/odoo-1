@@ -97,4 +97,4 @@ class ManufacturingOrder(models.Model):
             f = Form(self)
             for key, value in mo_values:
                 setattr(f, key, value)
-            mo = f.save()
+            f.save()

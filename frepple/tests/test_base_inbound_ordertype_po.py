@@ -28,8 +28,8 @@ class TestBaseInboundOrdertypePo(TestBase):
                                            date_start=date_now + relativedelta(days=1),
                                            date_end=date_now + relativedelta(days=3))
         self.seller_product2 = self._create_seller(self.supplier, self.product2, priority=1, price=6, delay=6,
-                                           date_start=date_now + relativedelta(days=1),
-                                           date_end=date_now + relativedelta(days=3))
+                                                   date_start=date_now + relativedelta(days=1),
+                                                   date_end=date_now + relativedelta(days=3))
         self.dest_loc = self._create_location('ASM/Stock')
         self.source_loc = self._create_location('Source Location')
         warehouse = self.env.ref('stock.warehouse0')
@@ -40,32 +40,32 @@ class TestBaseInboundOrdertypePo(TestBase):
     def _create_xml_line(self, reference, product, supplier, source_location, destination_location, qty,
                          datetime_start_xml, datetime_end_xml,):
         xml_content = '''
-                    <operationplan  
+                    <operationplan
                       ordertype="PO"
                       id="{reference}"
-                      item="{product_name}" 
+                      item="{product_name}"
                       item_id="{uom_id},{product_id}"
-                      start="{datetime_start}" 
+                      start="{datetime_start}"
                       end="{datetime_end}"
                       quantity="{qty:0.6f}"
-                      origin="{origin_name}" 
+                      origin="{origin_name}"
                       origin_id="{origin_id}"
-                      location="{location_name}" 
+                      location="{location_name}"
                       location_id="{location_id}"
                       supplier="{supplier}"
                       criticality="0"
                     />'''.format(reference=reference,
-                   product_name=product.name,
-                   product_id=product.id,
-                   location_name=destination_location.name,
-                   location_id=destination_location.id,
-                   origin_name=source_location.name,
-                   origin_id=source_location.id,
-                   qty=qty,
-                   datetime_start=datetime_start_xml,
-                   datetime_end=datetime_end_xml,
-                   supplier="{0} {1}".format(supplier.id, supplier.name),
-                   uom_id=product.uom_id.id)
+                                 product_name=product.name,
+                                 product_id=product.id,
+                                 location_name=destination_location.name,
+                                 location_id=destination_location.id,
+                                 origin_name=source_location.name,
+                                 origin_id=source_location.id,
+                                 qty=qty,
+                                 datetime_start=datetime_start_xml,
+                                 datetime_end=datetime_end_xml,
+                                 supplier="{0} {1}".format(supplier.id, supplier.name),
+                                 uom_id=product.uom_id.id)
         return xml_content
 
     def _create_xml(self, lines):
@@ -196,10 +196,10 @@ class TestBaseInboundOrdertypePo(TestBase):
         _, xml_file = self._create_xml(
             [{'id': ref_product2, 'product': self.product2, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_product2,
-              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1,},
+              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1, },
              {'id': ref_1, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_1,
-              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1,},
+              'datetime_start_xml': datetime_start_str_xml_1, 'datetime_end_xml': datetime_end_str_xml_1, },
              {'id': ref_2, 'product': self.product, 'supplier': self.supplier,
               'source_location': self.source_loc, 'destination_location': self.dest_loc, 'qty': qty_2,
               'datetime_start_xml': datetime_start_str_xml_2, 'datetime_end_xml': datetime_end_str_xml_2}]
@@ -223,9 +223,10 @@ class TestBaseInboundOrdertypePo(TestBase):
         self.assertEqual(fields.Datetime.to_string(order_line_summarized.date_planned), datetime_end_str_odoo_1)
         # The price is finally assigned as the one of the supplier according to the planned date of the line,
         # unlike in standard odoo where it should be according to the PO order date
-        self.assertAlmostEqual(order_line_summarized.price_unit,
-                               self.seller2.product_uom._compute_price(
-                                    self.seller2.price, order_line_summarized.product_uom), 2)
+        self.assertAlmostEqual(
+            order_line_summarized.price_unit,
+            self.seller2.product_uom._compute_price(self.seller2.price, order_line_summarized.product_uom), 2
+        )
         self.assertEqual(order_line_summarized.frepple_reference, ','.join([ref_1, ref_2]))
         self.assertEqual(fields.Datetime.to_string(po.date_planned), datetime_end_str_odoo_1)
         self.assertEqual(fields.Datetime.to_string(po.date_order), datetime_start_str_odoo_1)

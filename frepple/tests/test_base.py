@@ -7,7 +7,7 @@
 
 from odoo import fields
 from odoo.tests.common import TransactionCase
-from odoo.addons.frepple.controllers.outbound import exporter, Odoo_generator, XMLRPC_generator
+from odoo.addons.frepple.controllers.outbound import exporter, Odoo_generator
 from odoo.addons.frepple.controllers.inbound import importer
 from odoo import SUPERUSER_ID
 

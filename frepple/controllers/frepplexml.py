@@ -25,8 +25,6 @@ from tempfile import NamedTemporaryFile
 from werkzeug.exceptions import MethodNotAllowed, InternalServerError
 from werkzeug.wrappers import Response
 
-from odoo.addons.web.controllers.main import db_monodb, ensure_db
-
 from odoo.addons.frepple.controllers.outbound import exporter, Odoo_generator
 from odoo.addons.frepple.controllers.inbound import importer
 
@@ -193,7 +191,7 @@ class XMLController(odoo.http.Controller):
                         ("Expires", "0"),
                     ],
                 )
-            except Exception as e:
+            except Exception:
                 logger.exception("Error processing data posted by frePPLe")
                 raise InternalServerError(
                     description="Error processing data posted by frePPLe: check the Odoo log file for more details"

@@ -15,10 +15,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import odoo
 import logging
 from xml.etree.cElementTree import iterparse
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -124,9 +122,6 @@ class importer(object):
         count_po_line = 0
         count_move = 0
         count_mo = 0
-
-        # Mapping between frepple-generated MO reference and their odoo id.
-        mo_references = {}
 
         for event, elem in iterparse(self.datafile, events=("start", "end")):
             if event == "end" and elem.tag == "operationplan":
