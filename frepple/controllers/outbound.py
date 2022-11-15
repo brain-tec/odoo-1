@@ -190,26 +190,26 @@ class exporter(object):
                 "name": i["name"],
             }
 
-    def convert_qty_uom(self, qty, uom_id, product_id=None):
+    def convert_qty_uom(self, qty, uom_id, product_template_id=None):
         """
-        Convert a quantity to the reference uom of the product.
+        Convert a quantity to the reference uom of the product template.
         """
         if not uom_id:
             return qty
-        if not product_id:
+        if not product_template_id:
             return qty * self.uom[uom_id]["factor"]
         else:
-            product = self.env['product.product'].browse(product_id)
+            product_template = self.env['product.template'].browse(product_template_id)
             uom = self.env['uom.uom'].browse(uom_id)
 
             # I use the normal Odoo's conversion.
             # If it fails, I return what the original frePPLe code returns.
             try:
-                return uom._compute_quantity(qty, product.uom_id, raise_if_failure=True)
+                return uom._compute_quantity(qty, product_template.uom_id, raise_if_failure=True)
             except:
                 logger.warning(
-                    "Can't convert from %s for product %s"
-                    % (self.uom[uom_id]["name"], product_id)
+                    "Can't convert from %s for product template %s"
+                    % (self.uom[uom_id]["name"], product_template_id)
                 )
                 return qty * self.uom[uom_id]["factor"]
 
@@ -826,7 +826,7 @@ class exporter(object):
                             self.convert_qty_uom(
                                 j["product_qty"],
                                 j["product_uom"][0],
-                                j["product_id"][0],
+                                self.product_product[j["product_id"][0]]["template"],
                             ),
                             quoteattr(product["name"]),
                         )
@@ -1035,7 +1035,7 @@ class exporter(object):
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
                     i["product_uom"][0],
-                    i["product_id"][0],
+                    self.product_product[i["product_id"][0]]["template"]
                 )
                 yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" % (
                     quoteattr("%s - %s" % (j["name"], i["id"])),
@@ -1126,7 +1126,8 @@ class exporter(object):
                     move_lines = sml.browse(i["finished_move_line_ids"])
                     product_uom_qty = 0
                     for ml in move_lines:
-                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id, ml.product_id.id)
+                        product_uom_qty += (self.convert_qty_uom(ml.product_uom_qty, ml.product_uom_id.id,
+                                                                 ml.product_id.product_tmpl_id.id)
                                      / factor)
                     qty -= product_uom_qty
                     # in case qty <= 0 we should not output that MO at all
