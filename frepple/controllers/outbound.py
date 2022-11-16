@@ -769,8 +769,8 @@ class exporter(object):
             search_domain_suppliers = []
             search_domain_product_categories = []
 
-        # self._fill_in_product_related_variables(
-        #     search_domain_products, search_domain_suppliers, search_domain_templates)
+        self._fill_in_product_related_variables(
+            search_domain_products, search_domain_suppliers, search_domain_templates)
 
         # Now we generate the XML.
         xml_str.append('<!-- products -->')
@@ -796,7 +796,6 @@ class exporter(object):
         self.product_product = dict()
         self.product_template_product = dict()
         self.product_supplier = dict()
-        self.product_templates = dict()
         for product in self.env['product.product'].with_context(active_test=False).search(search_domain_products):
             product_template_id = product.product_tmpl_id.id
             product_data = {'name': product.name, 'template': product_template_id}
@@ -808,10 +807,6 @@ class exporter(object):
             self.product_supplier.setdefault(supplier.product_tmpl_id.id, []).append(
                 (supplier.name, supplier.delay, supplier.min_qty, supplier.date_end,
                  supplier.date_start, supplier.price, supplier.sequence))
-        for product_template in self.env['product.template'].with_context(active_test=False).search_read(
-                search_domain_templates, ['purchase_ok', 'route_ids', 'bom_ids', 'produce_delay',
-                                          'list_price', 'uom_id', 'seller_ids', 'standard_price', 'product_variant_ids']):
-            self.product_templates[product_template['id']] = product_template
 
     def _generate_category_xml(
             self, category, search_domain_categories, search_domain_products, search_domain_suppliers, ctx=None):
