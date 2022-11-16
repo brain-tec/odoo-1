@@ -580,8 +580,8 @@ class exporter(object):
         """
         ctx = ctx if ctx else {}
 
-        for loc in self.env['stock.location'].with_context(active_test=False).search([]):
-            self.map_locations[loc.id] = loc.get_warehouse_stock_location().complete_name
+        # for loc in self.env['stock.location'].with_context(active_test=False).search([]):
+        #     self.map_locations[loc.id] = loc.get_warehouse_stock_location().complete_name
 
         warehouses = self.env['stock.warehouse'].with_context(active_test=False).search([]).filtered(
             lambda warehouse: warehouse.name.startswith(ctx.get('test_prefix', '')))
@@ -734,6 +734,26 @@ class exporter(object):
         """
         ctx = ctx if ctx else {}
 
+        # Read the product templates
+        self.product_product = {}
+        self.product_template_product = {}
+        self.product_templates = {}
+        for i in self.generator.getData(
+            "product.template",
+            search=[("type", "not in", ("service", "consu"))],
+            fields=[
+                "sale_ok",
+                "purchase_ok",
+                "produce_delay",
+                "list_price",
+                "standard_price",
+                "uom_id",
+                "categ_id",
+                "product_variant_ids",
+            ],
+        ):
+            self.product_templates[i["id"]] = i
+
         xml_str = []
 
         # To ease testing, we alter the domain of the records we retrieve
@@ -749,8 +769,8 @@ class exporter(object):
             search_domain_suppliers = []
             search_domain_product_categories = []
 
-        self._fill_in_product_related_variables(
-            search_domain_products, search_domain_suppliers, search_domain_templates)
+        # self._fill_in_product_related_variables(
+        #     search_domain_products, search_domain_suppliers, search_domain_templates)
 
         # Now we generate the XML.
         xml_str.append('<!-- products -->')
@@ -790,7 +810,7 @@ class exporter(object):
                  supplier.date_start, supplier.price, supplier.sequence))
         for product_template in self.env['product.template'].with_context(active_test=False).search_read(
                 search_domain_templates, ['purchase_ok', 'route_ids', 'bom_ids', 'produce_delay',
-                                          'list_price', 'uom_id', 'seller_ids', 'standard_price']):
+                                          'list_price', 'uom_id', 'seller_ids', 'standard_price', 'product_variant_ids']):
             self.product_templates[product_template['id']] = product_template
 
     def _generate_category_xml(
@@ -950,28 +970,41 @@ class exporter(object):
             #     i['routing_id'] = dummy_mrp_route_m2o_read
 
             # Determine the location
-            location_name = self.env['res.company'].search(
-                [('name', '=', self.company)],
-                limit=1).manufacturing_warehouse.lot_stock_id.complete_name or self.company
-            if i["picking_type_id"]:
-                picking_type = self.env['stock.picking.type'].browse(i["picking_type_id"][0])
-                if picking_type:
-                    location_name = picking_type.warehouse_id.lot_stock_id.complete_name
-            elif i["routing_id"]:
-                location_id = mrp_routings.get(i["routing_id"][0], None)
-                if location_id:
-                    location_name = self.env['stock.location'].browse(location_id).get_warehouse_stock_location()
+            location = self.mfg_location
 
-            # Determine operation name and item
-            product_buf = self.product_product.get(product_id, None)
-            if not product_buf:
-                logger.warning("Skipping %s" % i["product_tmpl_id"][0])
+            product_template = self.product_templates.get(i["product_tmpl_id"][0], None)
+            if not product_template:
                 continue
+            uom_factor = self.convert_qty_uom(
+                1.0, i["product_uom_id"], i["product_tmpl_id"][0]
+            )
+
+            # Loop over all subcontractors
+            if i["type"] == "subcontract":
+                subcontractors = self.product_templates[i["product_tmpl_id"][0]].get(
+                    "subcontractors", None
+                )
+                if not subcontractors:
+                    continue
+            else:
+                subcontractors = [{}]
+
+            for product_id in product_template["product_variant_ids"]:
+
+                # Determine operation name and item
+                product_buf = self.product_product.get(product_id, None)
+                if not product_buf:
+                    logger.warning("Skipping %s" % i["product_tmpl_id"][0])
+                    continue
 
                 for subcontractor in subcontractors:
                     # Build operation. The operation can either be a summary operation or a detailed
                     # routing.
-                    operation = u"%d %s @ %s" % (i["id"], product_buf["name"], location_name)
+                    operation = "%s @ %s %d" % (
+                        product_buf["name"],
+                        subcontractor.get("name", location),
+                        i["id"],
+                    )
                     if len(operation) > 300:
                         suffix = " @ %s %d" % (
                             subcontractor.get("name", location),
@@ -992,10 +1025,7 @@ class exporter(object):
                         # All routing steps are collapsed in a single operation.
                         #
                         if subcontractor:
-                            yield '<operation name=%s size_multiple="1" category="subcontractor"' \
-                                  ' subcategory=%s duration="P%dD" posttime="P%dD"' \
-                                  ' xsi:type="operation_fixed_time" priority="%s"' \
-                                  ' size_minimum="%s">\n' "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s size_multiple="1" category="subcontractor" subcategory=%s duration="P%dD" posttime="P%dD" xsi:type="operation_fixed_time" priority="%s" size_minimum="%s">\n' "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 quoteattr(subcontractor["name"]),
                                 subcontractor.get("delay", 0),
@@ -1012,9 +1042,7 @@ class exporter(object):
                                 ]
                                 / 1440.0
                             )
-                            yield '<operation name=%s size_multiple="1" duration_per="%s"' \
-                                  ' posttime="P%dD" priority="%s" xsi:type="operation_time_per">\n'\
-                                  "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s size_multiple="1" duration_per="%s" posttime="P%dD" priority="%s" xsi:type="operation_time_per">\n' "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 self.convert_float_time(duration_per)
                                 if duration_per and duration_per > 0
@@ -1022,7 +1050,7 @@ class exporter(object):
                                 self.manufacturing_lead,
                                 i["sequence"] or 1,
                                 quoteattr(product_buf["name"]),
-                                quoteattr(location_name),
+                                quoteattr(location),
                             )
 
                         convertedQty = self.convert_qty_uom(
@@ -1154,7 +1182,7 @@ class exporter(object):
                             self.manufacturing_lead,
                             i["sequence"] or 1,
                             quoteattr(product_buf["name"]),
-                            quoteattr(location_name),
+                            quoteattr(location),
                         )
 
                         yield "<suboperations>"

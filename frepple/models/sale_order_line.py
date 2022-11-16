@@ -128,7 +128,7 @@ class SaleOrderLine(models.Model):
                     'name': name,
                     'quantity': float_repr(qty, precision_digits),
                     'due': fields.Datetime.context_timestamp(sale_order, due).strftime('%Y-%m-%dT%H:%M:%S'),
-                    'minshipment': sale_order.picking_policy == 'one' and qty or '1.0',
+                    'minshipment': sale_order.picking_policy == 'one' and str(qty) or '1.0',
                     'status': frepple_status,
                     'priority': '10',
                 }, children=deque([
