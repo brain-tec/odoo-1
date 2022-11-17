@@ -16,6 +16,5 @@ class StockLocation(models.Model):
         """ Returns the stock location for the warehouse the location belongs to.
         """
         self.ensure_one()
-        self._compute_warehouse_id()
         warehouse = self.warehouse_id
         return warehouse.lot_stock_id if warehouse else self
