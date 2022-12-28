@@ -1,0 +1,12 @@
+git_repositories:
+  - repository: git@github.com:brain-tec/odoo.git
+    branch: 15.0
+  - repository: git@github.com:brain-tec/enterprise.git
+    branch: 15.0
+  - repository: git@github.com:brain-tec/odoo-1.git
+    branch: 15.0.project_MI_465
+    mainrepo: True
+
+debian_codename: buster
+postgres: 13.5
+

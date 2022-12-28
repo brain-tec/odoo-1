@@ -14,7 +14,7 @@ odoo.define('frepple', function (require) {
         model: 'res.company',
         method: 'getFreppleURL',
         args: [false, '/forecast/editor/'],
-      })
+        })
         .then(function (result) {
           el.html('<iframe src="' + result
             + '" width="100%" height="100%" marginwidth="0" marginheight="0" frameborder="no" '
@@ -60,7 +60,7 @@ odoo.define('frepple', function (require) {
         model: 'res.company',
         method: 'getFreppleURL',
         args: [false, '/inventoryplanning/drp/'],
-      })
+        })
         .then(function (result) {
           el.html('<iframe src="' + result
             + '" width="100%" height="100%" marginwidth="0" marginheight="0" frameborder="no" '
@@ -83,7 +83,7 @@ odoo.define('frepple', function (require) {
         model: 'res.company',
         method: 'getFreppleURL',
         args: [false, '/planningboard/'],
-      })
+        })
         .then(function (result) {
           el.html('<iframe src="' + result
             + '" width="100%" height="100%" marginwidth="0" marginheight="0" frameborder="no" '
@@ -106,7 +106,7 @@ odoo.define('frepple', function (require) {
         model: 'res.company',
         method: 'getFreppleURL',
         args: [true, '/'],
-      })
+        })
         .then(function (result) {
           el.html('<iframe src="' + result
             + '" width="100%" height="100%" marginwidth="0" marginheight="0" frameborder="no" '
