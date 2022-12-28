@@ -847,9 +847,8 @@ class exporter(object):
             warehouse_domain.append(('code', '=like', '{}%'.format(ctx['test_prefix'])))
 
         weight = product._get_weight()
-        # if weight:
-        #     xml_str.append('<weight>%f</weight>' % weight)
-        xml_str.append('<weight>%f</weight>' % weight)
+        if weight:
+            xml_str.append('<weight>%f</weight>' % weight)
 
         # in the export of product master data the supplierinfo is also exported. to make sure frepple has all
         # the right routes to source the products, we were exporting each supplierinfo once for each warehouse.
