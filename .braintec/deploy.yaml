@@ -7,4 +7,6 @@ git_repositories:
     branch: 15.0.project_MI_465
     mainrepo: True
 
-postgres: 12.4
+debian_codename: buster
+postgres: 13.5
+
