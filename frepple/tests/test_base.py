@@ -219,23 +219,14 @@ class TestBase(TransactionCase):
     def _increase_qty_for_product(self, product, qty, location, lot):
         """ Increases the quantity on hand of the product in the amount received.
         """
-        inventory = self.env['stock.inventory'].create({
-            'name': 'Test Inventory Adjustment {}'.format(fields.Datetime.now()),
-            'product_ids': [(4, product.id)],
-            # 'operating_unit_use_trade_management': False,  # Added so that tests pass in an integrated way.
-            'line_ids': [(0, 0, {
-                'product_id': product.id,
-                'product_qty': qty,
-                'prod_lot_id': lot.id if lot else False,
-                'location_id': location.id
-            })]
+        quant = self.env['stock.quant'].create({
+            'location_id': location.id,
+            'product_id': product.id,
+            'lot_id': lot.id if lot else False,
+            'inventory_quantity': qty,
         })
-        inventory.action_start()
-        res = inventory.action_validate()
-        if isinstance(res, dict):
-            wiz = self.env['stock.track.confirmation'].browse(res['res_id'])
-            wiz.action_confirm()
-        return inventory
+        quant.action_apply_inventory()
+        return quant
 
     def _create_internal_picking(self, location_src, location_dest, defaults=None):
         defaults = defaults if defaults else {}
