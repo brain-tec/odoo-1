@@ -62,9 +62,11 @@ class TestOutboundItems(TestBase):
                 category_a.name, category_a.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
-            '<itemsuppliers>',
+                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id)])
+        if product_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -94,9 +96,12 @@ class TestOutboundItems(TestBase):
                 category_a.name, category_a.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_1.weight),
-            '<stringproperty name="itemstatus" value="active"/>',
+                product_1.name, product_1.list_price, self.kgm_uom.id, product_1.id)
+        ])
+        if product_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<stringproperty name="itemstatus" value="active"/>',
             '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
             '</item>',
             '</members>',
@@ -139,9 +144,12 @@ class TestOutboundItems(TestBase):
                     category_a.name, category_a.id),
                 '<members>',
                 '<item name="TC_Product_1 ES" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                    product_1.list_price, self.kgm_uom.id, product_1.id),
-                '<weight>{:0.6f}</weight>'.format(product_1._get_weight()),
-                '<stringproperty name="itemstatus" value="active"/>',
+                    product_1.list_price, self.kgm_uom.id, product_1.id)
+            ])
+            if product_1._get_weight():
+                xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_1._get_weight())
+            xml_str_expected += '\n'.join([
+                '\n<stringproperty name="itemstatus" value="active"/>',
                 '<stringproperty name="internalreference" value="{}"/>'.format(product_1.default_code),
                 '</item>',
                 '</members>',
@@ -185,9 +193,12 @@ class TestOutboundItems(TestBase):
                 category_a.name, category_a.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_1._get_weight()),
-            '<itemsuppliers>',
+                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id)
+            ])
+        if product_a_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -196,9 +207,12 @@ class TestOutboundItems(TestBase):
                 category_a_sub.name, category_a_sub.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight()),
-            '<itemsuppliers>',
+                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id)
+        ])
+        if product_a_sub_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a_sub,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -268,9 +282,12 @@ class TestOutboundItems(TestBase):
                 category_a.name, category_a.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_1._get_weight()),
-            '<itemsuppliers>',
+                product_a_1.name, product_a_1.list_price, self.kgm_uom.id, product_a_1.id)
+        ])
+        if product_a_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -279,9 +296,12 @@ class TestOutboundItems(TestBase):
                 category_a_sub.name, category_a_sub.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight()),
-            '<itemsuppliers>',
+                product_a_sub_1.name, product_a_sub_1.list_price, self.kgm_uom.id, product_a_sub_1.id)
+        ])
+        if product_a_sub_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_sub_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a_sub_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -290,17 +310,23 @@ class TestOutboundItems(TestBase):
                 category_a_sub_sub.name, category_a_sub_sub.id),
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_sub_sub_1._get_weight()),
-            '<itemsuppliers>',
+                product_a_sub_sub_1.name, product_a_sub_sub_1.list_price, self.kgm_uom.id, product_a_sub_sub_1.id)
+        ])
+        if product_a_sub_sub_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_sub_sub_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a_sub_sub_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
             '</item>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
-                product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id),
-            '<weight>{:0.6f}</weight>'.format(product_a_sub_sub_2._get_weight()),
-            '<itemsuppliers>',
+                product_a_sub_sub_2.name, product_a_sub_sub_2.list_price, self.kgm_uom.id, product_a_sub_sub_2.id)
+        ])
+        if product_a_sub_sub_2._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_a_sub_sub_2._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_a_sub_sub_2,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
@@ -316,8 +342,11 @@ class TestOutboundItems(TestBase):
             '<members>',
             '<item name="{}" cost="{:0.6f}" subcategory="{},{}" description="product">'.format(
                 product_b_1.name, product_b_1.list_price, self.kgm_uom.id, product_b_1.id),
-            '<weight>{:0.6f}</weight>'.format(product_b_1._get_weight()),
-            '<itemsuppliers>',
+        ])
+        if product_b_1._get_weight():
+            xml_str_expected += '\n<weight>{:0.6f}</weight>'.format(product_b_1._get_weight())
+        xml_str_expected += '\n'.join([
+            '\n<itemsuppliers>',
             supplier_info_b_1,
             '</itemsuppliers>',
             '<stringproperty name="itemstatus" value="active"/>',
