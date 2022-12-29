@@ -224,6 +224,7 @@ class TestBase(TransactionCase):
             'product_id': product.id,
             'lot_id': lot.id if lot else False,
             'inventory_quantity': qty,
+            'inventory_quantity_set': True,
         })
         quant.action_apply_inventory()
         return quant
