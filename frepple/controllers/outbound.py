@@ -423,7 +423,7 @@ class exporter(object):
         Leave times are read from resource.calendar.leaves
 
         resource.calendar.name -> calendar.name (default value is 0)
-        resource.calendar.attendance.date_from -> calendar bucket start date (or 2000-01-01 if unspecified)
+        resource.calendar.attendance.date_from -> calendar bucket start date (or 2020-01-01 if unspecified)
         resource.calendar.attendance.date_to -> calendar bucket end date (or 2030-01-01 if unspecified)
         resource.calendar.attendance.hour_from -> calendar bucket start time
         resource.calendar.attendance.hour_to -> calendar bucket end time
@@ -431,6 +431,11 @@ class exporter(object):
 
         resource.calendar.leaves.date_from -> calendar bucket start date
         resource.calendar.leaves.date_to -> calendar bucket end date
+
+        For two-week calendars all weeks between the calendar start and
+        calendar end dates are added in frepple as calendar buckets.
+        The week number is using the iso standard (first week of the
+        year is the one containing the first Thursday of the year).
 
         """
         yield "<!-- calendar -->\n"
@@ -455,6 +460,7 @@ class exporter(object):
             # Read the attendance for all calendars
             for i in self.generator.getData(
                 "resource.calendar.attendance",
+                search=[("display_type", "=", False)],
                 fields=[
                     "dayofweek",
                     "date_from",
@@ -462,6 +468,7 @@ class exporter(object):
                     "hour_from",
                     "hour_to",
                     "calendar_id",
+                    "week_type",
                 ],
             ):
                 if i["calendar_id"] and i["calendar_id"][0] in cal_ids:
@@ -497,38 +504,73 @@ class exporter(object):
                     )
                 yield '<calendar name=%s default="0"><buckets>\n' % quoteattr(i)
                 for j in calendars[i]:
-                    yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
-                        self.formatDateTime(j["date_from"], cal_tz[i])
-                        if not j["attendance"]
-                        else (
-                            j["date_from"].strftime("%Y-%m-%dT00:00:00")
-                            if j["date_from"]
-                            else "2000-01-01T00:00:00"
-                        ),
-                        self.formatDateTime(j["date_to"], cal_tz[i])
-                        if not j["attendance"]
-                        else (
-                            j["date_to"].strftime("%Y-%m-%dT00:00:00")
-                            if j["date_to"]
-                            else "2030-01-01T00:00:00"
-                        ),
-                        "1" if j["attendance"] else "0",
-                        (2 ** ((int(j["dayofweek"]) + 1) % 7))
-                        if "dayofweek" in j
-                        else (2 ** 7) - 1,
-                        priority_attendance if j["attendance"] else priority_leave,
-                        # In odoo, monday = 0. In frePPLe, sunday = 0.
-                        ("PT%dM" % round(j["hour_from"] * 60))
-                        if "hour_from" in j
-                        else "PT0M",
-                        ("PT%dM" % round(j["hour_to"] * 60))
-                        if "hour_to" in j
-                        else "PT1440M",
-                    )
-                    if j["attendance"]:
-                        priority_attendance += 1
+                    if j["week_type"] == False:
+                        # ONE-WEEK CALENDAR
+                        yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
+                            self.formatDateTime(j["date_from"], cal_tz[i])
+                            if not j["attendance"]
+                            else (
+                                j["date_from"].strftime("%Y-%m-%dT00:00:00")
+                                if j["date_from"]
+                                else "2020-01-01T00:00:00"
+                            ),
+                            self.formatDateTime(j["date_to"], cal_tz[i])
+                            if not j["attendance"]
+                            else (
+                                j["date_to"].strftime("%Y-%m-%dT00:00:00")
+                                if j["date_to"]
+                                else "2030-01-01T00:00:00"
+                            ),
+                            "1" if j["attendance"] else "0",
+                            (2 ** ((int(j["dayofweek"]) + 1) % 7))
+                            if "dayofweek" in j
+                            else (2 ** 7) - 1,
+                            priority_attendance if j["attendance"] else priority_leave,
+                            # In odoo, monday = 0. In frePPLe, sunday = 0.
+                            ("PT%dM" % round(j["hour_from"] * 60))
+                            if "hour_from" in j
+                            else "PT0M",
+                            ("PT%dM" % round(j["hour_to"] * 60))
+                            if "hour_to" in j
+                            else "PT1440M",
+                        )
+                        if j["attendance"]:
+                            priority_attendance += 1
+                        else:
+                            priority_leave += 1
                     else:
-                        priority_leave += 1
+                        # TWO-WEEKS CALENDAR
+                        start = j["date_from"] or datetime(2020, 1, 1)
+                        end = j["date_to"] or datetime(2030, 1, 1)
+
+                        t = start
+                        while t < end:
+                            if int(t.isocalendar()[1] % 2) == int(j["week_type"]):
+                                if j["hour_to"] == 0:
+                                    logger.info(j)
+                                yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
+                                    self.formatDateTime(t, cal_tz[i]),
+                                    self.formatDateTime(
+                                        min(t + timedelta(7 - t.weekday()), end),
+                                        cal_tz[i],
+                                    ),
+                                    "1",
+                                    (2 ** ((int(j["dayofweek"]) + 1) % 7))
+                                    if "dayofweek" in j
+                                    else (2 ** 7) - 1,
+                                    priority_attendance,
+                                    # In odoo, monday = 0. In frePPLe, sunday = 0.
+                                    ("PT%dM" % round(j["hour_from"] * 60))
+                                    if "hour_from" in j
+                                    else "PT0M",
+                                    ("PT%dM" % round(j["hour_to"] * 60))
+                                    if "hour_to" in j
+                                    else "PT1440M",
+                                )
+                                priority_attendance += 1
+                            dow = t.weekday()
+                            t += timedelta(7 - dow)
+
                 yield "</buckets></calendar>\n"
 
             yield "</calendars>\n"
@@ -945,6 +987,7 @@ class exporter(object):
                 "time_cycle",
                 "skill",
                 "search_mode",
+                "secondary_workcenter",
             ],
         ):
             if not i["bom_id"]:
@@ -964,6 +1007,11 @@ class exporter(object):
                     mrp_routing_workcenters[i["bom_id"][0]].append(i)
             else:
                 mrp_routing_workcenters[i["bom_id"][0]] = [i]
+
+        # Loop over all secondary workcenters
+        mrp_secondary_workcenter = {
+            i["id"]: i for i in self.generator.getData("mrp.secondary.workcenter")
+        }
 
         # Loop over all bom records
         for i in self.generator.getData(
@@ -1183,6 +1231,35 @@ class exporter(object):
                                     if j["skill"]
                                     else "",
                                 )
+                                # create a load for secondary workcenters
+                                # prepare the secondary workcenter xml string upfront
+                                secondary_workcenter_str = ""
+                                for sw_id in j["secondary_workcenter"]:
+                                    secondary_workcenter = mrp_secondary_workcenter[
+                                        sw_id
+                                    ]
+                                    yield '<load quantity="%f" search=%s><resource name=%s/>%s</load>' % (
+                                        1
+                                        if not secondary_workcenter["duration"]
+                                        or j["time_cycle"] == 0
+                                        else secondary_workcenter["duration"]
+                                        / j["time_cycle"],
+                                        quoteattr(secondary_workcenter["search_mode"]),
+                                        quoteattr(
+                                            self.map_workcenters[
+                                                secondary_workcenter["workcenter_id"][0]
+                                            ]
+                                        ),
+                                        (
+                                            "<skill name=%s/>"
+                                            % quoteattr(
+                                                secondary_workcenter["skill"][1]
+                                            )
+                                        )
+                                        if secondary_workcenter["skill"]
+                                        else "",
+                                    )
+
                             if exists:
                                 yield "</loads>\n"
                     else:
@@ -1243,6 +1320,7 @@ class exporter(object):
                         steplist = mrp_routing_workcenters[i["id"]]
                         counter = 0
                         for step in steplist:
+
                             counter = counter + 1
                             suboperation = step["name"]
                             name = "%s - %s - %s" % (
@@ -1264,7 +1342,32 @@ class exporter(object):
                                 or step["workcenter_id"][0] not in self.map_workcenters
                             ):
                                 continue
-                            yield "<suboperation>" '<operation name=%s priority="%s" duration_per="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load></loads>\n' % (
+
+                            # prepare the secondary workcenter xml string upfront
+                            secondary_workcenter_str = ""
+                            for sw_id in step["secondary_workcenter"]:
+                                secondary_workcenter = mrp_secondary_workcenter[sw_id]
+                                secondary_workcenter_str += '<load quantity="%f" search=%s><resource name=%s/>%s</load>' % (
+                                    1
+                                    if not secondary_workcenter["duration"]
+                                    or step["time_cycle"] == 0
+                                    else secondary_workcenter["duration"]
+                                    / step["time_cycle"],
+                                    quoteattr(secondary_workcenter["search_mode"]),
+                                    quoteattr(
+                                        self.map_workcenters[
+                                            secondary_workcenter["workcenter_id"][0]
+                                        ]
+                                    ),
+                                    (
+                                        "<skill name=%s/>"
+                                        % quoteattr(secondary_workcenter["skill"][1])
+                                    )
+                                    if secondary_workcenter["skill"]
+                                    else "",
+                                )
+
+                            yield "<suboperation>" '<operation name=%s priority="%s" duration_per="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
                                 quoteattr(name),
                                 counter * 10,
                                 self.convert_float_time(step["time_cycle"] / 1440.0)
@@ -1279,6 +1382,7 @@ class exporter(object):
                                 ("<skill name=%s/>" % quoteattr(step["skill"][1]))
                                 if step["skill"]
                                 else "",
+                                secondary_workcenter_str,
                             )
                             first_flow = True
                             if counter == len(steplist):
