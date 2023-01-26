@@ -51,3 +51,4 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.disclose_stack_trace",
         readonly=False,
     )
+
