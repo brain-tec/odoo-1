@@ -34,4 +34,11 @@
     "installable": True,
     "auto_install": False,
     "application": True,
+    "price": 0,
+    "currency": "EUR",
+    "images": [
+        "static/images/forecasting.png",
+        "static/images/inventory.png",
+        "static/images/production.png",
+    ],
 }
