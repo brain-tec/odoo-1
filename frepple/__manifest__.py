@@ -40,4 +40,7 @@
             "frepple/static/src/js/frepple.js",
         ],
     },
+    "price": 0,
+    "currency": "EUR",
+    "images": ["frepple/static/description/images/frepple_animation.gif"],
 }
