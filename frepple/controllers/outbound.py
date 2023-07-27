@@ -516,7 +516,7 @@ class exporter(object):
                             "1" if j["attendance"] else "0",
                             (2 ** ((int(j["dayofweek"]) + 1) % 7))
                             if "dayofweek" in j
-                            else (2**7) - 1,
+                            else (2 ** 7) - 1,
                             priority_attendance if j["attendance"] else priority_leave,
                             # In odoo, monday = 0. In frePPLe, sunday = 0.
                             ("PT%dM" % round(j["hour_from"] * 60))
@@ -549,7 +549,7 @@ class exporter(object):
                                     "1",
                                     (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                     if "dayofweek" in j
-                                    else (2**7) - 1,
+                                    else (2 ** 7) - 1,
                                     priority_attendance,
                                     # In odoo, monday = 0. In frePPLe, sunday = 0.
                                     ("PT%dM" % round(j["hour_from"] * 60))
@@ -1392,29 +1392,24 @@ class exporter(object):
                                     not in self.map_workcenters
                                 ):
                                     continue
-                                secondary_workcenter_str += (
-                                    '<load quantity="%f" search=%s><resource name=%s/>%s</load>'
-                                    % (
-                                        1
-                                        if not secondary_workcenter["duration"]
-                                        or step["time_cycle"] == 0
-                                        else secondary_workcenter["duration"]
-                                        / step["time_cycle"],
-                                        quoteattr(secondary_workcenter["search_mode"]),
-                                        quoteattr(
-                                            self.map_workcenters[
-                                                secondary_workcenter["workcenter_id"][0]
-                                            ]
-                                        ),
-                                        (
-                                            "<skill name=%s/>"
-                                            % quoteattr(
-                                                secondary_workcenter["skill"][1]
-                                            )
-                                        )
-                                        if secondary_workcenter["skill"]
-                                        else "",
+                                secondary_workcenter_str += '<load quantity="%f" search=%s><resource name=%s/>%s</load>' % (
+                                    1
+                                    if not secondary_workcenter["duration"]
+                                    or step["time_cycle"] == 0
+                                    else secondary_workcenter["duration"]
+                                    / step["time_cycle"],
+                                    quoteattr(secondary_workcenter["search_mode"]),
+                                    quoteattr(
+                                        self.map_workcenters[
+                                            secondary_workcenter["workcenter_id"][0]
+                                        ]
+                                    ),
+                                    (
+                                        "<skill name=%s/>"
+                                        % quoteattr(secondary_workcenter["skill"][1])
                                     )
+                                    if secondary_workcenter["skill"]
+                                    else "",
                                 )
 
                             yield "<suboperation>" '<operation name=%s priority="%s" duration_per="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
@@ -1819,8 +1814,14 @@ class exporter(object):
                 continue
             location = self.mfg_location
             if location and item and i["product_qty"] > i["qty_received"]:
-                start = self.formatDateTime(j["date_order"])
-                end = self.formatDateTime(i["date_planned"])
+                start = j["date_order"]
+                if not isinstance(start, datetime):
+                    start = datetime.fromisoformat(start)
+                end = j["date_planned"]
+                if not isinstance(end, datetime):
+                    end = datetime.fromisoformat(end)
+                start = self.formatDateTime(start if start < end else end)
+                end = self.formatDateTime(end)
                 qty = self.convert_qty_uom(
                     i["product_qty"] - i["qty_received"],
                     i["product_uom"],
@@ -1875,8 +1876,14 @@ class exporter(object):
                 location = self.map_locations.get(i["location_dest_id"][0], None)
                 if not location:
                     continue
-                start = self.formatDateTime(j["date_order"])
-                end = self.formatDateTime(i["date"])
+                start = j["date_order"]
+                if not isinstance(start, datetime):
+                    start = datetime.fromisoformat(start)
+                end = i["date"]
+                if not isinstance(end, datetime):
+                    end = datetime.fromisoformat(end)
+                start = self.formatDateTime(start if start < end else end)
+                end = self.formatDateTime(end)
                 qty = i["product_qty"] - i["quantity_done"]
                 if qty >= 0:
                     yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
@@ -2032,6 +2039,7 @@ class exporter(object):
                             "display_name",
                             "secondary_workcenters",
                         ],
+                        order="id",
                     )
                 ]
             else:
@@ -2051,6 +2059,7 @@ class exporter(object):
                             "date",
                             "reference",
                             "workorder_id",
+                            "operation_id",
                             "should_consume_qty",
                             "reserved_availability",
                         ],
@@ -2145,7 +2154,13 @@ class exporter(object):
                             continue
 
                         # Skip moves of other WOs
-                        if mv["workorder_id"]:
+                        # When the odoo bill of material doesn't specify the operation
+                        # where a component is consumed, odoo consumes at the LAST
+                        # work order of the manufacturing order.
+                        # In frePPLe we want to consume them in the *FIRST* work order
+                        # instead. This is a much more correct & realistic representation
+                        # from a planning point of view.
+                        if mv["workorder_id"] and mv["operation_id"]:
                             if mv["workorder_id"][0] != wo["id"]:
                                 continue
                         elif not first_wo:
