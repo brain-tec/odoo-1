@@ -1556,9 +1556,9 @@ class exporter(object):
                 reserved_quantity = stock_moves_dict[stock_move_id][
                     "reserved_availability"
                 ]
-
                 for i in stock_moves_dict[stock_move_id]["move_orig_ids"]:
-                    reserved_quantity += getReservedQuantity(i)
+                    if i != stock_move_id:
+                        reserved_quantity += getReservedQuantity(i)
             return reserved_quantity
 
         # Generate the demand records
@@ -1617,11 +1617,11 @@ class exporter(object):
                         )
                         reserved_quantity = (
                             getReservedQuantity(mv_id)
-                            if self.respect_reservations
+                            if self.respect_reservations and sm["state"] != "done"
                             else 0
                         )
 
-                        due = due = self.formatDateTime(sm["date"] or j["date_order"])
+                        due = self.formatDateTime(sm["date"] or j["date_order"])
 
                         yield (
                             '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
@@ -1817,7 +1817,7 @@ class exporter(object):
                 start = j["date_order"]
                 if not isinstance(start, datetime):
                     start = datetime.fromisoformat(start)
-                end = j["date_planned"]
+                end = i["date_planned"]
                 if not isinstance(end, datetime):
                     end = datetime.fromisoformat(end)
                 start = self.formatDateTime(start if start < end else end)
