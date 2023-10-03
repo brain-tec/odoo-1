@@ -13,6 +13,7 @@
                         <field name="manufacturing_warehouse"/>
                         <field name="webtoken_key"/>
                         <field name="frepple_server"/>
+                        <field name="disclose_stack_trace"/>
                         <field name="sol_domain" widget="domain" options="{'model': 'sale.order.line'}"/>
 <!--                        <field name="frepple_bom_dummy_route_id"/>-->
                         <field name="internal_moves_domain" widget="domain" options="{'model': 'stock.move'}"/>
