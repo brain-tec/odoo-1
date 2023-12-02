@@ -1582,28 +1582,33 @@ class exporter(object):
 
         # Get all move ids
         # We only read the open ones
-
-        stock_moves_dict = {
-            i["id"]: i
-            for i in self.generator.getData(
-                "stock.move",
-                search=[
-                    ("state", "in", ["waiting", "partially_available", "assigned"])
-                ],
-                fields=[
-                    "id",
-                    "move_orig_ids",
-                    "product_id",
-                    "date",
-                    "quantity",
-                    "picked",
-                    "product_uom_qty",
-                    "product_uom",
+        stock_moves_dict = {}
+        stock_moves_dict_confirmed = []  # needed for the so line status
+        for i in self.generator.getData(
+            "stock.move",
+            search=[
+                (
                     "state",
-                    "origin_returned_move_id",
-                ],
-            )
-        }
+                    "in",
+                    ["waiting", "partially_available", "assigned", "confirmed"],
+                )
+            ],
+            fields=[
+                "id",
+                "move_orig_ids",
+                "product_id",
+                "date",
+                "quantity",
+                "picked",
+                "product_uom_qty",
+                "product_uom",
+                "state",
+                "origin_returned_move_id",
+            ],
+        ):
+            if i["state"] != "confirmed":
+                stock_moves_dict[i["id"]] = i
+            stock_moves_dict_confirmed.append(i["id"])
 
         def getReservedQuantity(stock_move_id):
             reserved_quantity = 0
@@ -1647,7 +1652,17 @@ class exporter(object):
             priority = 1  # We give all customer orders the same default priority
 
             # Possible sales order status are 'draft', 'sent', 'sale', 'done' and 'cancel'
+
+            # if no stock_move if that SO line is still open, we can consider the line closed
             state = j.get("state", "sale")
+            if state == "sale" and not any(
+                x in stock_moves_dict_confirmed for x in i["move_ids"]
+            ):
+                state = "done"
+            logger.error(
+                "%s %s %s %s"
+                % (name, state, i["move_ids"], [x for x in stock_moves_dict])
+            )
             if state in ("draft", "sent"):
                 # status = "inquiry"  # Inquiries don't reserve capacity and materials
                 status = "quote"  # Quotes do reserve capacity and materials
@@ -1987,6 +2002,36 @@ class exporter(object):
         '1' -> operationplan.status = "confirmed"
         """
         now = datetime.now()
+
+        # Retrieve reserved quantities from stock moves
+        if self.respect_reservations:
+            # a first call to get all confirmed MO IDs
+            confirmed_mos = [
+                i["name"]
+                for i in self.generator.getData(
+                    "mrp.production",
+                    # Option 1: import only the odoo status from "confirmed" onwards
+                    search=[("state", "in", ["progress", "confirmed"])],
+                    fields=["name"],
+                )
+            ]
+            # a second call to get the reserved quantities
+            reserved_quantity = {}
+            for i in self.generator.getData(
+                "stock.move",
+                search=[
+                    ("state", "in", ["partially_available", "assigned"]),
+                    ("production_id", "=", False),
+                    ("workorder_id", "=", False),
+                    ("origin", "in", confirmed_mos),
+                ],
+                fields=["origin", "product_id", "quantity"],
+            ):
+                reserved_quantity[(i["origin"], i["product_id"][0])] = (
+                    reserved_quantity.get((i["origin"], i["product_id"][0]), 0)
+                    + i["quantity"]
+                )
+
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
         for i in self.generator.getData(
@@ -2164,13 +2209,21 @@ class exporter(object):
                             0,
                             mv["product_qty"]
                             - (
-                                mv["quantity"]
+                                reserved_quantity.get(
+                                    (i["name"], mv["product_id"][0]), 0
+                                )
                                 if self.respect_reservations
                                 else 0
                             ),
                         ),
                         mv["product_uom"],
                         self.product_product[mv["product_id"][0]]["template"],
+                    )
+                    # subtract the reserved quantity if product is twice in the BOM
+                    reserved_quantity[(i["name"], mv["product_id"][0])] = max(
+                        0,
+                        reserved_quantity.get((i["name"], mv["product_id"][0]), 0)
+                        - mv["product_qty"],
                     )
                     if qty_flow > 0:
                         yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
@@ -2247,7 +2300,9 @@ class exporter(object):
                                 0,
                                 mv["product_qty"]
                                 - (
-                                    mv["quantity"]
+                                    reserved_quantity.get(
+                                        (i["name"], mv["product_id"][0]), 0
+                                    )
                                     if self.respect_reservations
                                     else 0
                                 ),
@@ -2255,10 +2310,17 @@ class exporter(object):
                             mv["product_uom"],
                             self.product_product[mv["product_id"][0]]["template"],
                         )
-                        yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
-                            -qty_flow / qty,
-                            quoteattr(item["name"]),
+                        # subtract the reserved quantity if product is twice in the BOM
+                        reserved_quantity[(i["name"], mv["product_id"][0])] = max(
+                            0,
+                            reserved_quantity.get((i["name"], mv["product_id"][0]), 0)
+                            - mv["product_qty"],
                         )
+                        if qty_flow > 0:
+                            yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
+                                -qty_flow / qty,
+                                quoteattr(item["name"]),
+                            )
                     yield "</flows>"
                     if (
                         wo["workcenter_id"]
