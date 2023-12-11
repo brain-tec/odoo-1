@@ -580,8 +580,8 @@ class exporter(object):
         """
         ctx = ctx if ctx else {}
 
-        # for loc in self.env['stock.location'].with_context(active_test=False).search([]):
-        #     self.map_locations[loc.id] = loc.get_warehouse_stock_location().complete_name
+        for loc in self.env['stock.location'].with_context(active_test=False).search([]):
+            self.map_locations[loc.id] = loc.get_warehouse_stock_location().complete_name
 
         warehouses = self.env['stock.warehouse'].with_context(active_test=False).search([]).filtered(
             lambda warehouse: warehouse.name.startswith(ctx.get('test_prefix', '')))
@@ -1548,7 +1548,7 @@ class exporter(object):
                 if not item or not location:
                     continue
 
-                operation_ids = [int(x.split(' ')[0]) for x in self.operations]
+                operation_ids = [int(x.split(' ')[-1]) for x in self.operations]
                 # Working with ids for bom_ids instead of with text, as it might lead to problems
                 # due to changes in name_get for instance
                 bom_id = i["bom_id"][0]
@@ -1597,7 +1597,7 @@ class exporter(object):
                     qty,
                     # "approved",  # In the "approved" status, frepple can still
                     # reschedule the MO in function of material and capacity
-                    "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
+                    # "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
                     quoteattr(operation),
                     quoteattr(location_dest.get_warehouse_stock_location().complete_name)
                 )
@@ -1619,7 +1619,6 @@ class exporter(object):
                             "product_id",
                             "product_qty",
                             "product_uom",
-                            "has_move_lines",
                             "date",
                             "reference",
                             "move_line_ids",
