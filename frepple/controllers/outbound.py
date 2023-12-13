@@ -1591,7 +1591,7 @@ class exporter(object):
                 location_dest = self.env['stock.location'].browse(i['location_dest_id'][0])
                 # Option 1: compute MO end date based on the start date
                 yield '''<operationplan type="MO" reference=%s start="%s" quantity="%s" status="confirmed">
-                <operation name=%s/><location name=%s/></operationplan>\n''' % (
+                <operation name=%s/><location name=%s/>\n''' % (
                     quoteattr(i["name"]),
                     odoo_fields.Datetime.context_timestamp(m, startdate).strftime("%Y-%m-%dT%H:%M:%S"),
                     qty,
@@ -1612,6 +1612,7 @@ class exporter(object):
                 #     "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
                 #     quoteattr(operation),
                 # )
+                yield "<flowplans>\n"
                 for mv in self.generator.getData(
                         "stock.move",
                         ids=i["move_raw_ids"],
