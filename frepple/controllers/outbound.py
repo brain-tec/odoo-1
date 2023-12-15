@@ -489,6 +489,43 @@ class exporter(object):
                 cal_tz[i["name"]] = i["tz"]
                 cal_ids.add(i["id"])
 
+            # Read the resource calendar association
+            calendar_resource = {}
+            for i in self.generator.getData(
+                "mrp.workcenter",
+                search=[("resource_calendar_id", "!=", False)],
+                fields=[
+                    "id",
+                    "resource_calendar_id",
+                ],
+            ):
+                if i["resource_calendar_id"][0] not in calendar_resource:
+                    calendar_resource[i["resource_calendar_id"][0]] = set()
+                calendar_resource[i["resource_calendar_id"][0]].add(i["id"])
+
+            # Read from the attendance/leaves which resource has specific entries
+            self.resources_with_specific_calendars = {}
+            for i in self.generator.getData(
+                "resource.calendar.attendance",
+                search=[("resource_id", "!=", False)],
+                fields=[
+                    "resource_id",
+                ],
+            ):
+                self.resources_with_specific_calendars[i["resource_id"][0]] = i[
+                    "resource_id"
+                ][1]
+            for i in self.generator.getData(
+                "resource.calendar.leaves",
+                search=[("resource_id", "!=", False), ("time_type", "=", "leave")],
+                fields=[
+                    "resource_id",
+                ],
+            ):
+                self.resources_with_specific_calendars[i["resource_id"][0]] = i[
+                    "resource_id"
+                ][1]
+
             # Read the attendance for all calendars
             for i in self.generator.getData(
                 "resource.calendar.attendance",
@@ -501,13 +538,39 @@ class exporter(object):
                     "hour_to",
                     "calendar_id",
                     "week_type",
+                    "resource_id",
                 ],
             ):
                 if i["calendar_id"] and i["calendar_id"][0] in cal_ids:
-                    if i["calendar_id"][1] not in calendars:
-                        calendars[i["calendar_id"][1]] = []
-                    i["attendance"] = True
-                    calendars[i["calendar_id"][1]].append(i)
+                    if not i["resource_id"]:
+                        if i["calendar_id"][1] not in calendars:
+                            calendars[i["calendar_id"][1]] = []
+                        i["attendance"] = True
+                        calendars[i["calendar_id"][1]].append(i)
+
+                    if calendar_resource.get(i["calendar_id"][0]):
+                        for res in calendar_resource.get(i["calendar_id"][0]):
+                            if i["resource_id"] and res != i["resource_id"][0]:
+                                continue
+                            if res in self.resources_with_specific_calendars:
+                                if (
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                    not in calendars
+                                ):
+                                    calendars[
+                                        "calendar for %s"
+                                        % (self.resources_with_specific_calendars[res],)
+                                    ] = []
+                                    cal_tz[
+                                        "calendar for %s"
+                                        % (self.resources_with_specific_calendars[res],)
+                                    ] = cal_tz[i["calendar_id"][1]]
+                                i["attendance"] = True
+                                calendars[
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                ].append(i)
 
             # Read the leaves for all calendars
             for i in self.generator.getData(
@@ -517,13 +580,39 @@ class exporter(object):
                     "date_from",
                     "date_to",
                     "calendar_id",
+                    "resource_id",
                 ],
             ):
                 if i["calendar_id"] and i["calendar_id"][0] in cal_ids:
-                    if i["calendar_id"][1] not in calendars:
-                        calendars[i["calendar_id"][1]] = []
-                    i["attendance"] = False
-                    calendars[i["calendar_id"][1]].append(i)
+                    if not i["resource_id"]:
+                        if i["calendar_id"][1] not in calendars:
+                            calendars[i["calendar_id"][1]] = []
+                        i["attendance"] = False
+                        calendars[i["calendar_id"][1]].append(i)
+
+                    if calendar_resource.get(i["calendar_id"][0]):
+                        for res in calendar_resource.get(i["calendar_id"][0]):
+                            if i["resource_id"] and res != i["resource_id"][0]:
+                                continue
+                            if res in self.resources_with_specific_calendars:
+                                if (
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                    not in calendars
+                                ):
+                                    calendars[
+                                        "calendar for %s"
+                                        % (self.resources_with_specific_calendars[res],)
+                                    ] = []
+                                    cal_tz[
+                                        "calendar for %s"
+                                        % (self.resources_with_specific_calendars[res],)
+                                    ] = cal_tz[i["calendar_id"][1]]
+                                i["attendance"] = False
+                                calendars[
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                ].append(i)
 
             # Iterate over the results:
             for i in calendars:
@@ -556,7 +645,7 @@ class exporter(object):
                             "1" if j["attendance"] else "0",
                             (2 ** ((int(j["dayofweek"]) + 1) % 7))
                             if "dayofweek" in j
-                            else (2 ** 7) - 1,
+                            else (2**7) - 1,
                             priority_attendance if j["attendance"] else priority_leave,
                             # In odoo, monday = 0. In frePPLe, sunday = 0.
                             ("PT%dM" % round(j["hour_from"] * 60))
@@ -589,7 +678,7 @@ class exporter(object):
                                     "1",
                                     (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                     if "dayofweek" in j
-                                    else (2 ** 7) - 1,
+                                    else (2**7) - 1,
                                     priority_attendance,
                                     # In odoo, monday = 0. In frePPLe, sunday = 0.
                                     ("PT%dM" % round(j["hour_from"] * 60))
@@ -688,17 +777,28 @@ class exporter(object):
         """
         self.map_customers = {}
         first = True
+        individual_inserted = False
         for i in self.generator.getData(
             "res.partner",
-            search=[("is_company", "=", True)],
-            fields=["name"],
+            search=[],
+            fields=["name", "parent_id", "is_company"],
+            order="id",
         ):
             if first:
                 yield "<!-- customers -->\n"
                 yield "<customers>\n"
                 first = False
-            name = "%s %s" % (i["name"], i["id"])
-            yield "<customer name=%s/>\n" % quoteattr(name)
+            if i["is_company"]:
+                name = "%s %s" % (i["name"], i["id"])
+                yield "<customer name=%s/>\n" % quoteattr(name)
+            elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
+                name = "Individuals"
+                if not individual_inserted:
+                    yield "<customer name=%s/>\n" % quoteattr(name)
+                    individual_inserted = True
+            else:
+                name = self.map_customers[i["parent_id"][0]]
+
             self.map_customers[i["id"]] = name
         if not first:
             yield "</customers>\n"
@@ -712,16 +812,12 @@ class exporter(object):
         res.partner.id res.partner.name -> supplier.name
         """
         first = True
-        for i in self.generator.getData(
-            "res.partner",
-            search=[("is_company", "=", True)],
-            fields=["name"],
-        ):
+        for i in self.map_customers:
             if first:
                 yield "<!-- suppliers -->\n"
                 yield "<suppliers>\n"
                 first = False
-            yield "<supplier name=%s/>\n" % quoteattr("%d %s" % (i["id"], i["name"]))
+            yield "<supplier name=%s/>\n" % quoteattr(self.map_customers[i])
         if not first:
             yield "</suppliers>\n"
 
@@ -797,7 +893,14 @@ class exporter(object):
                 first = False
             name = i["name"]
             owner = i["owner"]
-            available = i["resource_calendar_id"]
+            available = (
+                i["resource_calendar_id"]
+                if not self.resources_with_specific_calendars.get(i["id"])
+                else (
+                    0,
+                    "calendar for %s" % (name,),
+                )
+            )
             self.map_workcenters[i["id"]] = name
             yield '<resource name=%s maximum="%s" category="%s" subcategory="%s" efficiency="%s"><location name=%s/>%s%s</resource>\n' % (
                 quoteattr(name),
@@ -841,6 +944,13 @@ class exporter(object):
         self.product_product = {}
         self.product_template_product = {}
         self.product_templates = {}
+        self.routes = {
+            i["id"]: i for i in self.generator.getData("stock.route", fields=["name"])
+        }
+        self.route_mto = None
+        for k, v in self.routes.items():
+            if v["name"] == "Replenish on Order (MTO)":
+                self.route_mto = k
         for i in self.generator.getData(
             "product.template",
             search=[("type", "not in", ("service", "consu"))],
@@ -853,6 +963,7 @@ class exporter(object):
                 "uom_id",
                 "categ_id",
                 "product_variant_ids",
+                "route_ids",
             ],
         ):
             self.product_templates[i["id"]] = i
@@ -907,8 +1018,7 @@ class exporter(object):
             }
             self.product_product[i["id"]] = prod_obj
             self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
-            # For make-to-order items the next line needs to XML snippet ' type="item_mto"'.
-            yield '<item name=%s uom=%s volume="%f" weight="%f" cost="%f" category=%s subcategory="%s,%s">\n' % (
+            yield '<item name=%s uom=%s volume="%f" weight="%f" cost="%f" category=%s subcategory="%s,%s" %s>\n' % (
                 quoteattr(name),
                 quoteattr(tmpl["uom_id"][1]) if tmpl["uom_id"] else "",
                 i["volume"] or 0,
@@ -921,6 +1031,7 @@ class exporter(object):
                 quoteattr(tmpl["categ_id"][1]) if tmpl["categ_id"] else '""',
                 self.uom_categories[self.uom[tmpl["uom_id"][0]]["category"]],
                 i["id"],
+                ' type="item_mto"' if self.route_mto in tmpl["route_ids"] else ""
             )
             # Export suppliers for the item, if the item is allowed to be purchased
             if tmpl["purchase_ok"]:
@@ -941,7 +1052,7 @@ class exporter(object):
                     )
                 suppliers = {}
                 for sup in results:
-                    name = "%d %s" % (sup["partner_id"][0], sup["partner_id"][1])
+                    name = self.map_customers.get(sup["partner_id"][0])
                     if sup.get("is_subcontractor", False):
                         if not hasattr(tmpl, "subcontractors"):
                             tmpl["subcontractors"] = []
@@ -1443,24 +1554,29 @@ class exporter(object):
                                     not in self.map_workcenters
                                 ):
                                     continue
-                                secondary_workcenter_str += '<load quantity="%f" search=%s><resource name=%s/>%s</load>' % (
-                                    1
-                                    if not secondary_workcenter["duration"]
-                                    or step["time_cycle"] == 0
-                                    else secondary_workcenter["duration"]
-                                    / step["time_cycle"],
-                                    quoteattr(secondary_workcenter["search_mode"]),
-                                    quoteattr(
-                                        self.map_workcenters[
-                                            secondary_workcenter["workcenter_id"][0]
-                                        ]
-                                    ),
-                                    (
-                                        "<skill name=%s/>"
-                                        % quoteattr(secondary_workcenter["skill"][1])
+                                secondary_workcenter_str += (
+                                    '<load quantity="%f" search=%s><resource name=%s/>%s</load>'
+                                    % (
+                                        1
+                                        if not secondary_workcenter["duration"]
+                                        or step["time_cycle"] == 0
+                                        else secondary_workcenter["duration"]
+                                        / step["time_cycle"],
+                                        quoteattr(secondary_workcenter["search_mode"]),
+                                        quoteattr(
+                                            self.map_workcenters[
+                                                secondary_workcenter["workcenter_id"][0]
+                                            ]
+                                        ),
+                                        (
+                                            "<skill name=%s/>"
+                                            % quoteattr(
+                                                secondary_workcenter["skill"][1]
+                                            )
+                                        )
+                                        if secondary_workcenter["skill"]
+                                        else "",
                                     )
-                                    if secondary_workcenter["skill"]
-                                    else "",
                                 )
 
                             yield "<suboperation>" '<operation name=%s %spriority="%s" duration_per="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
@@ -1627,19 +1743,7 @@ class exporter(object):
             j = so[i["order_id"][0]]
             location = j["warehouse_id"][1]
             customer = self.map_customers.get(j["partner_id"][0], None)
-            if not customer:
-                # The customer may be an individual.
-                # We check whether his/her company is in the map.
-                for c in self.generator.getData(
-                    "res.partner",
-                    ids=[j["partner_id"][0]],
-                    fields=["commercial_partner_id"],
-                ):
-                    customer = self.map_customers.get(
-                        c["commercial_partner_id"][0], None
-                    )
-                    if customer:
-                        break
+
             if not customer or not location or not product:
                 # Not interested in this sales order...
                 continue
@@ -1890,7 +1994,7 @@ class exporter(object):
                     qty,
                     quoteattr(item["name"]),
                     quoteattr(location),
-                    quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
+                    quoteattr(self.map_customers.get(j["partner_id"][0])),
                 )
         yield "</operationplans>\n"
 
@@ -1968,7 +2072,7 @@ class exporter(object):
                         qty,
                         quoteattr(item["name"]),
                         quoteattr(location),
-                        quoteattr("%d %s" % (j["partner_id"][0], j["partner_id"][1])),
+                        quoteattr(self.map_customers.get(j["partner_id"][0])),
                     )
             yield "</operationplans>\n"
 
@@ -2157,6 +2261,8 @@ class exporter(object):
                     quoteattr(location),
                     quoteattr(item["name"]),
                 )
+                # dictionary needed as BOM in Odoo might have multiple lines with the same product
+                operation_materials = {}
                 for mv in mv_list:
                     consumed_item = (
                         self.product_product[mv["product_id"][0]]
@@ -2179,10 +2285,16 @@ class exporter(object):
                         self.product_product[mv["product_id"][0]]["template"],
                     )
                     if qty_flow > 0:
-                        yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
-                            -qty_flow / qty,
-                            quoteattr(consumed_item["name"]),
+                        operation_materials[
+                            consumed_item["name"]
+                        ] = operation_materials.get(consumed_item["name"], 0) + (
+                            -qty_flow / qty
                         )
+                for key in operation_materials:
+                    yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
+                        operation_materials[key],
+                        quoteattr(key),
+                    )
                 yield '<flow xsi:type="flow_end" quantity="1"><item name=%s/></flow>\n' % (
                     quoteattr(item["name"]),
                 )
@@ -2226,6 +2338,8 @@ class exporter(object):
                         quoteattr(location),
                     )
                     idx += 10
+                    # dictionary needed as BOM in Odoo might have multiple lines with the same product
+                    operation_materials = {}
                     for mv in mv_list:
                         item = (
                             self.product_product[mv["product_id"][0]]
@@ -2261,9 +2375,13 @@ class exporter(object):
                             mv["product_uom"],
                             self.product_product[mv["product_id"][0]]["template"],
                         )
+                        operation_materials[item["name"]] = operation_materials.get(
+                            item["name"], 0
+                        ) + (-qty_flow / qty)
+                    for key in operation_materials:
                         yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
-                            -qty_flow / qty,
-                            quoteattr(item["name"]),
+                            operation_materials[key],
+                            quoteattr(key),
                         )
                     yield "</flows>"
                     if (
