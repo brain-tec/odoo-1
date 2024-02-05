@@ -312,9 +312,15 @@ class exporter(object):
                     and i["manufacturing_warehouse"][1]
                     or self.company
                 )
+                self.stock_location = (
+                    i["manufacturing_warehouse"]
+                    and self.env["stock.warehouse"].browse(i["manufacturing_warehouse"][0]).lot_stock_id
+                    or self.company
+                )
             except Exception:
                 self.calendar = None
                 self.mfg_location = None
+                self.stock_location = None
             if self.singlecompany:
                 # Create a new context to limit the data to the selected company
                 self.generator.setContext(allowed_company_ids=[i["id"]])
@@ -964,7 +970,8 @@ class exporter(object):
             #     i['routing_id'] = dummy_mrp_route_m2o_read
 
             # Determine the location
-            location = self.mfg_location
+            location = self.stock_location
+            location_name = location.display_name
 
             product_template = self.product_templates.get(i["product_tmpl_id"][0], None)
             if not product_template:
@@ -996,12 +1003,12 @@ class exporter(object):
                     # routing.
                     operation = "%s @ %s %d" % (
                         product_buf["name"],
-                        subcontractor.get("name", location),
+                        subcontractor.get("name", location_name),
                         i["id"],
                     )
                     if len(operation) > 300:
                         suffix = " @ %s %d" % (
-                            subcontractor.get("name", location),
+                            subcontractor.get("name", location_name),
                             i["id"],
                         )
                         operation = "%s%s" % (
@@ -1027,7 +1034,7 @@ class exporter(object):
                                 subcontractor.get("priority", 1),
                                 subcontractor.get("size_minimum", 0),
                                 quoteattr(product_buf["name"]),
-                                quoteattr(location),
+                                quoteattr(location_name),
                             )
                         else:
                             duration_per = (
@@ -1044,7 +1051,7 @@ class exporter(object):
                                 self.manufacturing_lead,
                                 i["sequence"] or 1,
                                 quoteattr(product_buf["name"]),
-                                quoteattr(location),
+                                quoteattr(location_name),
                             )
 
                         convertedQty = self.convert_qty_uom(
