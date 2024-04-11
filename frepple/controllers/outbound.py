@@ -1491,7 +1491,7 @@ class exporter(object):
                     continue
                 start = self.formatDateTime(j["date_order"])
                 end = self.formatDateTime(i["date"])
-                qty = i["product_qty"] - i["quantity_done"]
+                qty = i["quantity_done"] or i["product_qty"]
                 if qty >= 0:
                     yield '<operationplan reference=%s ordertype="PO" start="%s" end="%s" quantity="%f"' \
                           ' status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/>" \
