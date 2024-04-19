@@ -375,17 +375,17 @@ class exporter(object):
         if not product_id:
             return qty * self.uom[uom_id]["factor"]
         else:
-            product = self.env['product.product'].browse(product_id)
+            product = self.env['product.template'].browse(product_id)
             uom = self.env['uom.uom'].browse(uom_id)
 
             # I use the normal Odoo's conversion.
             # If it fails, I return what the original frePPLe code returns.
             try:
                 return uom._compute_quantity(qty, product.uom_id, raise_if_failure=True)
-            except Exception:
+            except Exception as e:
                 logger.warning(
-                    "Can't convert from %s for product %s"
-                    % (self.uom[uom_id]["name"], product_id)
+                    "Can't convert from %s for product %s. With error: %s"
+                    % (self.uom[uom_id]["name"], product_id, str(e))
                 )
                 return qty * self.uom[uom_id]["factor"]
 
