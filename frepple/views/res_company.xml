@@ -20,6 +20,7 @@
                         <field name="stock_rules_domain" widget="domain" options="{'model': 'stock.rule'}"/>
                         <field name="tz_for_exporting"/>
                         <field name="frepple_export_language"/>
+                        <field name="respect_reservations"/>
                     </group>
                 </page>
             </xpath>
