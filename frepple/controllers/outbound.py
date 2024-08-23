@@ -2093,8 +2093,8 @@ class exporter(object):
 
             yield (
                 '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
-                # Enable only in frepple >= 6.25
-                # '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                # Disable the next line in frepple < 6.25
+                '<owner name=%s policy="%s" xsi:type="demand_group"/>'
                 "</demand>\n"
             ) % (
                 quoteattr(name),
@@ -2107,9 +2107,9 @@ class exporter(object):
                 quoteattr(product["name"]),
                 quoteattr(customer),
                 quoteattr(location),
-                # Enable only in frepple >= 6.25
-                # quoteattr(i["order_id"][1]),
-                # "alltogether" if j["picking_policy"] == "one" else "independent",
+                # Disable the next lines in frepple < 6.25
+                quoteattr(i["order_id"][1]),
+                "alltogether" if j["picking_policy"] == "one" else "independent",
             )
         yield "</demands>\n"
 
@@ -2747,10 +2747,12 @@ class exporter(object):
         convert stock.warehouse.orderpoint.qty_multiple -> buffer->size_multiple
         """
         first = True
-        try:
-            has_buffer_max = self.version[0] >= 9
-        except Exception:
-            has_buffer_max = False
+        # Keeping with the original reorderpoint mapping now
+        # try:
+        #     has_buffer_max = self.version[0] >= 9
+        # except Exception:
+        #     has_buffer_max = False
+        has_buffer_max = False
 
         if has_buffer_max:
             # frepple >= 9.0 has native support for buffers with a min and max level
