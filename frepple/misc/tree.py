@@ -87,7 +87,7 @@ class Node:
             # Prints the start of the entity.
             tag = ['<{}'.format(self.tag)]
             if self.attrs:
-                tag.append(' '.join(['{}={}'.format(k, quoteattr(v)) for k, v in sorted(self.attrs.items())]))
+                tag.append(' '.join(['{}={}'.format(k, quoteattr(str(v))) for k, v in sorted(self.attrs.items())]))
             tag[-1] += '>' if is_inlined else '/>'
             _list.append(' '.join(tag))
 
