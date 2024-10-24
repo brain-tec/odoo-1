@@ -97,6 +97,16 @@ class importer(object):
             change_product_qty = self.env["change.production.qty"].with_user(
                 self.actual_user
             )
+            hasRequisition = True
+            try:
+                purchase_requisition = self.env["purchase.requisition"].with_user(
+                    self.actual_user
+                )
+                purchase_requisition_line = self.env[
+                    "purchase.requisition.line"
+                ].with_user(self.actual_user)
+            except:
+                hasRequisition = False
         else:
             product_product = self.env["product.product"]
             product_supplierinfo = self.env["product.supplierinfo"]
@@ -113,10 +123,16 @@ class importer(object):
             stck_warehouse = self.env["stock.warehouse"]
             stck_location = self.env["stock.location"]
             change_product_qty = self.env["change.production.qty"]
+            hasRequisition = True
+            try:
+                purchase_requisition = self.env["purchase.requisition"]
+                purchase_requisition_line = self.env["purchase.requisition.line"]
+            except:
+                hasRequisition = False
         if self.mode == 1:
             # Cancel previous draft purchase quotations
             m = self.env["purchase.order"]
-            recs = m.search([("state", "=", "draft"), ("origin", "=", "frePPLe")])
+            recs = m.search([("state", "=", "draft"), ("origin", "=like", "frePPLe%")])
             recs.write({"state": "cancel"})
             recs.unlink()
             msg.append("Removed %s old draft purchase orders" % len(recs))
@@ -127,12 +143,37 @@ class importer(object):
                     "|",
                     ("state", "=", "draft"),
                     ("state", "=", "cancel"),
-                    ("origin", "=", "frePPLe"),
+                    ("origin", "=like", "frePPLe%"),
                 ]
             )
             recs.write({"state": "cancel"})
             recs.unlink()
             msg.append("Removed %s old draft manufacturing orders" % len(recs))
+
+            # read all the blanket orders
+            if hasRequisition:
+                pr_ids = [
+                    i
+                    for i in purchase_requisition.search(
+                        [
+                            "&",
+                            "&",
+                            "|",
+                            ("date_end", "=", False),
+                            ("date_end", ">=", datetime.now()),
+                            ("type_id.name", "=", "Blanket Order"),
+                            ("state", "=", "ongoing"),
+                        ]
+                    )
+                ]
+                requisition_dic = {
+                    (i.product_id.id, i.requisition_id.vendor_id.id): i.requisition_id
+                    for i in purchase_requisition_line.search(
+                        [
+                            ("requisition_id", "in", [j.id for j in pr_ids]),
+                        ]
+                    )
+                }
 
         # Parsing the XML data file
         countproc = 0
@@ -280,17 +321,42 @@ class importer(object):
                             continue
 
                         # Create purchase order
+                        remark = elem.get("remark", None)
+                        if remark:
+                            remark = "frePPLe - %s" % remark
+                        else:
+                            remark = "frePPLe"
                         if supplier_id not in supplier_reference:
-                            po = proc_order.create(
-                                {
-                                    "company_id": self.company.id,
-                                    "partner_id": supplier_id,
-                                    # TODO Odoo has no place to store the location and criticality
-                                    # int(elem.get('location_id')),
-                                    # elem.get('criticality'),
-                                    "origin": "frePPLe",
-                                }
-                            )
+                            po_args = {
+                                "company_id": self.company.id,
+                                "partner_id": supplier_id,
+                                "origin": remark,
+                            }
+                            try:
+                                picking_type_id = stck_picking_type.search(
+                                    [
+                                        ("code", "=", "incoming"),
+                                        (
+                                            "warehouse_id",
+                                            "=",
+                                            int(elem.get("location_id")),
+                                        ),
+                                    ],
+                                    limit=1,
+                                )[:1]
+                                if not picking_type_id:
+                                    picking_type_id = stck_picking_type.search(
+                                        [
+                                            ("code", "=", "incoming"),
+                                            ("warehouse_id", "=", False),
+                                        ],
+                                        limit=1,
+                                    )[:1]
+                                if picking_type_id:
+                                    po_args["picking_type_id"] = picking_type_id.id
+                            except Exception:
+                                pass
+                            po = proc_order.create(po_args)
                             po.payment_term_id = (
                                 po.partner_id.property_supplier_payment_term_id.id
                             )
@@ -341,6 +407,52 @@ class importer(object):
                                     "product_uom": int(uom_id),
                                 }
                             )
+
+                            # Is there a blanket order for this product /supplier ?
+                            if (
+                                self.mode == 1
+                                and hasRequisition
+                                and not po_line.order_id.requisition_id
+                                and (int(item_id), supplier_id) in requisition_dic
+                            ):
+                                po.requisition_id = requisition_dic[
+                                    (int(item_id), supplier_id)
+                                ]
+                            elif (
+                                self.mode != 1
+                                and hasRequisition
+                                and not po_line.order_id.requisition_id
+                            ):
+                                for i in purchase_requisition_line.search(
+                                    [
+                                        "&",
+                                        "&",
+                                        "&",
+                                        "&",
+                                        "|",
+                                        ("requisition_id.date_end", "=", False),
+                                        (
+                                            "requisition_id.date_end",
+                                            ">=",
+                                            datetime.now(),
+                                        ),
+                                        (
+                                            "requisition_id.type_id.name",
+                                            "=",
+                                            "Blanket Order",
+                                        ),
+                                        ("requisition_id.state", "=", "ongoing"),
+                                        ("product_id.id", "=", int(item_id)),
+                                        (
+                                            "requisition_id.vendor_id.id",
+                                            "=",
+                                            supplier_id,
+                                        ),
+                                    ]
+                                ):
+                                    po_line.order_id.requisition_id = i.requisition_id
+                                    break
+
                             # Then let odoo computes all the fields (taxes, name, description...)
 
                             d = po_line._prepare_purchase_order_line(
@@ -379,10 +491,10 @@ class importer(object):
                         destination = elem.get("destination")
 
                         origin_id = stck_warehouse.search(
-                            [("name", "=", origin)], limit=1
+                            [("code", "=", origin)], limit=1
                         )[0]
                         destination_id = stck_warehouse.search(
-                            [("name", "=", destination)], limit=1
+                            [("code", "=", destination)], limit=1
                         )[0]
 
                         location_id = None
@@ -445,6 +557,11 @@ class importer(object):
                         if not hasattr(self, "stock_picking_dict"):
                             self.stock_picking_dict = {}
                         if not self.stock_picking_dict.get((origin, destination)):
+                            remark = elem.get("remark", None)
+                            if remark:
+                                remark = "frePPLe - %s" % remark
+                            else:
+                                remark = "frePPLe"
                             self.stock_picking_dict[(origin, destination)] = (
                                 stck_picking.create(
                                     {
@@ -453,7 +570,7 @@ class importer(object):
                                         "location_id": location_id["id"],
                                         "location_dest_id": location_dest_id["id"],
                                         "move_type": "direct",
-                                        "origin": "frePPLe",
+                                        "origin": remark,
                                     }
                                 )
                             )
@@ -584,6 +701,11 @@ class importer(object):
                         )
                         if (elem.get("status") or "proposed") == "proposed":
                             # MO creation
+                            remark = elem.get("remark", None)
+                            if remark:
+                                remark = "frePPLe - %s" % remark
+                            else:
+                                remark = "frePPLe"
                             mo = mfg_order.with_context(context).create(
                                 {
                                     "product_qty": elem.get("quantity"),
@@ -599,7 +721,7 @@ class importer(object):
                                     "qty_producing": 0.00,
                                     # TODO no place to store the criticality
                                     # elem.get('criticality'),
-                                    "origin": "frePPLe",
+                                    "origin": remark,
                                 }
                             )
                             # Remember odoo name for the MO reference passed by frepple.
@@ -621,6 +743,11 @@ class importer(object):
                                 continue
                             if mo:
                                 new_qty = float(elem.get("quantity"))
+                                remark = elem.get("remark", None)
+                                if remark:
+                                    remark = "frePPLe - %s" % remark
+                                else:
+                                    remark = "frePPLe"
                                 if mo.product_qty != new_qty:
                                     cpq = change_product_qty.create(
                                         {
@@ -633,7 +760,7 @@ class importer(object):
                                     {
                                         "date_start": elem.get("start"),
                                         "date_finished": elem.get("end"),
-                                        "origin": "frePPLe",
+                                        "origin": remark,
                                     }
                                 )
                                 mo_references[elem.get("reference")] = mo
