@@ -1478,11 +1478,11 @@ class exporter(object):
                                 quoteattr(location),
                             )
                         else:
-                            duration_per = (i["produce_delay"] or 0) + (
+                            duration = (i["produce_delay"] or 0) + (
                                 i["days_to_prepare_mo"] or 0
                             )
 
-                            yield '<operation name=%s %ssize_multiple="1" duration_per="%s" posttime="P%dD" priority="%s" xsi:type="operation_time_per">\n' "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s %ssize_multiple="1" duration="%s" posttime="P%dD" priority="%s" xsi:type="operation_fixed_time">\n' "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 (
                                     ("description=%s " % quoteattr(i["code"]))
@@ -1490,8 +1490,8 @@ class exporter(object):
                                     else ""
                                 ),
                                 (
-                                    self.convert_float_time(duration_per)
-                                    if duration_per and duration_per > 0
+                                    self.convert_float_time(duration)
+                                    if duration and duration > 0
                                     else "P0D"
                                 ),
                                 self.manufacturing_lead,
@@ -2060,7 +2060,12 @@ class exporter(object):
                                 ),
                                 due,
                                 priority,
-                                qty - reserved_quantity if j["picking_policy"] == "one" and qty - reserved_quantity > 0 else 0.0,
+                                (
+                                    qty - reserved_quantity
+                                    if j["picking_policy"] == "one"
+                                    and qty - reserved_quantity > 0
+                                    else 0.0
+                                ),
                                 "open" if qty - reserved_quantity > 0 else "closed",
                                 quoteattr(product["name"]),
                                 quoteattr(customer),
@@ -2448,9 +2453,12 @@ class exporter(object):
                 startdate = self.formatDateTime(
                     i.date_start if i.date_start else i.date_planned_start
                 )
-                # enddate = self.formatDateTime(i.date_planned_finished)
             except Exception:
                 continue
+            try:
+                enddate = self.formatDateTime(i.date_finished)
+            except Exception:
+                enddate = None
             qty = self.convert_qty_uom(
                 i.qty_producing if i.qty_producing else i.product_qty,
                 i.product_uom_id.id,
@@ -2470,31 +2478,24 @@ class exporter(object):
                 batch = mto_mo[0].display_name if mto_mo else i.name
 
             # Create a record for the MO
-            # Option 1: compute MO end date based on the start date
-            yield '<operationplan type="MO" reference=%s batch=%s start="%s" quantity="%s" status="%s">\n' % (
+            yield '<operationplan type="MO" reference=%s batch=%s %s="%s" quantity="%s" status="%s">\n' % (
                 quoteattr(i.name),
                 quoteattr(batch),
-                startdate,
+                (
+                    "start"  # Option 1: compute MO end date based on the start date
+                    if self.manage_work_orders or not enddate
+                    else "end"  # Option 2: compute MO start date based on the end date
+                ),
+                (startdate if self.manage_work_orders or not enddate else enddate),
                 qty,
-                "approved",  # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
-                # "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
-                # "approved" if i["status"]  == "confirmed" else "confirmed", # In-progress can't be rescheduled in frepple, but confirmed MOs
+                # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
+                # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
+                (
+                    "approved"
+                    if self.manage_work_orders or i.state in ("confirmed", "draft")
+                    else "confirmed"
+                ),
             )
-            # Option 2: compute MO start date based on the end date
-            # yield '<operationplan type="MO" reference=%s end="%s" quantity="%s" status="%s"><operation name=%s/><flowplans>\n' % (
-            #     quoteattr(i["name"]),
-            #     enddate,
-            #     qty,
-            #     # "approved",  # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
-            #     "confirmed",  # In the "confirmed" status, frepple sees the MO as frozen and unchangeable
-            #     quoteattr(operation),
-            # )
-
-            # Collect work order info
-            if self.manage_work_orders:
-                wo_list = i.workorder_ids
-            else:
-                wo_list = []
 
             # Collect move info
             if i.move_raw_ids:
@@ -2502,8 +2503,8 @@ class exporter(object):
             else:
                 mv_list = []
 
-            if not wo_list:
-                # There are no workorders on the manufacturing order
+            if not self.manage_work_orders or not getattr(i, "workorder_ids", None):
+                # There are no workorders on the manufacturing order (or we don't want to see them in frepple)
                 yield '<operation name=%s xsi:type="operation_fixed_time" priority="0"><location name=%s/><item name=%s/><flows>' % (
                     quoteattr(operation),
                     quoteattr(location),
@@ -2543,7 +2544,37 @@ class exporter(object):
                 yield '<flow xsi:type="flow_end" quantity="1"><item name=%s/></flow>\n' % (
                     quoteattr(item["name"]),
                 )
-                yield "</flows></operation></operationplan>"
+                yield "</flows>"
+                # Pick up work center loading of all work orders
+                loads = {}
+                for wo in getattr(i, "workorder_ids", []):
+                    # Get remaining duration of the WO
+                    time_left = wo.duration_expected - wo.duration_unit
+                    if wo.is_user_working and wo.time_ids:
+                        # The WO is currently being worked on
+                        for tm in wo.time_ids:
+                            if tm.date_start and not tm.date_end:
+                                time_left -= round(
+                                    (now - tm.date_start).total_seconds() / 60
+                                )
+                    if (
+                        time_left > 0
+                        and wo.workcenter_id.id in self.map_workcenters
+                        and wo.state not in ("done", "cancel")
+                    ):
+                        loads[self.map_workcenters[wo.workcenter_id.id]] = (
+                            loads.get(self.map_workcenters[wo.workcenter_id.id], 0)
+                            + time_left
+                        )
+                if loads:
+                    yield "<loads>"
+                    for r, q in loads.items():
+                        yield '<load quantity_fixed="%s" quantity="0"><resource name=%s/></load>' % (
+                            q,
+                            quoteattr(r),
+                        )
+                    yield "</loads>"
+                yield "</operation></operationplan>"
             else:
                 # Define an operation for the MO
                 yield '<operation name=%s xsi:type="operation_routing" priority="0"><item name=%s/><location name=%s/><suboperations>' % (
@@ -2554,7 +2585,7 @@ class exporter(object):
                 # Define operations for each WO
                 idx = 10
                 first_wo = True
-                for wo in wo_list:
+                for wo in i.workorder_ids:
                     suboperation = wo.display_name
                     if len(suboperation) > 300:
                         suboperation = suboperation[0:300]
@@ -2679,7 +2710,7 @@ class exporter(object):
 
                 # Create operationplans for each WO, starting with the last one
                 idx = 0
-                for wo in reversed(wo_list):
+                for wo in reversed(i.workorder_ids):
                     idx += 1.0
                     suboperation = wo.display_name
                     if len(suboperation) > 300:
