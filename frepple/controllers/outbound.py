@@ -2430,6 +2430,7 @@ class exporter(object):
         ):
             # Filter out irrelevant manufacturing orders
             location = self.map_locations.get(i.location_dest_id.id, None)
+            operation = i.name
             if not location and i.picking_type_id:
                 # For subcontracting MO we find the warehouse on the operation type
                 operation_type = self.operation_types.get(i.picking_type_id.id, None)
@@ -2438,7 +2439,7 @@ class exporter(object):
                     if location:
                         code = self.subcontracting_mo_po_mapping.get(i.id, None)
                         if code:
-                            i.name = code
+                            operation = code
             item = self.product_product.get(i.product_id.id, None)
             if not item or not location:
                 continue
@@ -2448,7 +2449,6 @@ class exporter(object):
             # materials.
             # To reflect this flexibility we need a frepple operation specific
             # to each manufacturing order.
-            operation = i.name
             try:
                 startdate = self.formatDateTime(
                     i.date_start if i.date_start else i.date_planned_start
