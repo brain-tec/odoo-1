@@ -25,16 +25,11 @@
 import json
 import logging
 import pytz
-import xmlrpc.client
 from xml.sax.saxutils import quoteattr
 from datetime import datetime, timedelta
 from pytz import timezone
-import ssl
 
-try:
-    import odoo
-except ImportError:
-    pass
+import odoo
 
 logger = logging.getLogger(__name__)
 
@@ -412,14 +407,9 @@ class exporter(object):
             for usr in self.generator.getData(
                 "res.users",
                 ids=grp["users"],
-                fields=["name", "login"],
+                fields=["name", "login", "lang"],
             ):
-                users.append(
-                    (
-                        usr["name"],
-                        usr["login"],
-                    )
-                )
+                users.append((usr["name"], usr["login"], usr["lang"]))
         yield '<stringproperty name="users" value=%s/>\n' % quoteattr(json.dumps(users))
 
     def export_calendar(self):
@@ -1987,7 +1977,12 @@ class exporter(object):
                                 ),
                                 due,
                                 priority,
-                                qty - reserved_quantity if j["picking_policy"] == "one" and qty - reserved_quantity > 0 else 0.0,
+                                (
+                                    qty - reserved_quantity
+                                    if j["picking_policy"] == "one"
+                                    and qty - reserved_quantity > 0
+                                    else 0.0
+                                ),
                                 "open" if qty - reserved_quantity > 0 else "closed",
                                 quoteattr(product["name"]),
                                 quoteattr(customer),
