@@ -970,7 +970,11 @@ class exporter(object):
             #     i['routing_id'] = dummy_mrp_route_m2o_read
 
             # Determine the location
-            location = self.stock_location
+            warehouse = False
+            if i and i["picking_type_id"]:
+                warehouse = self.env['stock.picking.type'].browse(i["picking_type_id"][0]).warehouse_id
+
+            location = warehouse.lot_stock_id if warehouse else self.stock_location
             location_name = location.display_name
 
             product_template = self.product_templates.get(i["product_tmpl_id"][0], None)
