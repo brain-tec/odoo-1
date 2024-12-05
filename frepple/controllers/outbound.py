@@ -979,6 +979,12 @@ class exporter(object):
         supplierinfo.sequence -> itemsupplier.priority
         """
 
+        # Read the product tags
+        product_tags = {
+            i["id"]: i["name"]
+            for i in self.generator.getData("product.tag", fields=["name"])
+        }
+
         # Read the product templates
         self.product_product = {}
         self.product_template_product = {}
@@ -1002,6 +1008,7 @@ class exporter(object):
                 "categ_id",
                 "product_variant_ids",
                 "route_ids",
+                "product_tag_ids",
             ]
             + (
                 [
@@ -1123,7 +1130,7 @@ class exporter(object):
             self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
 
             # For make-to-order items the next line needs to XML snippet ' type="item_mto"'.
-            yield '<item name=%s %s uom=%s volume="%f" weight="%f" cost="%f" subcategory="%s,%s"%s%s>%s\n' % (
+            yield '<item name=%s %s uom=%s volume="%f" weight="%f" cost="%f" subcategory="%s,%s"%s%s%s>%s\n' % (
                 quoteattr(name),
                 (
                     ("description=%s" % (quoteattr(description),))
@@ -1149,6 +1156,22 @@ class exporter(object):
                     if self.has_expiry
                     and tmpl["expiration_time"]
                     and tmpl["expiration_time"] > 0
+                    else ""
+                ),
+                (
+                    (
+                        " category=%s"
+                        % quoteattr(
+                            ", ".join(
+                                [
+                                    product_tags[i]
+                                    for i in tmpl["product_tag_ids"]
+                                    if i in product_tags
+                                ]
+                            )
+                        )
+                    )
+                    if tmpl["product_tag_ids"]
                     else ""
                 ),
                 (
