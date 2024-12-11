@@ -729,7 +729,6 @@ class importer(object):
                             mo_references[elem.get("reference")] = mo
                             mo._create_update_move_finished()
                             # mo.action_confirm()  # confirm MO
-                            # mo.action_assign() # reserve material
                             create = True
                         else:
                             # MO update
