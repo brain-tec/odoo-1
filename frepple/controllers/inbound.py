@@ -161,7 +161,7 @@ class importer(object):
                             "|",
                             ("date_end", "=", False),
                             ("date_end", ">=", datetime.now()),
-                            ("type_id.name", "=", "Blanket Order"),
+                            ("requisition_type", "=", "blanket_order"),
                             ("state", "=", "ongoing"),
                         ]
                     )
