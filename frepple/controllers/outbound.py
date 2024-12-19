@@ -1490,7 +1490,9 @@ class exporter(object):
                 # if PO status is done, we should ignore this receipt
                 if j["state"] == "done":
                     continue
-                location = self.map_locations.get(i["location_dest_id"][0], None)
+                location = self.env['purchase.order'].browse(
+                    j["id"]
+                ).picking_type_id.warehouse_id.lot_stock_id.get_warehouse_stock_location().complete_name
                 if not location:
                     continue
                 start = self.formatDateTime(j["date_order"])
