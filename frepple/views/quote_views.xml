@@ -89,20 +89,20 @@
         <field name="name">frepple_quote.post.view.tree</field>
         <field name="model">frepple.quote</field>
         <field name="arch" type="xml">
-            <form string="">
+            <list string="">
                 <field name="product_id"/>
                 <field name="warehouse_id"/>
                 <field name="quantity"/>
                 <field name="promised_delivery_date"/>
                 <field name="last_quoted"/>
-            </form>
+            </list>
         </field>
     </record>
 
     <record id="frepple_quote_post_action" model="ir.actions.act_window">
         <field name="name">FrePPLe Quotes</field>
         <field name="res_model">frepple.quote</field>
-        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_mode">list,kanban,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Make your first FrePPLe quote!

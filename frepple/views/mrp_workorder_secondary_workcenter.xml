@@ -5,11 +5,11 @@
         <field name="name">mrp.workorder.secondary.workcenter.tree</field>
         <field name="model">mrp.workorder.secondary.workcenter</field>
         <field name="arch" type="xml">
-            <form>
+            <list>
                 <field name="workorder_id" invisible="1"/>
                 <field name="workcenter_id"/>
                 <field name="duration"/>
-            </form>
+            </list>
         </field>
     </record>
     <record id="mrp_workorder_secondary_workcenter_form_view" model="ir.ui.view">
@@ -18,7 +18,7 @@
         <field name="arch" type="xml">
             <form string="Secondary Work Centers">
                 <sheet>
-                    <group name="Secondary workcenter" context="{'tree_view_ref': 'mrp.mrp_workorder_secondary_workcenter_tree_view'}">
+                    <group name="Secondary workcenter" context="{'list_view_ref': 'frepple.mrp_workorder_secondary_workcenter_tree_view'}">
                         <field name="workorder_id" invisible="1"/>
                         <field name="workcenter_id"/>
                         <field name="duration"/>

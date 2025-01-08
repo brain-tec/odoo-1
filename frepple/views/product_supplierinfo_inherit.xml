@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>     
-<odoo>        
-
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="product_supplierinfo_inherit_tree_view" model="ir.ui.view">
         <field name="name">product.supplierinfo.inherit.tree.view</field>
@@ -13,6 +10,4 @@
             </xpath>
         </field>
     </record>
-</odoo>
-
 </odoo>
