@@ -90,6 +90,7 @@ class importer(object):
             stck_picking_type = self.env["stock.picking.type"].with_user(
                 self.actual_user
             )
+            bom_type = self.env["mrp.bom"].with_user(self.actual_user)
             stck_picking = self.env["stock.picking"].with_user(self.actual_user)
             stck_move = self.env["stock.move"].with_user(self.actual_user)
             stck_warehouse = self.env["stock.warehouse"].with_user(self.actual_user)
@@ -161,7 +162,7 @@ class importer(object):
                             "|",
                             ("date_end", "=", False),
                             ("date_end", ">=", datetime.now()),
-                            ("type_id.name", "=", "Blanket Order"),
+                            ("requisition_type", "=", "blanket_order"),
                             ("state", "=", "ongoing"),
                         ]
                     )
@@ -448,10 +449,10 @@ class importer(object):
                                             "=",
                                             supplier_id,
                                         ),
-                                    ]
+                                    ],
+                                    limit=1,
                                 ):
                                     po_line.order_id.requisition_id = i.requisition_id
-                                    break
 
                             # Then let odoo computes all the fields (taxes, name, description...)
 
@@ -706,6 +707,19 @@ class importer(object):
                                 remark = "frePPLe - %s" % remark
                             else:
                                 remark = "frePPLe"
+                            bom_id = int(elem.get("operation").rsplit(" ", 1)[1])
+                            try:
+                                bom = bom_type.search(
+                                    [
+                                        ("id", "=", bom_id),
+                                    ],
+                                    limit=1,
+                                )
+                                if not bom and bom.type == "phantom":
+                                    # Avoid creating MO on a) non-existing BOMs and b) phantom/kit BOMs
+                                    continue
+                            except Exception:
+                                pass
                             mo = mfg_order.with_context(context).create(
                                 {
                                     "product_qty": elem.get("quantity"),
@@ -715,9 +729,7 @@ class importer(object):
                                     "company_id": self.company.id,
                                     "product_uom_id": int(uom_id),
                                     "picking_type_id": picking.id,
-                                    "bom_id": int(
-                                        elem.get("operation").rsplit(" ", 1)[1]
-                                    ),
+                                    "bom_id": bom_id,
                                     "qty_producing": 0.00,
                                     # TODO no place to store the criticality
                                     # elem.get('criticality'),
@@ -729,8 +741,6 @@ class importer(object):
                             mo_references[elem.get("reference")] = mo
                             mo._create_update_move_finished()
                             # mo.action_confirm()  # confirm MO
-                            # mo._plan_workorders() # plan MO
-                            # mo.action_assign() # reserve material
                             create = True
                         else:
                             # MO update
