@@ -2825,13 +2825,20 @@ class exporter(object):
                 )
                 if not item:
                     continue
+                warehouse = (
+                    self.warehouses.get(i["warehouse_id"][0])
+                    if i["warehouse_id"]
+                    else None
+                )
+                if not warehouse:
+                    continue
                 uom_factor = self.convert_qty_uom(
                     1.0,
                     i["product_uom"][0],
                     self.product_product[i["product_id"][0]]["template"],
                 )
                 yield '<buffer name=%s minimum="%f" maximum="%f"><item name=%s/><location name=%s/></buffer>\n' % (
-                    quoteattr("%s @ %s" % (item["name"], i["warehouse_id"][1])),
+                    quoteattr("%s @ %s" % (item["name"], warehouse)),
                     ((i["product_min_qty"] or 0) * uom_factor),
                     ((i["product_max_qty"] or 0) * uom_factor),
                     quoteattr(item["name"]),
@@ -2860,12 +2867,19 @@ class exporter(object):
                 )
                 if not item:
                     continue
+                warehouse = (
+                    self.warehouses.get(i["warehouse_id"][0])
+                    if i["warehouse_id"]
+                    else None
+                )
+                if not warehouse:
+                    continue
                 uom_factor = self.convert_qty_uom(
                     1.0,
                     i["product_uom"][0],
                     self.product_product[i["product_id"][0]]["template"],
                 )
-                name = "%s @ %s" % (item["name"], i["warehouse_id"][1])
+                name = "%s @ %s" % (item["name"], warehouse)
                 if i["product_min_qty"]:
                     yield """
                     <calendar name=%s default="0"><buckets>
