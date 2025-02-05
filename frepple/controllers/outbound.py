@@ -56,7 +56,17 @@ class Odoo_generator:
             return getattr(obj, method)(*args)
         return None
 
-    def getData(self, model, search=[], order=None, fields=[], ids=None, object=False):
+    def getData(
+        self,
+        model,
+        search=[],
+        order=None,
+        fields=[],
+        ids=None,
+        object=False,
+        limit=None,
+        offset=0,
+    ):
         if ids is not None:
             if object:
                 return self.env[model].browse(ids) if ids else []
@@ -64,14 +74,24 @@ class Odoo_generator:
                 return self.env[model].browse(ids).read(fields) if ids else []
         if order:
             if object:
-                return self.env[model].search(search, order=order)
+                return self.env[model].search(
+                    search, order=order, limit=limit, offset=offset
+                )
             else:
-                return self.env[model].search(search, order=order).read(fields)
+                return (
+                    self.env[model]
+                    .search(search, order=order, limit=limit, offset=offset)
+                    .read(fields)
+                )
         else:
             if object:
-                return self.env[model].search(search)
+                return self.env[model].search(search, limit=limit, offset=offset)
             else:
-                return self.env[model].search(search).read(fields)
+                return (
+                    self.env[model]
+                    .search(search, limit=limit, offset=offset)
+                    .read(fields)
+                )
 
 
 class XMLRPC_generator:
@@ -847,38 +867,52 @@ class exporter(object):
         self.map_suppliers = {}
         first = True
         individual_inserted = False
-        for i in self.generator.getData(
-            "res.partner",
-            search=["|", ("parent_id", "=", False), ("parent_id.active", "=", True)],
-            fields=["name", "parent_id", "is_company"],
-            order="parent_id desc",
-        ):
-            if first:
-                yield "<!-- customers -->\n"
-                yield "<customers>\n"
-                first = False
-            if i["is_company"]:
-                name = str(i["id"])
-                supplier = "%s %s" % (i["name"], i["id"])
-                yield '<customer name="%s" description=%s/>\n' % (
-                    name,
-                    quoteattr(i["name"][:300]),
-                )
-            elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
-                name = "Individuals"
-                supplier = "Individuals"
-                if not individual_inserted:
-                    yield "<customer name=%s/>\n" % quoteattr(name)
-                    individual_inserted = True
-            else:
-                if i["parent_id"][0] in self.map_customers:
-                    name = str(self.map_customers[i["parent_id"][0]])
-                    supplier = "%s %s" % (i["parent_id"][1], i["parent_id"][0])
-                else:
+        offset = 0
+        pagesize = 25000
+        while True:
+            recs = self.generator.getData(
+                "res.partner",
+                fields=["name", "parent_id", "is_company"],
+                order="parent_id desc",
+                offset=offset,
+                limit=pagesize,
+            )
+            if len(recs) == 0:
+                break
+            offset += pagesize
+            for i in recs:
+
+                # We don't kow that parent (archived ?) so continue
+                if i["parent_id"] and i["parent_id"][0] not in self.map_customers:
                     continue
 
-            self.map_customers[i["id"]] = name
-            self.map_suppliers[i["id"]] = supplier
+                if first:
+                    yield "<!-- customers -->\n"
+                    yield "<customers>\n"
+                    first = False
+                if i["is_company"]:
+                    name = str(i["id"])
+                    supplier = "%s %s" % (i["name"], i["id"])
+                    yield '<customer name="%s" description=%s/>\n' % (
+                        name,
+                        quoteattr(i["name"][:300]),
+                    )
+                elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
+                    name = "Individuals"
+                    supplier = "Individuals"
+                    if not individual_inserted:
+                        yield "<customer name=%s/>\n" % quoteattr(name)
+                        individual_inserted = True
+                else:
+                    if i["parent_id"][0] in self.map_customers:
+                        name = str(self.map_customers[i["parent_id"][0]])
+                        supplier = "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                    else:
+                        continue
+
+                self.map_customers[i["id"]] = name
+                self.map_suppliers[i["id"]] = supplier
+
         if not first:
             yield "</customers>\n"
 
