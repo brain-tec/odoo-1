@@ -249,7 +249,7 @@ class Quote(models.Model):
                         "description": "",
                         "due": due_date_user_tz.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                         "item": {"name": product_name},
-                        "location": {"name": str(quote.warehouse_id.name)},
+                        "location": {"name": str(quote.warehouse_id.code)},
                         "customer": {"name": "All customers"},
                         "minshipment": quote.minimum_shipment,
                         "maxlateness": quote.maximum_lateness * 86400,

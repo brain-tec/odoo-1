@@ -106,7 +106,7 @@ class SaleOrder(models.Model):
                             "description": "",
                             "due": due_date,
                             "item": {"name": product_name},
-                            "location": {"name": sale_order.warehouse_id.name},
+                            "location": {"name": sale_order.warehouse_id.code},
                             "customer": {
                                 "name": "%s %s"
                                 % (
