@@ -84,7 +84,7 @@ class SaleOrder(models.Model):
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
-                if line.product_id.type == "product":
+                if line.product_id.type == "consu":
                     product_name = self.getfrePPLeItemName(
                         line.product_id, use_short_names
                     )
