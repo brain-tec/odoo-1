@@ -1222,17 +1222,25 @@ class exporter(object):
             if i["product_tmpl_id"][0] not in self.product_templates:
                 continue
             tmpl = self.product_templates[i["product_tmpl_id"][0]]
-            if i["code"]:
+            # generate variant name and description in frepple
+            if i["product_template_attribute_value_ids"]:
+                if use_short_names:
+                    name = (i["code"])[:300]
+                    description = i["name"][:500]
+                else:
+                    name = (
+                        (("[%s] %s %s" % (i["code"], i["name"], i["id"]))[:300])
+                        if i["code"]
+                        else "%s %s" % (i["name"], i["id"])[:300]
+                    )
+                    description = None
+            # generate name and description for non-variant products
+            elif i["code"]:
                 name = (
                     (("[%s] %s" % (i["code"], i["name"]))[:300])
                     if not use_short_names
                     else i["code"][:300]
                 )
-                description = i["name"][:500] if use_short_names else None
-            # product is a variant and has no internal reference
-            # we use the product id as code
-            elif i["product_template_attribute_value_ids"]:
-                name = ("[%s] %s" % (i["id"], i["name"]))[:300]
                 description = i["name"][:500] if use_short_names else None
             else:
                 name = i["name"][:300]
