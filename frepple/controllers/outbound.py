@@ -313,8 +313,11 @@ class exporter(object):
         logger.debug("Exporting BOMs.")
         if self.mode == 1:
             yield from self.export_boms()
-        logger.debug("Exporting sales orders.")
-        yield from self.export_salesorders()
+
+        # No sales orders for medifab
+        # logger.debug("Exporting sales orders.")
+        # yield from self.export_salesorders()
+
         # Uncomment the following lines to create forecast models in frepple
         # logger.debug("Exporting forecast.")
         # for i in self.export_forecasts():
@@ -324,8 +327,10 @@ class exporter(object):
             yield from self.export_purchaseorders()
             logger.debug("Exporting manufacturing orders.")
             yield from self.export_manufacturingorders()
-            logger.debug("Exporting reordering rules.")
-            yield from self.export_orderpoints()
+
+            # No reordering rules for medifab
+            # logger.debug("Exporting reordering rules.")
+            # yield from self.export_orderpoints()
 
             if self.has_expiry:
                 logger.debug("Exporting stock orders.")
