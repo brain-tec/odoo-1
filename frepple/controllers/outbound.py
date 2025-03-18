@@ -59,14 +59,18 @@ class Odoo_generator:
     def getData(
         self,
         model,
-        search=[],
+        search=None,
         order=None,
-        fields=[],
+        fields=None,
         ids=None,
         object=False,
         limit=None,
         offset=0,
     ):
+        if search is None:
+            search = []
+        if fields is None:
+            fields = []
         if ids is not None:
             if object:
                 return self.env[model].browse(ids) if ids else []
@@ -121,7 +125,11 @@ class XMLRPC_generator:
             self.db, self.uid, self.password, model, method, [id], []
         )
 
-    def getData(self, model, search=None, order="id asc", fields=[], ids=[]):
+    def getData(self, model, search=None, order="id asc", fields=None, ids=None):
+        if search is None:
+            search = []
+        if fields is None:
+            fields = []
         if ids:
             page_ids = [ids]
         else:
