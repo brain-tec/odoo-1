@@ -52,7 +52,15 @@ class Odoo_generator:
         return None
 
     def getData(
-        self, model, search=None, order=None, fields=None, ids=None, object=False
+        self,
+        model,
+        search=None,
+        order=None,
+        fields=None,
+        ids=None,
+        object=False,
+        limit=None,
+        offset=0,
     ):
         if search is None:
             search = []
@@ -65,15 +73,24 @@ class Odoo_generator:
                 return self.env[model].browse(ids).read(fields) if ids else []
         if order:
             if object:
-                return self.env[model].search(search, order=order)
+                return self.env[model].search(
+                    search, order=order, limit=limit, offset=offset
+                )
             else:
-                return self.env[model].search(search, order=order).read(fields)
+                return (
+                    self.env[model]
+                    .search(search, order=order, limit=limit, offset=offset)
+                    .read(fields)
+                )
         else:
             if object:
-                return self.env[model].search(search)
+                return self.env[model].search(search, limit=limit, offset=offset)
             else:
-                return self.env[model].search(search).read(fields)
-
+ 				return (
+                    self.env[model]
+                    .search(search, limit=limit, offset=offset)
+                    .read(fields)
+                )
 
 class exporter(object):
     def __init__(
@@ -766,33 +783,56 @@ class exporter(object):
         res.partner.id res.partner.name -> customer.name
         """
         self.map_customers = {}
+        # We also build in the loop the supplier map
+        self.map_suppliers = {}
         first = True
         individual_inserted = False
-        for i in self.generator.getData(
-            "res.partner",
-            search=["|", ("parent_id", "=", False), ("parent_id.active", "=", True)],
-            fields=["name", "parent_id", "is_company"],
-            order="parent_id desc",
-        ):
-            if first:
-                yield "<!-- customers -->\n"
-                yield "<customers>\n"
-                first = False
-            if i["is_company"]:
-                name = "%s %s" % (i["name"], i["id"])
-                yield "<customer name=%s/>\n" % quoteattr(name)
-            elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
-                name = "Individuals"
-                if not individual_inserted:
-                    yield "<customer name=%s/>\n" % quoteattr(name)
-                    individual_inserted = True
-            else:
-                if i["parent_id"][0] in self.map_customers:
-                    name = self.map_customers[i["parent_id"][0]]
-                else:
+        offset = 0
+        pagesize = 25000
+        while True:
+            recs = self.generator.getData(
+                "res.partner",
+                fields=["name", "parent_id", "is_company"],
+                order="parent_id desc",
+                offset=offset,
+                limit=pagesize,
+            )
+            if len(recs) == 0:
+                break
+            offset += pagesize
+            for i in recs:
+
+                # We don't kow that parent (archived ?) so continue
+                if i["parent_id"] and i["parent_id"][0] not in self.map_customers:
                     continue
 
-            self.map_customers[i["id"]] = name
+                if first:
+                    yield "<!-- customers -->\n"
+                    yield "<customers>\n"
+                    first = False
+                if i["is_company"]:
+                    name = str(i["id"])
+                    supplier = "%s %s" % (i["name"], i["id"])
+                    yield '<customer name="%s" description=%s/>\n' % (
+                        name,
+                        quoteattr(i["name"][:300]),
+                    )
+                elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
+                    name = "Individuals"
+                    supplier = "Individuals"
+                    if not individual_inserted:
+                        yield "<customer name=%s/>\n" % quoteattr(name)
+                        individual_inserted = True
+                else:
+                    if i["parent_id"][0] in self.map_customers:
+                        name = str(self.map_customers[i["parent_id"][0]])
+                        supplier = "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                    else:
+                        continue
+
+                self.map_customers[i["id"]] = name
+                self.map_suppliers[i["id"]] = supplier
+
         if not first:
             yield "</customers>\n"
 
@@ -805,7 +845,7 @@ class exporter(object):
         res.partner.id res.partner.name -> supplier.name
         """
         first = True
-        for i in self.map_customers.values():
+        for i in self.map_suppliers.values():
             if first:
                 yield "<!-- suppliers -->\n"
                 yield "<suppliers>\n"
@@ -1109,17 +1149,25 @@ class exporter(object):
             if i["product_tmpl_id"][0] not in self.product_templates:
                 continue
             tmpl = self.product_templates[i["product_tmpl_id"][0]]
-            if i["code"]:
+            # generate variant name and description in frepple
+            if i["product_template_attribute_value_ids"]:
+                if use_short_names:
+                    name = (i["code"])[:300]
+                    description = i["name"][:500]
+                else:
+                    name = (
+                        (("[%s] %s %s" % (i["code"], i["name"], i["id"]))[:300])
+                        if i["code"]
+                        else "%s %s" % (i["name"], i["id"])[:300]
+                    )
+                    description = None
+            # generate name and description for non-variant products
+            elif i["code"]:
                 name = (
                     (("[%s] %s" % (i["code"], i["name"]))[:300])
                     if not use_short_names
                     else i["code"][:300]
                 )
-                description = i["name"][:500] if use_short_names else None
-            # product is a variant and has no internal reference
-            # we use the product id as code
-            elif i["product_template_attribute_value_ids"]:
-                name = ("[%s] %s" % (i["id"], i["name"]))[:300]
                 description = i["name"][:500] if use_short_names else None
             else:
                 name = i["name"][:300]
@@ -1195,7 +1243,7 @@ class exporter(object):
             if tmpl["purchase_ok"]:
                 suppliers = {}
                 for sup in itemsuppliers.get(tmpl["id"], []):
-                    name = self.map_customers.get(sup["partner_id"][0], None)
+                    name = self.map_suppliers.get(sup["partner_id"][0], None)
                     if not name:
                         # Skip uninterested suppliers (eg archived ones)
                         continue
@@ -2213,7 +2261,7 @@ class exporter(object):
                     start = self.formatDateTime(start if start < end else end)
                     end = self.formatDateTime(end)
                     qty = mv.product_qty
-                    supplier = self.map_customers.get(j.partner_id.id)
+                    supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
                         # supplier is archived :-(
                         for sup in self.generator.getData(
@@ -2231,7 +2279,7 @@ class exporter(object):
                                 "(archived) " if not sup["active"] else "",
                                 sup["id"],
                             )
-                            self.map_customers[sup["id"]] = supplier
+                            self.map_suppliers[sup["id"]] = supplier
                             break
                     if not supplier:
                         continue
@@ -2269,7 +2317,7 @@ class exporter(object):
                         i.product_uom.id,
                         self.product_product[i.product_id.id]["template"],
                     )
-                    supplier = self.map_customers.get(j.partner_id.id)
+                    supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
                         # supplier is archived :-(
                         for sup in self.generator.getData(
@@ -2287,7 +2335,7 @@ class exporter(object):
                                 "(archived) " if not sup["active"] else "",
                                 sup["id"],
                             )
-                            self.map_customers[sup["id"]] = supplier
+                            self.map_suppliers[sup["id"]] = supplier
                             break
                     if not supplier:
                         continue
