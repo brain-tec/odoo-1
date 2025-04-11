@@ -1233,7 +1233,7 @@ class exporter(object):
             # generate variant name and description in frepple
             if i["product_template_attribute_value_ids"]:
                 if use_short_names:
-                    name = (i["code"])[:300]
+                    name = (i["code"] or i["name"])[:300]
                     description = i["name"][:500]
                 else:
                     name = (
