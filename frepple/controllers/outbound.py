@@ -2573,14 +2573,10 @@ class exporter(object):
                     consumed_item = self.product_product.get(mv.product_id.id, None)
                     if not consumed_item:
                         continue
-                    qty_flow = self.convert_qty_uom(
-                        max(
-                            0,
-                            mv.product_qty
-                            - (mv.quantity if self.respect_reservations else 0),
-                        ),
-                        mv.product_uom.id,
-                        consumed_item["template"],
+                    qty_flow = max(
+                        0,
+                        mv.product_qty
+                        - (mv.quantity if self.respect_reservations else 0),
                     )
                     # subtract the reserved quantity if product is twice in the BOM
                     reserved_quantity[(i["name"], mv.product_id.id)] = max(
@@ -2687,14 +2683,10 @@ class exporter(object):
                         elif not first_wo:
                             continue
 
-                        qty_flow = self.convert_qty_uom(
-                            max(
-                                0,
-                                mv.product_qty
-                                - (mv.quantity if self.respect_reservations else 0),
-                            ),
-                            mv.product_uom.id,
-                            item["template"],
+                        qty_flow = max(
+                            0,
+                            mv.product_qty
+                            - (mv.quantity if self.respect_reservations else 0),
                         )
                         # subtract the reserved quantity if product is twice in the BOM
                         reserved_quantity[(i["name"], mv["product_id"][0])] = max(
