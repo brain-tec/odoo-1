@@ -1126,7 +1126,7 @@ class exporter(object):
                 self.route_mto = k
         for i in self.generator.getData(
             "product.template",
-            search=[("type", "not in", ("service", "consu"))],
+            search=[("type", "not in", ("service", "consu", "combo"))],
             fields=[
                 "sale_ok",
                 "purchase_ok",
@@ -1233,7 +1233,7 @@ class exporter(object):
             # generate variant name and description in frepple
             if i["product_template_attribute_value_ids"]:
                 if use_short_names:
-                    name = (i["code"])[:300]
+                    name = (i["code"] or i["name"])[:300]
                     description = i["name"][:500]
                 else:
                     name = (
@@ -2573,14 +2573,10 @@ class exporter(object):
                     consumed_item = self.product_product.get(mv.product_id.id, None)
                     if not consumed_item:
                         continue
-                    qty_flow = self.convert_qty_uom(
-                        max(
-                            0,
-                            mv.product_qty
-                            - (mv.quantity if self.respect_reservations else 0),
-                        ),
-                        mv.product_uom.id,
-                        consumed_item["template"],
+                    qty_flow = max(
+                        0,
+                        mv.product_qty
+                        - (mv.quantity if self.respect_reservations else 0),
                     )
                     # subtract the reserved quantity if product is twice in the BOM
                     reserved_quantity[(i["name"], mv.product_id.id)] = max(
@@ -2687,14 +2683,10 @@ class exporter(object):
                         elif not first_wo:
                             continue
 
-                        qty_flow = self.convert_qty_uom(
-                            max(
-                                0,
-                                mv.product_qty
-                                - (mv.quantity if self.respect_reservations else 0),
-                            ),
-                            mv.product_uom.id,
-                            item["template"],
+                        qty_flow = max(
+                            0,
+                            mv.product_qty
+                            - (mv.quantity if self.respect_reservations else 0),
                         )
                         # subtract the reserved quantity if product is twice in the BOM
                         reserved_quantity[(i["name"], mv["product_id"][0])] = max(
