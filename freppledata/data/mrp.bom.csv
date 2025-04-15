@@ -6,3 +6,5 @@ __export__.mrp_bom_11_ed249962,0,varnished chair,,Manufacture this product,My Co
 __export__.mrp_bom_9_132490bc,0,chair,,Manufacture this product,My Company (San Francisco),__export__.mrp_bom_line_18_d03483a9,4,1,,__export__.product_product_55_ac47c67d,__export__.mrp_routing_workcenter_10_b5cc8e56,assemble chair,100,priority,1,assembly line,15
 ,,,,,,__export__.mrp_bom_line_19_ec858f0a,20,1,,mrp.product_product_computer_desk_screw,,,,,,,
 ,,,,,,__export__.mrp_bom_line_20_70809562,1,1,,__export__.product_product_56_ea472d4f,,,,,,,
+__export__.mrp_bom_8_23412dda,0,DIY varnished chair,,Kit,My Company (San Francisco),__export__.mrp_bom_line_17_dd3283a9,4,1,,__export__.product_product_54_eb19f380,,,,,,,
+,,,,,,__export__.mrp_bom_line_17_ec85ff0a,1,1,,__export__.product_product_57_9ea5498d,,,,,,,

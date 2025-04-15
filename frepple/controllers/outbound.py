@@ -1136,6 +1136,7 @@ class exporter(object):
                 "categ_id",
                 "product_variant_ids",
                 "route_ids",
+                "type",
             ]
             + (
                 [
@@ -1541,7 +1542,7 @@ class exporter(object):
                                 i["days_to_prepare_mo"] or 0
                             )
 
-                            yield '<operation name=%s %ssize_multiple="1" duration="%s" posttime="P%dD" priority="%s" xsi:type="operation_fixed_time">\n' "<item name=%s/><location name=%s/>\n" % (
+                            yield '<operation name=%s %ssize_multiple="1" duration="%s" posttime="P%dD" priority="%s" category=%s xsi:type="operation_fixed_time">\n' "<item name=%s/><location name=%s/>\n" % (
                                 quoteattr(operation),
                                 (
                                     ("description=%s " % quoteattr(i["code"]))
@@ -1555,6 +1556,7 @@ class exporter(object):
                                 ),
                                 self.manufacturing_lead,
                                 100 + (i["sequence"] or 1),
+                                quoteattr(i["type"] or ""),
                                 quoteattr(product_buf["name"]),
                                 quoteattr(location),
                             )
@@ -1719,7 +1721,7 @@ class exporter(object):
                         # CASE 2: A routing operation is created with a suboperation for each
                         # routing step.
                         #
-                        yield '<operation name=%s %ssize_multiple="1" posttime="P%dD" priority="%s" xsi:type="operation_routing"><item name=%s/><location name=%s/>\n' % (
+                        yield '<operation name=%s %ssize_multiple="1" posttime="P%dD" priority="%s" category=%s xsi:type="operation_routing"><item name=%s/><location name=%s/>\n' % (
                             quoteattr(operation),
                             (
                                 ("description=%s " % quoteattr(i["code"]))
@@ -1728,6 +1730,7 @@ class exporter(object):
                             ),
                             self.manufacturing_lead,
                             100 + (i["sequence"] or 1),
+                            quoteattr(i["type"] or ""),
                             quoteattr(product_buf["name"]),
                             quoteattr(location),
                         )
@@ -1869,7 +1872,7 @@ class exporter(object):
                                     )
                                 )
 
-                            yield "<suboperation>" '<operation name=%s %spriority="%s" duration_per="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
+                            yield "<suboperation>" '<operation name=%s %spriority="%s" duration_per="%s" category=%s xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
                                 quoteattr(name),
                                 (
                                     ("description=%s " % quoteattr(i["code"]))
@@ -1882,6 +1885,7 @@ class exporter(object):
                                     if step["time_cycle"] and step["time_cycle"] > 0
                                     else "P0D"
                                 ),
+                                quoteattr(i["type"] or ""),
                                 quoteattr(location),
                                 1,
                                 quoteattr(step["search_mode"]),
@@ -2078,7 +2082,7 @@ class exporter(object):
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
                     i["product_uom"],
-                    self.product_product[i["product_id"][0]]["template"],
+                    product["template"],
                 )
             elif state == "sale":
                 if i["move_ids"] and any(
@@ -2090,10 +2094,17 @@ class exporter(object):
                         )
                         sm = stock_moves_dict.get(mv_id)
                         if sm:
+                            sm_product = (
+                                self.product_product.get(sm["product_id"][0], None)
+                                if sm["product_id"]
+                                else product
+                            )
+                            if not sm_product:
+                                continue
                             qty = self.convert_qty_uom(
                                 sm["product_uom_qty"],
                                 sm["product_uom"],
-                                self.product_product[i["product_id"][0]]["template"],
+                                sm_product["template"],
                             )
                             reserved_quantity = (
                                 getReservedQuantity(mv_id)
@@ -2124,7 +2135,7 @@ class exporter(object):
                                     else 0.0
                                 ),
                                 "open" if qty - reserved_quantity > 0 else "closed",
-                                quoteattr(product["name"]),
+                                quoteattr(sm_product["name"]),
                                 quoteattr(customer),
                                 quoteattr(location),
                                 # Disable the next 2 lines in frepple < 6.25
@@ -2144,28 +2155,28 @@ class exporter(object):
                         qty = self.convert_qty_uom(
                             i["product_uom_qty"],
                             i["product_uom"],
-                            self.product_product[i["product_id"][0]]["template"],
+                            product["template"],
                         )
                     else:
                         status = "open"
                         qty = self.convert_qty_uom(
                             qty,
                             i["product_uom"],
-                            self.product_product[i["product_id"][0]]["template"],
+                            product["template"],
                         )
             elif state == "done":
                 status = "closed"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
                     i["product_uom"],
-                    self.product_product[i["product_id"][0]]["template"],
+                    product["template"],
                 )
             elif state == "cancel":
                 status = "canceled"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
                     i["product_uom"],
-                    self.product_product[i["product_id"][0]]["template"],
+                    product["template"],
                 )
             else:
                 logger.warning("Unknown sales order state: %s." % (state,))
@@ -2562,7 +2573,7 @@ class exporter(object):
 
             if not self.manage_work_orders or not getattr(i, "workorder_ids", None):
                 # There are no workorders on the manufacturing order (or we don't want to see them in frepple)
-                yield '<operation name=%s xsi:type="operation_fixed_time" priority="0"><location name=%s/><item name=%s/><flows>' % (
+                yield '<operation name=%s category="MO" xsi:type="operation_fixed_time" priority="0"><location name=%s/><item name=%s/><flows>' % (
                     quoteattr(operation),
                     quoteattr(location),
                     quoteattr(item["name"]),
@@ -2630,7 +2641,7 @@ class exporter(object):
                 yield "</operation></operationplan>"
             else:
                 # Define an operation for the MO
-                yield '<operation name=%s xsi:type="operation_routing" priority="0"><item name=%s/><location name=%s/><suboperations>' % (
+                yield '<operation name=%s xsi:type="operation_routing" category="MO" priority="0"><item name=%s/><location name=%s/><suboperations>' % (
                     quoteattr(operation),
                     quoteattr(item["name"]),
                     quoteattr(location),
@@ -2653,7 +2664,7 @@ class exporter(object):
                                     (now - tm.date_start).total_seconds() / 60
                                 )
 
-                    yield '<suboperation><operation name=%s priority="%s" type="operation_fixed_time" duration="%s"><location name=%s/><flows>' % (
+                    yield '<suboperation><operation name=%s priority="%s" type="operation_fixed_time" category="WO" duration="%s"><location name=%s/><flows>' % (
                         quoteattr("%s - %s" % (suboperation, wo.id)),
                         idx,
                         self.convert_float_time(
