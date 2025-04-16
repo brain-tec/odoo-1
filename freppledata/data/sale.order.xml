@@ -14,8 +14,6 @@
             <field name="date_order" eval="(DateTime.today() - relativedelta(weeks=1)).strftime('%Y-%m-%d %H:%M')"/>
         </record>
 
-
-
         <record id="sale_order_line_1001" model="sale.order.line">
             <field name="order_id" ref="sale_order_1001"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
@@ -24,7 +22,9 @@
             <field name="price_unit">90</field>
         </record>
 
-
+        <record id="sale_order_1001" model="sale.order">
+            <field name="state">sale</field>
+        </record>
 
 
         <record id="sale_order_1002" model="sale.order">
@@ -68,7 +68,6 @@
             <field name="price_unit">90</field>
         </record>
 
-
         <record id="sale_order_1003" model="sale.order">
             <field name="state">sale</field>
         </record>
@@ -91,7 +90,6 @@
             <field name="product_uom" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
-
 
         <record id="sale_order_1004" model="sale.order">
             <field name="state">sale</field>
@@ -116,7 +114,6 @@
             <field name="price_unit">90</field>
         </record>
 
-
         <record id="sale_order_1005" model="sale.order">
             <field name="state">sale</field>
         </record>
@@ -139,7 +136,6 @@
             <field name="product_uom" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
-
 
         <record id="sale_order_1006" model="sale.order">
             <field name="state">sale</field>
@@ -164,7 +160,6 @@
             <field name="price_unit">90</field>
         </record>
 
-
         <record id="sale_order_1007" model="sale.order">
             <field name="state">sale</field>
         </record>
@@ -188,16 +183,34 @@
             <field name="price_unit">90</field>
         </record>
 
-
         <record id="sale_order_1008" model="sale.order">
             <field name="state">sale</field>
         </record>
 
 
+        <record id="sale_order_1009" model="sale.order">
+            <field name="partner_id" ref="base.res_partner_2"/>
+            <field name="partner_invoice_id" ref="base.res_partner_2"/>
+            <field name="partner_shipping_id" ref="base.res_partner_2"/>
+            <field name="user_id" ref="base.user_demo"/>
+            <field name="state">sale</field>
+            <field name="team_id" ref="sales_team.team_sales_department"/>
+            <field name="date_order" eval="(DateTime.today() + relativedelta(weeks=1)).strftime('%Y-%m-%d %H:%M')"/>
+        </record>
+
+        <record id="sale_order_line_1009" model="sale.order.line">
+            <field name="order_id" ref="sale_order_1009"/>
+            <field name="product_id" ref="__export__.product_product_597_5ee4267e"/>
+            <field name="product_uom_qty">3</field>
+            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="price_unit">90</field>
+        </record>
+
+        <record id="sale_order_1009" model="sale.order">
+            <field name="state">sale</field>
+        </record>
+
         <!-- demand history -->
-
-
-
 
             <record id="sale_order_1" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
