@@ -260,8 +260,6 @@ class exporter(object):
                 logger.debug("Exporting quantities on-hand.")
                 yield from self.export_onhand()
 
-        # yield
-        xxx = """
         # Footer
         yield "</plan>\n"
 
