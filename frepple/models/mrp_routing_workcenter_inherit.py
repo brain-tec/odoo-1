@@ -64,6 +64,6 @@ class RoutingWorkcenterInherit(models.Model):
     workcenter_quantity = fields.Integer(
         "Quantity",
         default=1,
-        help="Frepple: Number of workcenters to use.",
+        help="Frepple: Number of workcenters working in parallel to speed up this operation",
         required=False,
     )
