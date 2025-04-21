@@ -32,7 +32,7 @@ class RoutingWorkcenterInherit(models.Model):
         "mrp.skill",
         "Skill",
         required=False,
-        help="Workcenter skill required to perform this operation",
+        help="Frepple: Workcenter skill required to perform this operation",
     )
     search_mode = fields.Selection(
         [
@@ -44,15 +44,26 @@ class RoutingWorkcenterInherit(models.Model):
         string="Search Mode",
         required=False,
         default="PRIORITY",
-        help="Method to choose a workcenter among alternatives",
+        help="Frepple: Method to choose a workcenter among alternatives",
     )
     priority = fields.Integer(
-        "priority", default=1, help="Priority of this workcenter among alternatives"
+        "Priority", default=1, help="Priority of this workcenter among alternatives"
     )
     secondary_workcenter = fields.One2many(
         "mrp.secondary.workcenter",
         "routing_workcenter_id",
         required=False,
         copy=True,
-        help="Extra workcenters needed for this operation",
+        help="Frepple: Extra workcenters needed for this operation",
+    )
+    post_operation_time = fields.Integer(
+        "Post-op Time",
+        help="Frepple: Time gap (in working hours) frepple tries to leave in the plan after this operation).",
+        required=False,
+    )
+    workcenter_quantity = fields.Integer(
+        "Quantity",
+        default=1,
+        help="Frepple: Number of workcenters to use.",
+        required=False,
     )

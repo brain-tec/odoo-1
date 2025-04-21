@@ -5,10 +5,12 @@
         <field name="model">mrp.routing.workcenter</field>
         <field name="inherit_id" ref="mrp.mrp_routing_workcenter_tree_view"/>
         <field name="arch" type="xml">
-            <field name="workcenter_id" position="after">
-                <field name="skill"/>
-                <field name="search_mode"/>
-                <field name="priority"/>
+            <field name="workcenter_id" position="after">            
+                <field name="workcenter_quantity" optional="hide"/>
+                <field name="skill" optional="hide"/>
+                <field name="search_mode" optional="hide"/>
+                <field name="priority" optional="hide"/>
+                <field name="post_operation_time" optional="hide"/>
                 <field name="secondary_workcenter" string="secondary work centers" widget="many2many_tags" optional="hide"/>
             </field>
         </field>
@@ -19,9 +21,11 @@
         <field name="inherit_id" ref="mrp.mrp_routing_workcenter_form_view"/>
         <field name="arch" type="xml">
             <field name="workcenter_id" position="after">
+                <field name="workcenter_quantity"/>
                 <field name="skill"/>
                 <field name="search_mode"/>
                 <field name="priority"/>
+                <field name="post_operation_time"/>
             </field>
         </field>
     </record>
