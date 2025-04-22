@@ -1423,6 +1423,8 @@ class exporter(object):
                 "skill",
                 "search_mode",
                 "secondary_workcenter",
+                "post_operation_time",
+                "workcenter_quantity",
             ],
         ):
             if not i["bom_id"]:
@@ -1814,6 +1816,7 @@ class exporter(object):
                         for step in steplist:
                             counter = counter + 1
                             suboperation = step["name"]
+                            workcenter_qty = max(step["workcenter_quantity"] or 0, 1)
                             name = "%s - %s - %s" % (
                                 operation,
                                 suboperation,
@@ -1872,7 +1875,7 @@ class exporter(object):
                                     )
                                 )
 
-                            yield "<suboperation>" '<operation name=%s %spriority="%s" duration_per="%s" category=%s xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
+                            yield "<suboperation>" '<operation name=%s %spriority="%s" duration_per="%s" category=%s posttime="%s" xsi:type="operation_time_per">\n' "<location name=%s/>\n" '<loads><load quantity="%f" search=%s><resource name=%s/>%s</load>%s</loads>\n' % (
                                 quoteattr(name),
                                 (
                                     ("description=%s " % quoteattr(i["code"]))
@@ -1881,13 +1884,21 @@ class exporter(object):
                                 ),
                                 counter * 10,
                                 (
-                                    self.convert_float_time(step["time_cycle"] / 1440.0)
+                                    self.convert_float_time(step["time_cycle"] / workcenter_qty / 1440.0)
                                     if step["time_cycle"] and step["time_cycle"] > 0
                                     else "P0D"
                                 ),
                                 quoteattr(i["type"] or ""),
+                                (
+                                    self.convert_float_time(
+                                        step["post_operation_time"], "hours"
+                                    )
+                                    if step["post_operation_time"]
+                                    and step["post_operation_time"] > 0
+                                    else "P0D"
+                                ),
                                 quoteattr(location),
-                                1,
+                                workcenter_qty,
                                 quoteattr(step["search_mode"]),
                                 quoteattr(
                                     self.map_workcenters[step["workcenter_id"][0]]
