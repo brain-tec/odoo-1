@@ -58,7 +58,7 @@ class RoutingWorkcenterInherit(models.Model):
     )
     post_operation_time = fields.Integer(
         "Post-op Time",
-        help="Frepple: Time gap (in working hours) frepple tries to leave in the plan after this operation).",
+        help="Frepple: Time gap (in working hours) frepple tries to leave in the plan after this operation.",
         required=False,
     )
     workcenter_quantity = fields.Integer(
