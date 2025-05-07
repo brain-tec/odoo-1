@@ -408,6 +408,7 @@ class importer(object):
                                     "product_uom": int(uom_id),
                                 }
                             )
+                            po = po_line.order_id
 
                             # Is there a blanket order for this product /supplier ?
                             if (
