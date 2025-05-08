@@ -2526,11 +2526,12 @@ class exporter(object):
                         - (mv.quantity if self.respect_reservations else 0),
                     )
                     # subtract the reserved quantity if product is twice in the BOM
-                    reserved_quantity[(i["name"], mv.product_id.id)] = max(
-                        0,
-                        reserved_quantity.get((i["name"], mv.product_id.id), 0)
-                        - mv.product_qty,
-                    )
+                    if self.respect_reservations:
+                        reserved_quantity[(i["name"], mv.product_id.id)] = max(
+                            0,
+                            reserved_quantity.get((i["name"], mv.product_id.id), 0)
+                            - mv.product_qty,
+                        )
                     if qty_flow > 0:
                         operation_materials[consumed_item["name"]] = (
                             operation_materials.get(consumed_item["name"], 0)
@@ -2636,11 +2637,14 @@ class exporter(object):
                             - (mv.quantity if self.respect_reservations else 0),
                         )
                         # subtract the reserved quantity if product is twice in the BOM
-                        reserved_quantity[(i["name"], mv["product_id"][0])] = max(
-                            0,
-                            reserved_quantity.get((i["name"], mv["product_id"][0]), 0)
-                            - mv["product_qty"],
-                        )
+                        if self.respect_reservations:
+                            reserved_quantity[(i["name"], mv["product_id"][0])] = max(
+                                0,
+                                reserved_quantity.get(
+                                    (i["name"], mv["product_id"][0]), 0
+                                )
+                                - mv["product_qty"],
+                            )
                         if qty_flow > 0:
                             yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
                                 -qty_flow / qty,
