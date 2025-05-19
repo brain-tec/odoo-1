@@ -903,7 +903,7 @@ class exporter(object):
                     supplier = "%s %s" % (i["name"], i["id"])
                     yield '<customer name="%s" description=%s/>\n' % (
                         name,
-                        quoteattr(i["name"][:300]),
+                        quoteattr(i["name"][:300] if i["name"] else ""),                        
                     )
                 elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
                     name = "Individuals"
