@@ -32,11 +32,14 @@ logger = logging.getLogger(__name__)
 
 
 class importer(object):
-    def __init__(self, req, database=None, company=None, mode=1):
+    def __init__(
+        self, req, database=None, company=None, mode=1, disclose_stack_trace=False
+    ):
         self.env = req.env
         self.database = database
         self.company = company
         self.datafile = req.httprequest.files.get("frePPLe plan")
+        self.disclose_stack_trace = disclose_stack_trace
 
         # The mode argument defines different types of runs:
         #  - Mode 1:
@@ -857,8 +860,11 @@ class importer(object):
                     import traceback
 
                     logger.info(traceback.format_exc())
-                    logger.error("Exception %s" % e)
-                    msg.append(str(e))
+                    logger.error(f"Exception {e}")
+                    if self.disclose_stack_trace:
+                        msg.append(traceback.format_exc())
+                    else:
+                        msg.append(f"Exception {e}")
                 # Remove the element now to keep the DOM tree small
                 wo_data = []
                 root.clear()
