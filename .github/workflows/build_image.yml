@@ -3,7 +3,7 @@ name: Build and Push Odoo + frePPLe Docker Image to GHCR
 on:
   push:
     branches:
-      - 16.0
+      - "16.0"
   schedule:
       - cron: "0 0 * * 0"
 
@@ -16,7 +16,7 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
       with:
-        ref: 16.0
+        ref: "16.0"
 
     - name: Log in to GitHub Container Registry
       uses: docker/login-action@v3
