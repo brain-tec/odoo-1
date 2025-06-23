@@ -28,7 +28,7 @@ jobs:
     - name: Build Docker Image
       run: |
         IMAGE_BASE=ghcr.io/frepple/frepple-enterprise-dev/odoo_frepple
-        docker build -t $IMAGE_BASE:16.0 -t $IMAGE_BASE:latest .
+        docker build -t $IMAGE_BASE:16.0 .
 
     - name: Push Docker Image
       run: |
