@@ -43,8 +43,6 @@ from werkzeug.wrappers import Response
 
 
 from odoo import http
-from odoo.addons.frepple.controllers.outbound import exporter, Odoo_generator
-from odoo.addons.frepple.controllers.inbound import importer
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +254,26 @@ class XMLController(odoo.http.Controller):
             # Generate data
             try:
                 # Option 1: read the data using the outbound.py file in the same folder
+                from odoo.addons.frepple.controllers.outbound import (
+                    exporter,
+                    Odoo_generator,
+                )
+
+                # Option 2: Read the data using outbound.py in github.
+                # This can be handy during development phase to skip redeploying the connectors after each commit.
+                # To enable:
+                #   - Update variable raw_url below with the odoo connectors github repo you want to use.
+                #   - You should ONLY use sources you trust 100%.
+                #     Using untrusted sources allows attackers to execute arbitrary code on your server, and
+                #     is a very big security risk.
+                #
+                # class_dict = load_classes_from_github(
+                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/17.0/frepple/controllers/outbound.py",
+                #     ["exporter", "Odoo_generator"],
+                # )
+                # exporter = class_dict["exporter"]
+                # Odoo_generator = class_dict["Odoo_generator"]
+
                 xp = exporter(
                     Odoo_generator(req.env),
                     req,
@@ -271,29 +289,6 @@ class XMLController(odoo.http.Controller):
                     language=language,
                     apps=apps,
                 )
-
-                # Option 2: read the data using outbound.py in github (prevents from redeploying the connectors after a commit)
-                # Update variable raw_url below with the odoo connectors github repo you want to use
-                # comment option 1 if you uncomment option 2
-                # raw_url = "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/17.0/frepple/controllers/outbound.py"
-                # class_dict = load_classes_from_github(
-                #     raw_url, ["exporter", "Odoo_generator"]
-                # )
-                # xp = class_dict["exporter"](
-                #     class_dict["Odoo_generator"](req.env),
-                #     req,
-                #     uid=uid,
-                #     database=database,
-                #     company=company_name,
-                #     mode=int(kwargs.get("mode", 1)),
-                #     timezone=kwargs.get("timezone", None),
-                #     singlecompany=kwargs.get("singlecompany", "false").lower()
-                #     == "true",
-                #     version=version,
-                #     delta=float(kwargs.get("delta", 999)),
-                #     language=language,
-                #     apps=apps,
-                # )
 
                 # last empty double quote is to let python understand frepple is a folder.
                 xml_folder = os.path.join(str(Path.home()), "logs", "frepple", "")
@@ -339,6 +334,22 @@ class XMLController(odoo.http.Controller):
             # Import the data
             try:
                 # Option 1: read the data using the inbound.py file in the same folder
+                from odoo.addons.frepple.controllers.inbound import importer
+
+                # Option 2: Read the data using inbound.py in github.
+                # This can be handy during development phase to skip redeploying the connectors after each commit.
+                # To enable:
+                #   - Update variable raw_url below with the odoo connectors github repo you want to use.
+                #   - You should ONLY use sources you trust 100%.
+                #     Using untrusted sources allows attackers to execute arbitrary code on your server, and
+                #     is a very big security risk.
+                #
+                # class_dict = load_classes_from_github(
+                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/17.0/frepple/controllers/inbound.py",
+                #     ["importer"],
+                # )
+                # importer = class_dict["importer"]
+
                 ip = importer(
                     req,
                     database=database,
@@ -347,22 +358,6 @@ class XMLController(odoo.http.Controller):
                     disclose_stack_trace=company and company.disclose_stack_trace,
                 )
 
-                # Option 2: read the data using inbound.py in github (prevents from redeploying the connectors after a commit)
-                # Update variable raw_url below with the odoo connectors github repo you want to use
-                # comment option 1 if you uncomment option 2
-                # raw_url = "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/17.0/frepple/controllers/inbound.py"
-                # class_dict = load_classes_from_github(
-                #     raw_url,
-                #     [
-                #         "importer",
-                #     ],
-                # )
-                # ip = class_dict["importer"](
-                #     req,
-                #     database=database,
-                #     company=company,
-                #     mode=req.httprequest.form.get("mode", 1),
-                # )
                 return req.make_response(
                     ip.run(),
                     [
