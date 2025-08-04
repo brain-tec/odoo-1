@@ -930,7 +930,7 @@ class exporter(object):
         res.partner.id res.partner.name -> supplier.name
         """
         first = True
-        for i in self.map_suppliers.values():
+        for i in set(self.map_suppliers.values()):
             if first:
                 yield "<!-- suppliers -->\n"
                 yield "<suppliers>\n"
