@@ -25,6 +25,10 @@
         <record id="sale_order_1001" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1001').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1002" model="sale.order">
@@ -48,6 +52,10 @@
         <record id="sale_order_1002" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1002').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1003" model="sale.order">
@@ -71,6 +79,10 @@
         <record id="sale_order_1003" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1003').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1004" model="sale.order">
@@ -94,6 +106,10 @@
         <record id="sale_order_1004" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1004').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1005" model="sale.order">
@@ -117,6 +133,10 @@
         <record id="sale_order_1005" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1005').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1006" model="sale.order">
@@ -140,6 +160,10 @@
         <record id="sale_order_1006" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1006').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1007" model="sale.order">
@@ -163,6 +187,10 @@
         <record id="sale_order_1007" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1007').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1008" model="sale.order">
@@ -186,6 +214,10 @@
         <record id="sale_order_1008" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1008').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
 
         <record id="sale_order_1009" model="sale.order">
@@ -209,6 +241,10 @@
         <record id="sale_order_1009" model="sale.order">
             <field name="state">sale</field>
         </record>
+        <function model="stock.move" name="write">
+                <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1009').id)]"/>
+                <value eval="{'quantity': '0'}"/>
+        </function>
 
         <!-- demand history -->
 
@@ -237,7 +273,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_1').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_2" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -264,7 +300,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_2').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_3" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -291,7 +327,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_3').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_4" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -318,7 +354,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_4').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_5" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -345,7 +381,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_5').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_6" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -372,7 +408,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_6').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_7" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -399,7 +435,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_7').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_8" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -426,7 +462,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_8').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_9" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -453,7 +489,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_9').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_10" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -480,7 +516,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_10').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_11" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -507,7 +543,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_11').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_12" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -534,7 +570,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_12').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_13" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -561,7 +597,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_13').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_14" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -588,7 +624,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_14').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_15" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -615,7 +651,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_15').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_16" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -642,7 +678,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_16').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_17" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -669,7 +705,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_17').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_18" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -696,7 +732,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_18').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_19" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -723,7 +759,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_19').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_20" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -750,7 +786,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_20').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_21" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -777,7 +813,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_21').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_22" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -804,7 +840,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_22').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_23" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -831,7 +867,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_23').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_24" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -858,7 +894,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_24').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_25" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -885,7 +921,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_25').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_26" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -912,7 +948,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_26').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_27" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -939,7 +975,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_27').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_28" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -966,7 +1002,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_28').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_29" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -993,7 +1029,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_29').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_30" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1020,7 +1056,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_30').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_31" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1047,7 +1083,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_31').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_32" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1074,7 +1110,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_32').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_33" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1101,7 +1137,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_33').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_34" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1128,7 +1164,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_34').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_35" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1155,7 +1191,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_35').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_36" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1182,7 +1218,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_36').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_37" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1209,7 +1245,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_37').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_38" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1236,7 +1272,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_38').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_39" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1263,7 +1299,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_39').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_40" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1290,7 +1326,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_40').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_41" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1317,7 +1353,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_41').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_42" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1344,7 +1380,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_42').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_43" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1371,7 +1407,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_43').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_44" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1398,7 +1434,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_44').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_45" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1425,7 +1461,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_45').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_46" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1452,7 +1488,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_46').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_47" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1479,7 +1515,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_47').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_48" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1506,7 +1542,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_48').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_49" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1533,7 +1569,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_49').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_50" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1560,7 +1596,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_50').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_51" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1587,7 +1623,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_51').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_52" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1614,7 +1650,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_52').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_53" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1641,7 +1677,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_53').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_54" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1668,7 +1704,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_54').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_55" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1695,7 +1731,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_55').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_56" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1722,7 +1758,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_56').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_57" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1749,7 +1785,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_57').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_58" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1776,7 +1812,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_58').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_59" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1803,7 +1839,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_59').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_60" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1830,7 +1866,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_60').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_61" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1857,7 +1893,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_61').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_62" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1884,7 +1920,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_62').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_63" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1911,7 +1947,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_63').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_64" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -1938,7 +1974,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_64').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_65" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -1965,7 +2001,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_65').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_66" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -1992,7 +2028,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_66').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_67" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2019,7 +2055,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_67').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_68" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2046,7 +2082,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_68').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_69" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2073,7 +2109,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_69').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_70" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2100,7 +2136,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_70').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_71" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2127,7 +2163,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_71').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_72" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2154,7 +2190,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_72').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_73" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2181,7 +2217,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_73').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_74" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2208,7 +2244,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_74').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_75" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2235,7 +2271,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_75').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_76" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2262,7 +2298,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_76').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_77" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2289,7 +2325,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_77').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_78" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2316,7 +2352,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_78').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_79" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2343,7 +2379,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_79').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_80" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2370,7 +2406,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_80').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_81" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2397,7 +2433,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_81').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_82" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2424,7 +2460,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_82').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_83" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2451,7 +2487,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_83').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_84" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2478,7 +2514,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_84').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_85" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2505,7 +2541,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_85').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_86" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2532,7 +2568,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_86').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_87" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2559,7 +2595,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_87').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_88" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2586,7 +2622,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_88').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_89" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2613,7 +2649,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_89').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_90" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2640,7 +2676,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_90').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_91" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2667,7 +2703,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_91').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_92" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2694,7 +2730,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_92').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_93" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2721,7 +2757,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_93').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_94" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2748,7 +2784,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_94').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_95" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2775,7 +2811,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_95').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_96" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2802,7 +2838,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_96').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_97" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2829,7 +2865,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_97').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_98" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2856,7 +2892,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_98').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_99" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2883,7 +2919,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_99').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_100" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2910,7 +2946,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_100').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_101" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -2937,7 +2973,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_101').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_102" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -2964,7 +3000,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_102').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_103" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -2991,7 +3027,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_103').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_104" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3018,7 +3054,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_104').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_105" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3045,7 +3081,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_105').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_106" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3072,7 +3108,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_106').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_107" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3099,7 +3135,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_107').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_108" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3126,7 +3162,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_108').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_109" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3153,7 +3189,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_109').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_110" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3180,7 +3216,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_110').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_111" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3207,7 +3243,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_111').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_112" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3234,7 +3270,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_112').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_113" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3261,7 +3297,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_113').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_114" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3288,7 +3324,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_114').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_115" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3315,7 +3351,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_115').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_116" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3342,7 +3378,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_116').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_117" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3369,7 +3405,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_117').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_118" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3396,7 +3432,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_118').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_119" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3423,7 +3459,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_119').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_120" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3450,7 +3486,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_120').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_121" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3477,7 +3513,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_121').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_122" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3504,7 +3540,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_122').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_123" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3531,7 +3567,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_123').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_124" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3558,7 +3594,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_124').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_125" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3585,7 +3621,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_125').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_126" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3612,7 +3648,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_126').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_127" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3639,7 +3675,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_127').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_128" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3666,7 +3702,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_128').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_129" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3693,7 +3729,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_129').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_130" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3720,7 +3756,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_130').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_131" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3747,7 +3783,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_131').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_132" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3774,7 +3810,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_132').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_133" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3801,7 +3837,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_133').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_134" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3828,7 +3864,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_134').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_135" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3855,7 +3891,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_135').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_136" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3882,7 +3918,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_136').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_137" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3909,7 +3945,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_137').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_138" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -3936,7 +3972,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_138').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_139" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -3963,7 +3999,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_139').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_140" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -3990,7 +4026,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_140').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_141" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -4017,7 +4053,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_141').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_142" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -4044,7 +4080,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_142').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_143" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -4071,7 +4107,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_143').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_144" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -4098,7 +4134,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_144').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_145" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -4125,7 +4161,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_145').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_146" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -4152,7 +4188,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_146').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_147" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_1"/>
@@ -4179,7 +4215,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_147').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_148" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_2"/>
@@ -4206,7 +4242,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_148').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
             <record id="sale_order_149" model="sale.order">
                 <field name="partner_id" ref="base.res_partner_3"/>
@@ -4233,7 +4269,7 @@
             <function model="stock.move" name="write">
                 <value model="stock.move" search="[('picking_id.sale_id', '=', obj().env.ref('freppledata.sale_order_149').id)]"/>
                 <value eval="{'state': 'done'}"/>
-            </function>"
+            </function>
 
 
 
