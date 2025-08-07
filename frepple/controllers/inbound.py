@@ -770,13 +770,17 @@ class importer(object):
                                         }
                                     )
                                     cpq.change_prod_qty()
-                                mo.write(
-                                    {
-                                        "date_start": elem.get("start"),
-                                        "date_finished": elem.get("end"),
-                                        "origin": remark,
-                                    }
-                                )
+                                arg_dict = {
+                                    "date_start": elem.get("start"),
+                                    "date_finished": elem.get("end"),
+                                    "origin": remark,
+                                }
+                                # Odoo doesn't allow updating the start date of the MO if one WO is in progress
+                                if any(
+                                    wo.state == "progress" for wo in mo.workorder_ids
+                                ):
+                                    arg_dict.pop("date_start")
+                                mo.write(arg_dict)
                                 mo_references[elem.get("reference")] = mo
 
                         # Process the workorder information we received
@@ -789,7 +793,14 @@ class importer(object):
                                         # By default odoo populates the scheduled start date field only when you confirm and plan
                                         # the manufacturing order.
                                         # Here we are already updating it earlier
-                                        if "start" in rec:
+                                        # We need to update the end date first
+                                        # if the new start date is after the current end date
+                                        startUpdated = False
+                                        if "start" in rec and (
+                                            not wo.date_finished
+                                            or rec["start"] <= wo.date_finished
+                                        ):
+                                            startUpdated = True
                                             wo.date_start = rec["start"]
                                             if not create:
                                                 wo.write({"date_start": wo.date_start})
@@ -797,9 +808,14 @@ class importer(object):
                                             wo.date_finished = rec["end"]
                                             if not create:
                                                 wo.write(
-                                                    {"date_finished": wo.date_finished}
+                                                    {
+                                                        "date_finished": wo.date_finished
+                                                    }
                                                 )
-
+                                        if not startUpdated and "start" in rec:
+                                            wo.date_start = rec["start"]
+                                            if not create:
+                                                wo.write({"date_start": wo.date_start})
                                         for res in rec["workcenters"]:
                                             wc = mfg_workcenter.browse(res["id"])
                                             if not wc:
