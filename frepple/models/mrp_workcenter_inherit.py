@@ -32,16 +32,26 @@ class WorkcenterInherit(models.Model):
         "mrp.workcenter",
         "Owner",
         required=False,
-        help="Groups workcenters together in groups",
+        help="Frepple: Groups workcenters together in groups",
     )
     tool = fields.Boolean(
-        "is a tool",
+        "Is a tool",
         default=False,
-        help="Mark workcenters that are tools, fixtures or holders. The same tool needs to accompany a manufacturing order through all its work orders.",
+        help="Frepple: Mark workcenters that are tools, fixtures or holders. The same tool needs to accompany a manufacturing order through all its work orders.",
     )
     workcenter_skill_ids = fields.One2many(
         "mrp.workcenter.skill",
         "workcenter",
         string="Skills",
-        help="Skills the work center has",
+        help="Frepple: Skills the work center has",
+    )
+    post_operation_time = fields.Integer(
+        "Post-op Time",
+        help="Frepple: Time gap (in working hours) frepple tries to leave in the plan after operations on this work center.",
+        required=False,
+    )
+    constrained = fields.Boolean(
+        "Constrained",
+        default=True,
+        help="Frepple: Mark workcenters which frepple should use as constraints in the plan.",
     )
