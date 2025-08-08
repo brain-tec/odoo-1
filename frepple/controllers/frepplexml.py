@@ -367,6 +367,7 @@ class XMLController(odoo.http.Controller):
                     database=database,
                     company=company,
                     mode=req.httprequest.form.get("mode", 1),
+                    disclose_stack_trace=company and company.disclose_stack_trace,
                 )
 
                 return req.make_response(
