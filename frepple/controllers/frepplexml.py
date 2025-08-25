@@ -115,9 +115,21 @@ class XMLController(odoo.http.Controller):
             self.user, password = auth.split(":", 1)
             if not database or not self.user or not password:
                 raise Exception("Missing user, password or database")
-            uid = req.session.authenticate(database, self.user, password)
-            if not uid:
-                raise Exception("Odoo basic authentication failed")
+            # Authenticate with an API key
+            uid = req.env["res.users.apikeys"]._check_credentials(
+                scope="rpc", key=password
+            )
+            if uid:
+                req.update_env(user=uid)
+            else:
+                # Authenticate with a password
+                uid = req.session.authenticate(
+                    database,
+                    self.user,
+                    password,
+                )
+                if not uid:
+                    raise Exception("Odoo basic authentication failed")
         elif authmeth.lower() == "bearer" and version and version[0] >= 7:
             try:
                 if not company or not company.webtoken_key:
@@ -131,11 +143,19 @@ class XMLController(odoo.http.Controller):
                     raise Exception(
                         "Missing user, password, company or database in token"
                     )
-                uid = req.session.authenticate(
-                    database, decoded["user"], decoded["password"]
+                # Authenticate with an API key
+                uid = req.env["res.users.apikeys"]._check_credentials(
+                    scope="rpc", key=decoded["password"]
                 )
-                if not uid:
-                    raise Exception("Odoo token authentication failed")
+                if uid:
+                    req.update_env(user=uid)
+                else:
+                    # Authenticate with a password
+                    uid = req.session.authenticate(
+                        database, decoded["user"], decoded["password"]
+                    )
+                    if not uid:
+                        raise Exception("Odoo token authentication failed")
             except Exception:
                 raise Exception("Odoo token authentication failed")
         else:
@@ -241,6 +261,8 @@ class XMLController(odoo.http.Controller):
             )
 
         # Validate company name
+        logger.error("kadee")
+        logger.error("req.env %s" % req.env["res.company"])
         if company_name and req.env:
             for i in req.env["res.company"].search(
                 [("name", "=", company_name)], limit=1
