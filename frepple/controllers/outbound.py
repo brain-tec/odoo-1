@@ -318,6 +318,8 @@ class exporter(object):
         logger.debug("Exporting BOMs.")
         if self.mode == 1:
             yield from self.export_boms()
+            logger.debug("Exporting BOM changes.")
+            yield from self.export_bom_changes()
         logger.debug("Exporting sales orders.")
         yield from self.export_salesorders()
         # Uncomment the following lines to create forecast models in frepple
@@ -1399,6 +1401,20 @@ class exporter(object):
         # for i in recs.read(fields):
         #    mrp_routings[i["id"]] = i["location_id"]
 
+        # dict to keep track of the bom operation material records
+        # We only keep the records for the BOMs that have changes in the PLM module.
+        self.bom_changes = {}
+        try:
+            for i in self.generator.getData(
+                "mrp.eco.bom.change",
+                search=[("eco_id.stage_id.name", "=", "Effective")],
+                object=True,
+            ):
+                self.bom_changes[i.eco_id.bom_id.id] = []
+        except:
+            # PLM module not installed
+            pass
+
         # Read all workcenters of all routings
         mrp_routing_workcenters = {}
         for i in self.generator.getData(
@@ -1615,6 +1631,16 @@ class exporter(object):
                                     qty / producedQty,
                                     quoteattr(product["name"]),
                                 )
+                                if i["id"] in self.bom_changes:
+                                    self.bom_changes[i["id"]].append(
+                                        {
+                                            "suboperation": operation,  # suboperation name
+                                            "product_id": j["product_id"][
+                                                0
+                                            ],  # product id
+                                            "quantity": qty / producedQty,  # quantity,
+                                        }
+                                    )
 
                         # Build byproduct flows
                         if i.get("sub_products", None):
@@ -1932,12 +1958,59 @@ class exporter(object):
                                             ]
                                         ),
                                     )
+                                    if i["id"] in self.bom_changes:
+                                        self.bom_changes[i["id"]].append(
+                                            {
+                                                "suboperation": name,  # suboperation name
+                                                "product_id": j["product_id"][
+                                                    0
+                                                ],  # product id
+                                                "quantity": -j["qty"]
+                                                / producedQty,  # quantity,
+                                            }
+                                        )
                             if not first_flow:
                                 yield "</flows>\n"
                             yield "</operation></suboperation>\n"
                         yield "</suboperations>\n"
                     yield "</operation>\n"
         yield "</operations>\n"
+
+    # Read the ECOs in the PLM module and update the BOM accordingly
+    # ECO BOM changes are suppoted
+    # ECO Routing changes are not supported
+    def export_bom_changes(self):
+
+        # If no changes have been captured no need to go further
+        if not self.bom_changes:
+            return
+
+        yield "<!-- bills of material changes -->\n"
+        yield "<flows>\n"
+        for i in self.generator.getData(
+            "mrp.eco.bom.change",
+            search=[("eco_id.stage_id.name", "=", "Effective")],
+            object=True,
+        ):
+            if not i.eco_id.bom_id.id in self.bom_changes:
+                logger.warning(f"BOM with id {i.eco_id.bom_id.id} is unknown")
+                continue
+            if not i.product_id.id in self.product_product:
+                logger.warning(f"Product with id {i.product_id.id} is unknown")
+                continue
+            if i.change_type == "add":
+                yield f'<flow xsi:type="flow_start" effective_start="{self.formatDateTime(i.eco_id.effectivity_date or datetime.now())}" quantity="{-i.upd_product_qty}"><operation name={quoteattr(self.bom_changes.get(i.eco_id.bom_id.id)[0].get("suboperation"))}/><item name={quoteattr(self.product_product[i.product_id.id]["name"])}/></flow>\n'
+            else:
+                for d in self.bom_changes[i.eco_id.bom_id.id]:
+                    if d.get("product_id") == i.product_id.id:
+                        if i.change_type == "remove":
+                            yield f'<flow xsi:type="flow_start" effective_end="{self.formatDateTime(i.eco_id.effectivity_date or datetime.now())}" quantity="{d.get("quantity")}"><operation name={quoteattr(d.get("suboperation"))}/><item name={quoteattr(self.product_product[i.product_id.id]["name"])}/></flow>\n'
+                            break
+                        elif i.change_type == "update":
+                            yield f'<flow xsi:type="flow_start" effective_end="{self.formatDateTime(i.eco_id.effectivity_date or datetime.now())}" quantity="{d.get("quantity")}"><operation name={quoteattr(d.get("suboperation"))}/><item name={quoteattr(self.product_product[i.product_id.id]["name"])}/></flow>\n'
+                            yield f'<flow xsi:type="flow_start" effective_start="{self.formatDateTime(i.eco_id.effectivity_date or datetime.now())}" quantity="{d.get("quantity") - i.upd_product_qty}"><operation name={quoteattr(d.get("suboperation"))}/><item name={quoteattr(self.product_product[i.product_id.id]["name"])}/></flow>\n'
+                            break
+        yield "</flows>\n"
 
     def export_salesorders(self):
         """
