@@ -273,8 +273,6 @@ class XMLController(odoo.http.Controller):
             )
 
         # Validate company name
-        logger.error("kadee")
-        logger.error("req.env %s" % req.env["res.company"])
         if company_name and req.env:
             for i in req.env["res.company"].search(
                 [("name", "=", company_name)], limit=1
