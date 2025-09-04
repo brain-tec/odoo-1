@@ -1976,8 +1976,8 @@ class exporter(object):
 
         def getReservedQuantity(stock_move_id):
             reserved_quantity = 0
-            if stock_move_id in stock_moves_dict:
-                mv = stock_moves_dict[stock_move_id]
+            mv = stock_moves_dict.get(stock_move_id, None)
+            if mv and mv["procure_method"] != "make_to_order":
                 reserved_quantity = mv["quantity"] or 0
                 for i in mv["move_orig_ids"]:
                     if i != stock_move_id:
