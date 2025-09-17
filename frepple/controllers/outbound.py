@@ -156,6 +156,7 @@ class exporter(object):
             )
             > 0
         ) and "freppledb.shelflife" in apps
+        self.has_length_limits = self.version[0] < 9 or self.version[1] < 11
 
         # The mode argument defines different types of runs:
         #  - Mode 1:
@@ -813,7 +814,11 @@ class exporter(object):
                     supplier = "%s %s" % (i["name"], i["id"])
                     yield '<customer name="%s" description=%s/>\n' % (
                         name,
-                        quoteattr(i["name"][:300] if i["name"] else ""),
+                        quoteattr(
+                            i["name"][:300]
+                            if i["name"] and self.has_length_limits
+                            else i["name"] or ""
+                        ),
                     )
                 elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
                     name = "Individuals"
@@ -1144,26 +1149,30 @@ class exporter(object):
             # generate variant name and description in frepple
             if i["product_template_attribute_value_ids"]:
                 if use_short_names:
-                    name = (i["code"] or i["name"])[:300]
-                    description = i["name"][:500]
+                    name = i["code"] or i["name"]
+                    description = i["name"]
                 else:
                     name = (
-                        (("[%s] %s %s" % (i["code"], i["name"], i["id"]))[:300])
+                        (("[%s] %s %s" % (i["code"], i["name"], i["id"])))
                         if i["code"]
-                        else "%s %s" % (i["name"], i["id"])[:300]
+                        else "%s %s" % (i["name"], i["id"])
                     )
                     description = None
             # generate name and description for non-variant products
             elif i["code"]:
                 name = (
-                    (("[%s] %s" % (i["code"], i["name"]))[:300])
+                    (("[%s] %s" % (i["code"], i["name"])))
                     if not use_short_names
-                    else i["code"][:300]
+                    else i["code"]
                 )
-                description = i["name"][:500] if use_short_names else None
+                description = i["name"] if use_short_names else None
             else:
-                name = i["name"][:300]
-                description = i["name"][:500] if use_short_names else None
+                name = i["name"]
+                description = i["name"] if use_short_names else None
+            if self.has_length_limits:
+                name = name[:300]
+                if description:
+                    description = description[:500]
             prod_obj = {
                 "name": name,
                 "template": i["product_tmpl_id"][0],
@@ -1431,7 +1440,7 @@ class exporter(object):
                         subcontractor.get("name", location),
                         i["id"],
                     )
-                    if len(operation) > 300:
+                    if self.has_length_limits and len(operation) > 300:
                         suffix = " @ %s %d" % (
                             subcontractor.get("name", location),
                             i["id"],
@@ -1750,7 +1759,7 @@ class exporter(object):
                                 suboperation,
                                 step["id"],
                             )
-                            if len(name) > 300:
+                            if self.has_length_limits and len(name) > 300:
                                 suffix = " - %s - %s" % (
                                     suboperation,
                                     step["id"],
