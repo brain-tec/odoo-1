@@ -1399,6 +1399,7 @@ class exporter(object):
                 "days_to_prepare_mo",
                 "sequence",
                 "code",
+                "product_qty_multiple",
             ],
         ):
             # Determine the location
@@ -1497,6 +1498,16 @@ class exporter(object):
                                 quoteattr(product_buf["name"]),
                                 quoteattr(location),
                             )
+
+                        # Handle multiple quantity of a bom (frepple custom extra field)
+                        if i.get("product_qty_multiple", 0) > 0:
+                            multipleQty = self.convert_qty_uom(
+                                i["product_qty_multiple"],
+                                i["product_uom_id"],
+                                i["product_tmpl_id"][0],
+                            )
+                            if multipleQty > 0:
+                                yield "<size_multiple>%s</size_multiple>\n" % multipleQty
 
                         # Handle produced quantity of a bom
                         producedQty = self.convert_qty_uom(
@@ -1673,6 +1684,16 @@ class exporter(object):
                             quoteattr(product_buf["name"]),
                             quoteattr(location),
                         )
+
+                        # Handle multiple quantity of a bom (frepple custom extra field)
+                        if i.get("product_qty_multiple", 0) > 0:
+                            multipleQty = self.convert_qty_uom(
+                                i["product_qty_multiple"],
+                                i["product_uom_id"],
+                                i["product_tmpl_id"][0],
+                            )
+                            if multipleQty > 0:
+                                yield "<size_multiple>%s</size_multiple>\n" % multipleQty
 
                         # Handle produced quantity of a bom
                         producedQty = (
