@@ -14,6 +14,7 @@
         "security/ir.model.access.csv",
         "views/frepple_data.xml",
         "views/res_config_settings_views.xml",
+        "views/mrp_bom.xml",
         "views/mrp_skill.xml",
         "views/mrp_workcenter_skill.xml",
         "views/mrp_workcenter_inherit.xml",
