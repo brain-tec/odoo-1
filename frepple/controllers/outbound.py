@@ -1087,7 +1087,7 @@ class exporter(object):
             product_template.name->>'en_US'), count(*)
             from product_product
             inner join product_template on product_product.product_tmpl_id = product_template.id
-            where product_template.type not in ('service', 'consu')
+            where product_template.type not in ('service', 'combo')
             group by coalesce(product_product.default_code,
             product_template.name->>%s,
             product_template.name->>'en_US')
