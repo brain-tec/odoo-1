@@ -238,7 +238,9 @@ class exporter(object):
             )
             > 0
         ) and "freppledb.shelflife" in apps
-        self.has_length_limits = self.version[0] < 9 or self.version[1] < 11
+        self.has_length_limits = self.version[0] < 9 or (
+            self.version[0] == 9 and self.version[1] < 11
+        )
 
         # The mode argument defines different types of runs:
         #  - Mode 1:
@@ -2781,7 +2783,7 @@ class exporter(object):
                 first_wo = True
                 for wo in i.workorder_ids:
                     suboperation = wo.display_name
-                    if len(suboperation) > 300:
+                    if self.has_length_limits and len(suboperation) > 300:
                         suboperation = suboperation[0:300]
 
                     # Get remaining duration of the WO
@@ -2910,7 +2912,7 @@ class exporter(object):
                 for wo in reversed(i.workorder_ids):
                     idx += 1.0
                     suboperation = wo.display_name
-                    if len(suboperation) > 300:
+                    if self.has_length_limits and len(suboperation) > 300:
                         suboperation = suboperation[0:300]
 
                     # In the "approved" status, frepple can still reschedule the MO in function of material and capacity
