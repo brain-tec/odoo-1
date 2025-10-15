@@ -719,7 +719,7 @@ class importer(object):
                                     ],
                                     limit=1,
                                 )
-                                if not bom and bom.type == "phantom":
+                                if not bom or bom.type == "phantom":
                                     # Avoid creating MO on a) non-existing BOMs and b) phantom/kit BOMs
                                     continue
                             except Exception:
