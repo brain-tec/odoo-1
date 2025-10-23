@@ -226,18 +226,9 @@ class exporter(object):
         self.delta = delta
         self.language = language
         self.has_expiry = (
-            len(
-                self.generator.getData(
-                    "ir.module.module",
-                    search=[
-                        ("state", "=", "installed"),
-                        ("name", "=", "mrp_product_expiry"),
-                    ],
-                    fields=["id"],
-                )
-            )
-            > 0
-        ) and "freppledb.shelflife" in apps
+            "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
+            and "freppledb.shelflife" in apps
+        )
         self.has_length_limits = self.version[0] < 9 or (
             self.version[0] == 9 and self.version[1] < 11
         )
@@ -3134,6 +3125,9 @@ class exporter(object):
                 stock_lot.name as lot_name,
                 stock_lot.expiration_date
                 FROM stock_quant
+                inner join stock_location on stock_location.id = stock_quant.location_id
+                and stock_location.scrap_location is distinct from true
+                and stock_location.return_location is distinct from true
                 left outer join stock_lot on stock_quant.lot_id = stock_lot.id
                 and stock_lot.product_id = stock_quant.product_id
                 WHERE quantity > 0
