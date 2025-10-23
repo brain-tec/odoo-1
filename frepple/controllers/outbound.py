@@ -57,10 +57,12 @@ class Odoo_generator:
             return getattr(obj, method)(*args)
         return None
 
-    def getData(self, model, search=None, order=None, fields=None, ids=None, object=False):
+    def getData(
+        self, model, search=None, order=None, fields=None, ids=None, object=False
+    ):
         if search is None:
-            search = []  
-        if fields is None:  
+            search = []
+        if fields is None:
             fields = []
         if ids is not None:
             if object:
@@ -206,18 +208,9 @@ class exporter(object):
             > 0
         )
         self.has_expiry = (
-            len(
-                self.generator.getData(
-                    "ir.module.module",
-                    search=[
-                        ("state", "=", "installed"),
-                        ("name", "=", "mrp_product_expiry"),
-                    ],
-                    fields=["id"],
-                )
-            )
-            > 0
-        ) and "freppledb.shelflife" in apps
+            "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
+            and "freppledb.shelflife" in apps
+        )
 
         # The mode argument defines different types of runs:
         #  - Mode 1:
@@ -2836,6 +2829,9 @@ class exporter(object):
                 stock_lot.name as lot_name,
                 stock_lot.expiration_date
                 FROM stock_quant
+                inner join stock_location on stock_location.id = stock_quant.location_id
+                and stock_location.scrap_location is distinct from true
+                and stock_location.return_location is distinct from true
                 left outer join stock_lot on stock_quant.lot_id = stock_lot.id
                 and stock_lot.product_id = stock_quant.product_id
                 WHERE quantity > 0
