@@ -1,0 +1,10 @@
+.my_small_button {
+  width: auto !important;
+  padding: 2px 8px !important;
+  max-width: 140px !important;
+  white-space: nowrap;
+  font-size: 0.9em !important;
+
+  /* override uppercase */
+  text-transform: none !important;
+}
