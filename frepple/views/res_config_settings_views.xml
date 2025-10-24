@@ -9,6 +9,27 @@
          <xpath expr="//div[hasclass('settings')]" position="inside">
             <div class="app_settings_block" data-string="FrePPLe" string="Frepple" data-key="frepple">
                <h2>FrePPLe</h2>
+                  <group>
+                     <div class="row mt16 o_settings_container">
+                        <div class="col-12 d-flex align-items-center">
+                           <div class="flex-grow-1">
+                              <label for="manufacturing_warehouse" string="Configuring a connection to frepple is easy." class="o_form_label"/>
+                              <br/>
+                              <label for="manufacturing_warehouse" string="However, it might not always work out of the box (if you have a proxy, customizations…)." class="o_form_label"/>
+                              <br/>
+                              <label for="manufacturing_warehouse" string="Contact us and we will be happy to help you set it up." class="o_form_label mb-0"/>
+                           </div>
+                           <div class="ms-3">
+                              <a href="mailto:info@frepple.com?subject=Help%20me%20configure%20my%20Odoo-freppLe%20connection"
+                                 class="btn btn-primary my_small_button"
+                                 target="_blank"
+                                 role="button">
+                              Help me configure it
+                              </a>
+                           </div>
+                        </div>
+                     </div>
+                  </group>
                <div class="row mt16 o_settings_container">
                   <div class="col-12 col-lg-6 o_setting_box" id="frepple_manufacturing_warehouse">
                      <div class="o_setting_left_pane"/>
