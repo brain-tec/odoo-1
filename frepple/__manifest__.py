@@ -33,6 +33,7 @@
     "assets": {
         "web.assets_backend": [
             "frepple/static/src/js/frepple.js",
+            "frepple/static/src/css/my_small_button.scss",
         ],
     },
     "price": 0,
