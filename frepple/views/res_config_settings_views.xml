@@ -17,7 +17,11 @@
                               <br/>
                               <label for="manufacturing_warehouse" string="However, it might not always work out of the box (if you have a proxy, customizations…)." class="o_form_label"/>
                               <br/>
-                              <label for="manufacturing_warehouse" string="Contact us and we will be happy to help you set it up." class="o_form_label mb-0"/>
+                              <div class="o_form_label mb-0">
+                                 Contact us at
+                                 <a href="mailto:info@frepple.com?subject=Help%20me%20configure%20my%20Odoo-freppLe%20connection">info@frepple.com</a>
+                                 and we will be happy to help you set it up.
+                              </div>
                            </div>
                            <div class="ms-3">
                               <a href="mailto:info@frepple.com?subject=Help%20me%20configure%20my%20Odoo-freppLe%20connection"
