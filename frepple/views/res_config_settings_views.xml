@@ -25,7 +25,7 @@
                                  </div>
                               </div>
                               <a href="mailto:info@frepple.com?subject=Help%20me%20configure%20my%20Odoo-freppLe%20connection"
-                                 class="btn btn-primary my_small_button"
+                                 class="btn btn-primary my_small_button ms-3"
                                  target="_blank"
                                  role="button">
                                  Help me configure it
