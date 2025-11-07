@@ -186,8 +186,6 @@ class exporter(object):
             yield "</plan>"
             return
 
-        self.load_uom()
-
         # Header.
         # The source attribute is set to 'odoo_<mode>', such that all objects created or
         # updated from the data are also marked as from originating from odoo.
@@ -198,8 +196,15 @@ class exporter(object):
         self.currentdate = datetime.now()
         yield "<current>%s</current>" % self.currentdate.strftime("%Y-%m-%dT%H:%M:%S")
 
-        # Synchronize users
+        # Synchronize users.
+        # This needs to run before we restrict the context to the selected company!
         yield from self.export_users()
+
+        if self.singlecompany:
+            # Create a new context to limit the data to the selected company
+            self.generator.setContext(allowed_company_ids=[self.company_id])
+
+        self.load_uom()
 
         # Main content.
         # The order of the entities is important. First one needs to create the
@@ -290,9 +295,6 @@ class exporter(object):
             except Exception:
                 self.calendar = None
                 self.mfg_location = None
-            if self.singlecompany:
-                # Create a new context to limit the data to the selected company
-                self.generator.setContext(allowed_company_ids=[i["id"]])
         if not self.company_id:
             logger.warning("Can't find company '%s'" % self.company)
             self.company_id = None
@@ -422,9 +424,10 @@ class exporter(object):
             for usr in self.generator.getData(
                 "res.users",
                 ids=grp["users"],
-                fields=["name", "login", "lang"],
+                fields=["name", "login", "lang", "company_ids"],
             ):
-                users.append((usr["name"], usr["login"], usr["lang"]))
+                if not self.singlecompany or self.company_id in usr["company_ids"]:
+                    users.append((usr["name"], usr["login"], usr["lang"]))
         yield '<stringproperty name="users" value=%s/>\n' % quoteattr(json.dumps(users))
 
     def export_calendar(self):
