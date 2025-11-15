@@ -241,7 +241,7 @@ class Quote(models.Model):
                 due_date_user_tz = due_date_utc.astimezone(
                     tz.gettz(self.env.user.tz)
                 ).replace(tzinfo=None)
-
+                company_id = getattr(quote, "company_id", quote.env.user.company_id)
                 request_body["demands"].append(
                     {
                         "name": quote.product_id.id,
@@ -261,13 +261,13 @@ class Quote(models.Model):
                 encode_params = dict(
                     exp=round(time.time()) + 600, user=quote.env.user.login
                 )
-                user_company_webtoken = quote.env.user.company_id.webtoken_key
+                user_company_webtoken = company_id.webtoken_key
                 if not user_company_webtoken:
                     raise exceptions.UserError(
                         "FrePPLe company web token not configured"
                     )
 
-                base_url = quote.env.user.company_id.frepple_server
+                base_url = company_id.frepple_server
                 if not base_url:
                     raise exceptions.UserError("frePPLe web server not configured")
                 if not base_url.endswith("/"):
