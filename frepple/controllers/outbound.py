@@ -2307,10 +2307,18 @@ class exporter(object):
                         continue
                     start = j.date_order
                     if not isinstance(start, datetime):
-                        start = datetime.fromisoformat(start)
+                        try:
+                            start = datetime.fromisoformat(start)
+                        except Exception:
+                            start = None
                     end = mv.date
                     if not isinstance(end, datetime):
-                        end = datetime.fromisoformat(end)
+                        try:
+                            end = datetime.fromisoformat(end)
+                        except Exception:
+                            end = None
+                    if not start or not end:
+                        continue
                     start = self.formatDateTime(start if start < end else end)
                     end = self.formatDateTime(end)
                     qty = mv.product_qty
