@@ -124,7 +124,7 @@ class XMLController(odoo.http.Controller):
             else:
                 # Authenticate with a password
                 uid = req.session.authenticate(
-                    database,
+                    req.env,
                     {
                         "login": self.user,
                         "password": password,
@@ -157,7 +157,7 @@ class XMLController(odoo.http.Controller):
                 else:
                     # Authenticate with a password
                     uid = req.session.authenticate(
-                        database,
+                        req.env,
                         {
                             "login": decoded["user"],
                             "password": decoded["password"],
@@ -300,7 +300,7 @@ class XMLController(odoo.http.Controller):
                 #     is a very big security risk.
                 #
                 # class_dict = load_classes_from_github(
-                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/18.0/frepple/controllers/outbound.py",
+                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/19.0/frepple/controllers/outbound.py",
                 #     ["exporter", "Odoo_generator"],
                 # )
                 # exporter = class_dict["exporter"]
@@ -377,7 +377,7 @@ class XMLController(odoo.http.Controller):
                 #     is a very big security risk.
                 #
                 # class_dict = load_classes_from_github(
-                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/18.0/frepple/controllers/inbound.py",
+                #     "https://raw.githubusercontent.com/frePPLe/odoo/refs/heads/19.0/frepple/controllers/inbound.py",
                 #     ["importer"],
                 # )
                 # importer = class_dict["importer"]

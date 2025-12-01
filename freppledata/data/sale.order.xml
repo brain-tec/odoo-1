@@ -18,7 +18,7 @@
             <field name="order_id" ref="sale_order_1001"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">66</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -45,7 +45,7 @@
             <field name="order_id" ref="sale_order_1002"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">70</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -72,7 +72,7 @@
             <field name="order_id" ref="sale_order_1003"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">89</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -99,7 +99,7 @@
             <field name="order_id" ref="sale_order_1004"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">75</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -126,7 +126,7 @@
             <field name="order_id" ref="sale_order_1005"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">38</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -153,7 +153,7 @@
             <field name="order_id" ref="sale_order_1006"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">41</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -180,7 +180,7 @@
             <field name="order_id" ref="sale_order_1007"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">99</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -207,7 +207,7 @@
             <field name="order_id" ref="sale_order_1008"/>
             <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
             <field name="product_uom_qty">61</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -234,7 +234,7 @@
             <field name="order_id" ref="sale_order_1009"/>
             <field name="product_id" ref="__export__.product_product_597_5ee4267e"/>
             <field name="product_uom_qty">3</field>
-            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="product_uom_id" ref="uom.product_uom_unit"/>
             <field name="price_unit">90</field>
         </record>
 
@@ -262,7 +262,7 @@
                 <field name="order_id" ref="sale_order_1"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -289,7 +289,7 @@
                 <field name="order_id" ref="sale_order_2"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">67</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -316,7 +316,7 @@
                 <field name="order_id" ref="sale_order_3"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">62</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -343,7 +343,7 @@
                 <field name="order_id" ref="sale_order_4"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">73</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -370,7 +370,7 @@
                 <field name="order_id" ref="sale_order_5"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">90</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -397,7 +397,7 @@
                 <field name="order_id" ref="sale_order_6"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">86</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -424,7 +424,7 @@
                 <field name="order_id" ref="sale_order_7"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">64</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -451,7 +451,7 @@
                 <field name="order_id" ref="sale_order_8"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">54</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -478,7 +478,7 @@
                 <field name="order_id" ref="sale_order_9"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -505,7 +505,7 @@
                 <field name="order_id" ref="sale_order_10"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">64</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -532,7 +532,7 @@
                 <field name="order_id" ref="sale_order_11"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -559,7 +559,7 @@
                 <field name="order_id" ref="sale_order_12"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">72</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -586,7 +586,7 @@
                 <field name="order_id" ref="sale_order_13"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">100</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -613,7 +613,7 @@
                 <field name="order_id" ref="sale_order_14"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">54</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -640,7 +640,7 @@
                 <field name="order_id" ref="sale_order_15"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">57</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -667,7 +667,7 @@
                 <field name="order_id" ref="sale_order_16"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">77</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -694,7 +694,7 @@
                 <field name="order_id" ref="sale_order_17"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">69</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -721,7 +721,7 @@
                 <field name="order_id" ref="sale_order_18"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -748,7 +748,7 @@
                 <field name="order_id" ref="sale_order_19"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">67</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -775,7 +775,7 @@
                 <field name="order_id" ref="sale_order_20"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">54</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -802,7 +802,7 @@
                 <field name="order_id" ref="sale_order_21"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">70</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -829,7 +829,7 @@
                 <field name="order_id" ref="sale_order_22"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">73</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -856,7 +856,7 @@
                 <field name="order_id" ref="sale_order_23"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">52</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -883,7 +883,7 @@
                 <field name="order_id" ref="sale_order_24"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">73</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -910,7 +910,7 @@
                 <field name="order_id" ref="sale_order_25"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">98</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -937,7 +937,7 @@
                 <field name="order_id" ref="sale_order_26"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">74</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -964,7 +964,7 @@
                 <field name="order_id" ref="sale_order_27"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">97</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -991,7 +991,7 @@
                 <field name="order_id" ref="sale_order_28"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">89</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1018,7 +1018,7 @@
                 <field name="order_id" ref="sale_order_29"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">93</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1045,7 +1045,7 @@
                 <field name="order_id" ref="sale_order_30"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">76</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1072,7 +1072,7 @@
                 <field name="order_id" ref="sale_order_31"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1099,7 +1099,7 @@
                 <field name="order_id" ref="sale_order_32"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">99</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1126,7 +1126,7 @@
                 <field name="order_id" ref="sale_order_33"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">81</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1153,7 +1153,7 @@
                 <field name="order_id" ref="sale_order_34"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">63</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1180,7 +1180,7 @@
                 <field name="order_id" ref="sale_order_35"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">82</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1207,7 +1207,7 @@
                 <field name="order_id" ref="sale_order_36"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1234,7 +1234,7 @@
                 <field name="order_id" ref="sale_order_37"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">83</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1261,7 +1261,7 @@
                 <field name="order_id" ref="sale_order_38"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">53</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1288,7 +1288,7 @@
                 <field name="order_id" ref="sale_order_39"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">50</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1315,7 +1315,7 @@
                 <field name="order_id" ref="sale_order_40"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">75</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1342,7 +1342,7 @@
                 <field name="order_id" ref="sale_order_41"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">58</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1369,7 +1369,7 @@
                 <field name="order_id" ref="sale_order_42"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">86</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1396,7 +1396,7 @@
                 <field name="order_id" ref="sale_order_43"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">55</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1423,7 +1423,7 @@
                 <field name="order_id" ref="sale_order_44"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">66</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1450,7 +1450,7 @@
                 <field name="order_id" ref="sale_order_45"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">94</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1477,7 +1477,7 @@
                 <field name="order_id" ref="sale_order_46"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1504,7 +1504,7 @@
                 <field name="order_id" ref="sale_order_47"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1531,7 +1531,7 @@
                 <field name="order_id" ref="sale_order_48"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">97</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1558,7 +1558,7 @@
                 <field name="order_id" ref="sale_order_49"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">97</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1585,7 +1585,7 @@
                 <field name="order_id" ref="sale_order_50"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1612,7 +1612,7 @@
                 <field name="order_id" ref="sale_order_51"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">80</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1639,7 +1639,7 @@
                 <field name="order_id" ref="sale_order_52"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1666,7 +1666,7 @@
                 <field name="order_id" ref="sale_order_53"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1693,7 +1693,7 @@
                 <field name="order_id" ref="sale_order_54"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1720,7 +1720,7 @@
                 <field name="order_id" ref="sale_order_55"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">82</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1747,7 +1747,7 @@
                 <field name="order_id" ref="sale_order_56"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">53</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1774,7 +1774,7 @@
                 <field name="order_id" ref="sale_order_57"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">74</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1801,7 +1801,7 @@
                 <field name="order_id" ref="sale_order_58"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1828,7 +1828,7 @@
                 <field name="order_id" ref="sale_order_59"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">85</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1855,7 +1855,7 @@
                 <field name="order_id" ref="sale_order_60"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">82</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1882,7 +1882,7 @@
                 <field name="order_id" ref="sale_order_61"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">51</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1909,7 +1909,7 @@
                 <field name="order_id" ref="sale_order_62"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">62</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1936,7 +1936,7 @@
                 <field name="order_id" ref="sale_order_63"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1963,7 +1963,7 @@
                 <field name="order_id" ref="sale_order_64"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">76</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -1990,7 +1990,7 @@
                 <field name="order_id" ref="sale_order_65"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">98</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2017,7 +2017,7 @@
                 <field name="order_id" ref="sale_order_66"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2044,7 +2044,7 @@
                 <field name="order_id" ref="sale_order_67"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">50</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2071,7 +2071,7 @@
                 <field name="order_id" ref="sale_order_68"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">52</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2098,7 +2098,7 @@
                 <field name="order_id" ref="sale_order_69"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">68</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2125,7 +2125,7 @@
                 <field name="order_id" ref="sale_order_70"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">66</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2152,7 +2152,7 @@
                 <field name="order_id" ref="sale_order_71"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">90</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2179,7 +2179,7 @@
                 <field name="order_id" ref="sale_order_72"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">100</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2206,7 +2206,7 @@
                 <field name="order_id" ref="sale_order_73"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">75</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2233,7 +2233,7 @@
                 <field name="order_id" ref="sale_order_74"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">67</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2260,7 +2260,7 @@
                 <field name="order_id" ref="sale_order_75"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2287,7 +2287,7 @@
                 <field name="order_id" ref="sale_order_76"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">52</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2314,7 +2314,7 @@
                 <field name="order_id" ref="sale_order_77"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">97</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2341,7 +2341,7 @@
                 <field name="order_id" ref="sale_order_78"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">99</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2368,7 +2368,7 @@
                 <field name="order_id" ref="sale_order_79"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">87</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2395,7 +2395,7 @@
                 <field name="order_id" ref="sale_order_80"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">89</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2422,7 +2422,7 @@
                 <field name="order_id" ref="sale_order_81"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">71</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2449,7 +2449,7 @@
                 <field name="order_id" ref="sale_order_82"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">63</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2476,7 +2476,7 @@
                 <field name="order_id" ref="sale_order_83"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2503,7 +2503,7 @@
                 <field name="order_id" ref="sale_order_84"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">72</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2530,7 +2530,7 @@
                 <field name="order_id" ref="sale_order_85"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">92</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2557,7 +2557,7 @@
                 <field name="order_id" ref="sale_order_86"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">55</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2584,7 +2584,7 @@
                 <field name="order_id" ref="sale_order_87"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">70</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2611,7 +2611,7 @@
                 <field name="order_id" ref="sale_order_88"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">71</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2638,7 +2638,7 @@
                 <field name="order_id" ref="sale_order_89"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">75</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2665,7 +2665,7 @@
                 <field name="order_id" ref="sale_order_90"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">83</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2692,7 +2692,7 @@
                 <field name="order_id" ref="sale_order_91"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">71</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2719,7 +2719,7 @@
                 <field name="order_id" ref="sale_order_92"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2746,7 +2746,7 @@
                 <field name="order_id" ref="sale_order_93"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">79</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2773,7 +2773,7 @@
                 <field name="order_id" ref="sale_order_94"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">90</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2800,7 +2800,7 @@
                 <field name="order_id" ref="sale_order_95"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2827,7 +2827,7 @@
                 <field name="order_id" ref="sale_order_96"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">52</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2854,7 +2854,7 @@
                 <field name="order_id" ref="sale_order_97"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">57</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2881,7 +2881,7 @@
                 <field name="order_id" ref="sale_order_98"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2908,7 +2908,7 @@
                 <field name="order_id" ref="sale_order_99"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2935,7 +2935,7 @@
                 <field name="order_id" ref="sale_order_100"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">74</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2962,7 +2962,7 @@
                 <field name="order_id" ref="sale_order_101"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">58</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -2989,7 +2989,7 @@
                 <field name="order_id" ref="sale_order_102"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">68</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3016,7 +3016,7 @@
                 <field name="order_id" ref="sale_order_103"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">71</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3043,7 +3043,7 @@
                 <field name="order_id" ref="sale_order_104"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">66</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3070,7 +3070,7 @@
                 <field name="order_id" ref="sale_order_105"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">80</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3097,7 +3097,7 @@
                 <field name="order_id" ref="sale_order_106"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">85</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3124,7 +3124,7 @@
                 <field name="order_id" ref="sale_order_107"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">82</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3151,7 +3151,7 @@
                 <field name="order_id" ref="sale_order_108"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3178,7 +3178,7 @@
                 <field name="order_id" ref="sale_order_109"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">83</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3205,7 +3205,7 @@
                 <field name="order_id" ref="sale_order_110"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3232,7 +3232,7 @@
                 <field name="order_id" ref="sale_order_111"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">77</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3259,7 +3259,7 @@
                 <field name="order_id" ref="sale_order_112"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">73</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3286,7 +3286,7 @@
                 <field name="order_id" ref="sale_order_113"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">77</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3313,7 +3313,7 @@
                 <field name="order_id" ref="sale_order_114"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">63</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3340,7 +3340,7 @@
                 <field name="order_id" ref="sale_order_115"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">76</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3367,7 +3367,7 @@
                 <field name="order_id" ref="sale_order_116"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">69</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3394,7 +3394,7 @@
                 <field name="order_id" ref="sale_order_117"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">73</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3421,7 +3421,7 @@
                 <field name="order_id" ref="sale_order_118"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">77</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3448,7 +3448,7 @@
                 <field name="order_id" ref="sale_order_119"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3475,7 +3475,7 @@
                 <field name="order_id" ref="sale_order_120"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">50</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3502,7 +3502,7 @@
                 <field name="order_id" ref="sale_order_121"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">66</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3529,7 +3529,7 @@
                 <field name="order_id" ref="sale_order_122"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">71</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3556,7 +3556,7 @@
                 <field name="order_id" ref="sale_order_123"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">70</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3583,7 +3583,7 @@
                 <field name="order_id" ref="sale_order_124"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">80</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3610,7 +3610,7 @@
                 <field name="order_id" ref="sale_order_125"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">67</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3637,7 +3637,7 @@
                 <field name="order_id" ref="sale_order_126"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">82</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3664,7 +3664,7 @@
                 <field name="order_id" ref="sale_order_127"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">88</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3691,7 +3691,7 @@
                 <field name="order_id" ref="sale_order_128"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">96</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3718,7 +3718,7 @@
                 <field name="order_id" ref="sale_order_129"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">90</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3745,7 +3745,7 @@
                 <field name="order_id" ref="sale_order_130"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">81</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3772,7 +3772,7 @@
                 <field name="order_id" ref="sale_order_131"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">52</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3799,7 +3799,7 @@
                 <field name="order_id" ref="sale_order_132"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">72</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3826,7 +3826,7 @@
                 <field name="order_id" ref="sale_order_133"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">75</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3853,7 +3853,7 @@
                 <field name="order_id" ref="sale_order_134"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">61</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3880,7 +3880,7 @@
                 <field name="order_id" ref="sale_order_135"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">80</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3907,7 +3907,7 @@
                 <field name="order_id" ref="sale_order_136"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">91</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3934,7 +3934,7 @@
                 <field name="order_id" ref="sale_order_137"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">75</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3961,7 +3961,7 @@
                 <field name="order_id" ref="sale_order_138"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">51</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -3988,7 +3988,7 @@
                 <field name="order_id" ref="sale_order_139"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">50</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4015,7 +4015,7 @@
                 <field name="order_id" ref="sale_order_140"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">99</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4042,7 +4042,7 @@
                 <field name="order_id" ref="sale_order_141"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">86</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4069,7 +4069,7 @@
                 <field name="order_id" ref="sale_order_142"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">61</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4096,7 +4096,7 @@
                 <field name="order_id" ref="sale_order_143"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">54</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4123,7 +4123,7 @@
                 <field name="order_id" ref="sale_order_144"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">60</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4150,7 +4150,7 @@
                 <field name="order_id" ref="sale_order_145"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">58</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4177,7 +4177,7 @@
                 <field name="order_id" ref="sale_order_146"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">78</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4204,7 +4204,7 @@
                 <field name="order_id" ref="sale_order_147"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">79</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4231,7 +4231,7 @@
                 <field name="order_id" ref="sale_order_148"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">74</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 
@@ -4258,7 +4258,7 @@
                 <field name="order_id" ref="sale_order_149"/>
                 <field name="product_id" ref="__export__.product_product_57_5aef267e"/>
                 <field name="product_uom_qty">84</field>
-                <field name="product_uom" ref="uom.product_uom_unit"/>
+                <field name="product_uom_id" ref="uom.product_uom_unit"/>
                 <field name="price_unit">100</field>
             </record>
 

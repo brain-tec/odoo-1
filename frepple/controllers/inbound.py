@@ -57,7 +57,7 @@ class importer(object):
 
         # Pick up the timezone of the connector user (or UTC if not set)
         try:
-            usr = self.env["res.users"].browse(ids=[req.uid]).read(["tz"])[0]
+            usr = self.env["res.users"].browse(ids=[req.env.uid]).read(["tz"])[0]
             self.timezone = timezone(usr["tz"] or "UTC")
         except Exception:
             self.timezone = timezone("UTC")
@@ -311,7 +311,7 @@ class importer(object):
                                     {
                                         "product_id": int(item_id),
                                         "product_qty": quantity,
-                                        "product_uom": int(uom_id),
+                                        "product_uom_id": int(uom_id),
                                         "date_planned": date_planned,
                                         "name": elem.get("item"),
                                     }
@@ -408,7 +408,7 @@ class importer(object):
                                     "order_id": supplier_reference[supplier_id]["id"],
                                     "product_id": int(item_id),
                                     "product_qty": quantity,
-                                    "product_uom": int(uom_id),
+                                    "product_uom_id": int(uom_id),
                                 }
                             )
                             po = po_line.order_id
@@ -465,7 +465,7 @@ class importer(object):
                                 quantity,
                                 product_uom,
                                 self.company,
-                                supplier,
+                                po.partner_id,
                                 po,
                             )
                             d["date_planned"] = date_planned
@@ -808,9 +808,7 @@ class importer(object):
                                             wo.date_finished = rec["end"]
                                             if not create:
                                                 wo.write(
-                                                    {
-                                                        "date_finished": wo.date_finished
-                                                    }
+                                                    {"date_finished": wo.date_finished}
                                                 )
                                         if not startUpdated and "start" in rec:
                                             wo.date_start = rec["start"]

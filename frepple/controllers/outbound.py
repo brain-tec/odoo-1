@@ -266,8 +266,7 @@ class exporter(object):
             search=[("name", "=", self.company)],
             fields=[
                 "security_lead",
-                "po_lead",
-                "manufacturing_lead",
+                "days_to_purchase",
                 "calendar",
                 "manufacturing_warehouse",
                 "respect_reservations",
@@ -277,8 +276,8 @@ class exporter(object):
             self.security_lead = int(
                 i["security_lead"]
             )  # TODO NOT USED RIGHT NOW - add parameter in frepple for this
-            self.po_lead = i["po_lead"]
-            self.manufacturing_lead = i["manufacturing_lead"]
+            self.po_lead = i["days_to_purchase"]
+            self.manufacturing_lead = 0
             self.respect_reservations = i["respect_reservations"]
             try:
                 self.calendar = (
@@ -317,11 +316,10 @@ class exporter(object):
             # We also need to load INactive UOMs, because there still might be records
             # using the inactive UOM. Questionable practice, but can happen...
             search=["|", ("active", "=", 1), ("active", "=", 0)],
-            fields=["factor", "uom_type", "category_id", "name"],
+            fields=["factor", "name"],
         ):
             self.uom[i["id"]] = {
                 "factor": i["factor"],
-                "category": i["category_id"][0],
                 "name": i["name"],
             }
 
@@ -385,15 +383,7 @@ class exporter(object):
         if product_uom == uom_id:
             return qty
         # check if different uoms belong to the same category
-        if self.uom[product_uom]["category"] == self.uom[uom_id]["category"]:
-            return qty / self.uom[uom_id]["factor"] * self.uom[product_uom]["factor"]
-        else:
-            # UOM is from a different category as the reference uom of the product.
-            logger.warning(
-                "Can't convert from %s for product template %s"
-                % (self.uom[uom_id]["name"], product_template_id)
-            )
-            return qty * self.uom[uom_id]["factor"]
+        return qty / self.uom[uom_id]["factor"] * self.uom[product_uom]["factor"]
 
     def convert_float_time(self, float_time, units="days"):
         """
@@ -418,12 +408,12 @@ class exporter(object):
             "res.groups",
             search=[("name", "=", "frePPLe user")],
             fields=[
-                "users",
+                "user_ids",
             ],
         ):
             for usr in self.generator.getData(
                 "res.users",
-                ids=grp["users"],
+                ids=grp["user_ids"],
                 fields=["name", "login", "lang", "company_ids"],
             ):
                 if not self.singlecompany or self.company_id in usr["company_ids"]:
@@ -486,16 +476,7 @@ class exporter(object):
 
             # Read from the attendance/leaves which resource has specific entries
             self.resources_with_specific_calendars = {}
-            for i in self.generator.getData(
-                "resource.calendar.attendance",
-                search=[("resource_id", "!=", False)],
-                fields=[
-                    "resource_id",
-                ],
-            ):
-                self.resources_with_specific_calendars[i["resource_id"][0]] = i[
-                    "resource_id"
-                ][1]
+
             for i in self.generator.getData(
                 "resource.calendar.leaves",
                 search=[("resource_id", "!=", False), ("time_type", "=", "leave")],
@@ -513,56 +494,22 @@ class exporter(object):
                 search=[("display_type", "=", False)],
                 fields=[
                     "dayofweek",
-                    "date_from",
-                    "date_to",
                     "hour_from",
                     "hour_to",
                     "calendar_id",
-                    "week_type",
-                    "resource_id",
+                    "two_weeks_calendar",
                     "day_period",
                 ],
             ):
                 if i["calendar_id"] and i["calendar_id"][0] in cal_ids:
                     calendar_name = "%s %s" % (i["calendar_id"][1], i["calendar_id"][0])
 
-                    if not i["resource_id"]:
-                        if calendar_name not in calendars:
-                            calendars[calendar_name] = []
-                        i["attendance"] = (
-                            True
-                            if i["day_period"] in ("morning", "afternoon")
-                            else False
-                        )
-                        calendars[calendar_name].append(i)
-
-                    if calendar_resource.get(i["calendar_id"][0]):
-                        for res in calendar_resource.get(i["calendar_id"][0]):
-                            if i["resource_id"] and res != i["resource_id"][0]:
-                                continue
-                            if res in self.resources_with_specific_calendars:
-                                if (
-                                    "calendar for %s"
-                                    % (self.resources_with_specific_calendars[res],)
-                                    not in calendars
-                                ):
-                                    calendars[
-                                        "calendar for %s"
-                                        % (self.resources_with_specific_calendars[res],)
-                                    ] = []
-                                    cal_tz[
-                                        "calendar for %s"
-                                        % (self.resources_with_specific_calendars[res],)
-                                    ] = cal_tz[calendar_name]
-                                i["attendance"] = (
-                                    True
-                                    if i["day_period"] in ("morning", "afternoon")
-                                    else False
-                                )
-                                calendars[
-                                    "calendar for %s"
-                                    % (self.resources_with_specific_calendars[res],)
-                                ].append(i)
+                    if calendar_name not in calendars:
+                        calendars[calendar_name] = []
+                    i["attendance"] = (
+                        True if i["day_period"] in ("morning", "afternoon") else False
+                    )
+                    calendars[calendar_name].append(i)
 
             # Read the leaves for all calendars
             for i in self.generator.getData(
@@ -600,7 +547,10 @@ class exporter(object):
                                     cal_tz[
                                         "calendar for %s"
                                         % (self.resources_with_specific_calendars[res],)
-                                    ] = cal_tz[i["calendar_id"][1]]
+                                    ] = cal_tz[
+                                        "%s %s"
+                                        % (i["calendar_id"][1], i["calendar_id"][0])
+                                    ]
                                 i["attendance"] = False
                                 calendars[
                                     "calendar for %s"
@@ -620,17 +570,17 @@ class exporter(object):
                     )
                 yield '<calendar name=%s default="0"><buckets>\n' % quoteattr(i)
                 for j in calendars[i]:
-                    if j.get("week_type", False) == False:
+                    if j.get("two_weeks_calendar", False) == False:
                         # ONE-WEEK CALENDAR
                         yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
                             (
                                 j["date_from"].strftime("%Y-%m-%dT00:00:00")
-                                if j["date_from"]
+                                if j.get("date_from")
                                 else "2020-01-01T00:00:00"
                             ),
                             (
                                 j["date_to"].strftime("%Y-%m-%dT00:00:00")
-                                if j["date_to"]
+                                if j.get("date_to")
                                 else "2030-12-31T00:00:00"
                             ),
                             "1" if j["attendance"] else "0",
@@ -658,12 +608,14 @@ class exporter(object):
                             priority_leave += 1
                     else:
                         # TWO-WEEKS CALENDAR
-                        start = j["date_from"] or datetime(2020, 1, 1)
-                        end = j["date_to"] or datetime(2030, 12, 31)
+                        start = j.get("date_from") or datetime(2020, 1, 1)
+                        end = j.get("date_to") or datetime(2030, 12, 31)
 
                         t = start
                         while t < end:
-                            if int(t.isocalendar()[1] % 2) == int(j["week_type"]):
+                            if int(t.isocalendar()[1] % 2) == int(
+                                j["two_weeks_calendar"]
+                            ):
                                 yield '<bucket start="%s" end="%s" value="%s" days="%s" priority="%s" starttime="%s" endtime="%s"/>\n' % (
                                     self.formatDateTime(t, cal_tz[i]),
                                     self.formatDateTime(
@@ -697,7 +649,15 @@ class exporter(object):
 
             yield "</calendars>\n"
         except Exception as e:
-            logger.info(e)
+            import traceback
+            import sys
+
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            tb_list = traceback.extract_tb(exc_tb)
+            last_frame = tb_list[-1]  # last_frame is a traceback.FrameSummary
+            print("Error occurred in file:", last_frame.filename)
+            print("Line number:", last_frame.lineno)
+            print("Code causing error:", last_frame.line)
             yield "</calendars>\n"
 
     def export_locations(self):
@@ -916,7 +876,6 @@ class exporter(object):
                 "owner",
                 "resource_calendar_id",
                 "time_efficiency",
-                "default_capacity",
                 "tool",
                 "post_operation_time",
                 "constrained",
@@ -945,9 +904,8 @@ class exporter(object):
                 )
             )
             self.map_workcenters[i["id"]] = i
-            yield '<resource name=%s maximum="%s" category="%s" subcategory="%s" constrained="%s" efficiency="%s"><location name=%s/>%s%s</resource>\n' % (
+            yield '<resource name=%s maximum="1" category="%s" subcategory="%s" constrained="%s" efficiency="%s"><location name=%s/>%s%s</resource>\n' % (
                 quoteattr(name),
-                i["default_capacity"],
                 i["id"],
                 # Use this line if the tool use is independent of the MO quantity
                 # "tool" if i["tool"] else "",
@@ -1046,7 +1004,12 @@ class exporter(object):
                 self.route_mto = k
         for i in self.generator.getData(
             "product.template",
-            search=[("type", "not in", ("service", "combo"))],
+            # use is_storable = True to exclude real consumable like screws, nails...
+            search=[
+                "&",
+                ("type", "not in", ("service", "combo")),
+                ("is_storable", "=", True),
+            ],
             fields=[
                 "sale_ok",
                 "purchase_ok",
@@ -1951,7 +1914,7 @@ class exporter(object):
                 "state",
                 "product_id",
                 "product_uom_qty",
-                "product_uom",
+                "product_uom_id",
                 "order_id",
                 "move_ids",
             ],
@@ -2058,7 +2021,7 @@ class exporter(object):
                 status = "quote"  # Quotes do reserve capacity and materials
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"],
+                    i["product_uom_id"],
                     product["template"],
                 )
             elif state == "sale":
@@ -2131,28 +2094,28 @@ class exporter(object):
                         status = "closed"
                         qty = self.convert_qty_uom(
                             i["product_uom_qty"],
-                            i["product_uom"],
+                            i["product_uom_id"],
                             product["template"],
                         )
                     else:
                         status = "open"
                         qty = self.convert_qty_uom(
                             qty,
-                            i["product_uom"],
+                            i["product_uom_id"],
                             product["template"],
                         )
             elif state == "done":
                 status = "closed"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"],
+                    i["product_uom_id"],
                     product["template"],
                 )
             elif state == "cancel":
                 status = "canceled"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
-                    i["product_uom"],
+                    i["product_uom_id"],
                     product["template"],
                 )
             else:
@@ -2375,7 +2338,7 @@ class exporter(object):
                     end = self.formatDateTime(end)
                     qty = self.convert_qty_uom(
                         i.product_qty - i.qty_received,
-                        i.product_uom.id,
+                        i.product_uom_id.id,
                         self.product_product[i.product_id.id]["template"],
                     )
                     supplier = self.map_suppliers.get(j.partner_id.id)
@@ -2523,15 +2486,8 @@ class exporter(object):
                 continue
 
             # Get MTO link
-            mto_so = (
-                # i.procurement_group_id.sale_id + # TODO   Verify this is the correct logic!!!!
-                i.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-            )
-            if mto_so:
-                batch = mto_so[0].name
-            else:
-                mto_mo = i._get_sources()
-                batch = mto_mo[0].display_name if mto_mo else i.name
+
+            batch = i.sale_line_id.order_id.name if i.sale_line_id else ""
 
             # Create a record for the MO
             yield '<operationplan type="MO" reference=%s batch=%s %s="%s" quantity="%s" status="%s">\n' % (
@@ -2995,8 +2951,7 @@ class exporter(object):
                 stock_lot.expiration_date
                 FROM stock_quant
                 inner join stock_location on stock_location.id = stock_quant.location_id
-                and stock_location.scrap_location is distinct from true
-                and stock_location.return_location is distinct from true
+                and stock_location.usage = 'internal'
                 left outer join stock_lot on stock_quant.lot_id = stock_lot.id
                 and stock_lot.product_id = stock_quant.product_id
                 WHERE quantity > 0
@@ -3088,7 +3043,6 @@ class exporter(object):
                 "FROM stock_quant "
                 "INNER JOIN stock_location ON stock_quant.location_id = stock_location.id "
                 "WHERE quantity > 0 "
-                "AND stock_location.scrap_location is distinct from true "
                 "AND stock_location.usage = 'internal' "
                 "GROUP BY product_id, stock_quant.location_id "
                 "ORDER BY stock_quant.location_id ASC"
