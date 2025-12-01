@@ -511,6 +511,32 @@ class exporter(object):
                     )
                     calendars[calendar_name].append(i)
 
+                if calendar_resource.get(i["calendar_id"][0]):
+                    for res in calendar_resource.get(i["calendar_id"][0]):
+                        if res in self.resources_with_specific_calendars:
+                            if (
+                                "calendar for %s"
+                                % (self.resources_with_specific_calendars[res],)
+                                not in calendars
+                            ):
+                                calendars[
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                ] = []
+                                cal_tz[
+                                    "calendar for %s"
+                                    % (self.resources_with_specific_calendars[res],)
+                                ] = cal_tz[calendar_name]
+                            i["attendance"] = (
+                                True
+                                if i["day_period"] in ("morning", "afternoon")
+                                else False
+                            )
+                            calendars[
+                                "calendar for %s"
+                                % (self.resources_with_specific_calendars[res],)
+                            ].append(i)
+
             # Read the leaves for all calendars
             for i in self.generator.getData(
                 "resource.calendar.leaves",
@@ -649,15 +675,7 @@ class exporter(object):
 
             yield "</calendars>\n"
         except Exception as e:
-            import traceback
-            import sys
-
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            tb_list = traceback.extract_tb(exc_tb)
-            last_frame = tb_list[-1]  # last_frame is a traceback.FrameSummary
-            print("Error occurred in file:", last_frame.filename)
-            print("Line number:", last_frame.lineno)
-            print("Code causing error:", last_frame.line)
+            logger.warning(e)
             yield "</calendars>\n"
 
     def export_locations(self):
