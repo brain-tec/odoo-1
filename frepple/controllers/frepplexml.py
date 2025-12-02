@@ -23,6 +23,8 @@
 #
 
 import base64
+from datetime import datetime
+import gzip
 import hashlib
 import hmac
 import importlib.util
@@ -409,3 +411,124 @@ class XMLController(odoo.http.Controller):
                         else e
                     )
                 )
+
+    @odoo.http.route(
+        "/frepple/recommendations",
+        type="http",
+        auth="none",
+        methods=["POST"],
+        csrf=False,
+    )
+    def receiveRecommendations(self, **kwargs):
+        try:
+            method, token = odoo.http.request.httprequest.headers.get(
+                "authorization", ""
+            ).split(" ", 1)
+            if not method or method.lower() != "bearer":
+                return http.Response(
+                    "Expecting bearer authentication with a job token", status=500
+                )
+            job_model = http.request.env["frepple.job"].sudo()
+            r = job_model.findJob(token)
+            logger.critical(f"yup {r}")
+
+        except Exception as e:
+            logger.exception(f"Error receiving frepple recommendations: {e}")
+            return http.Response(
+                "Error receiving frepple recommendations: {e}", status=500
+            )
+        return http.Response("Successfully processed recommentations.", status=200)
+
+    @odoo.http.route(
+        "/frepple/submit", type="http", auth="none", methods=["POST", "GET"], csrf=False
+    )
+    def submitjob(self, **kwargs):
+        """Temp method until we put this in more appropriate place"""
+        filename = None
+        try:
+            # Access the database using a Superuser (necessary because auth="none" lacks user permissions)
+            # self.env is NOT available in http.Controller methods, so we use http.request.env
+            # .sudo() elevates the privileges to the superuser (admin)
+            job_model = http.request.env["frepple.job"].sudo()
+            job, token = job_model.createJob()
+
+            # Generate a file with all data
+            job.write({"status": "Collecting data"})
+            # from odoo.addons.frepple.controllers.outbound import (
+            #     exporter,
+            #     Odoo_generator,
+            # )
+
+            # xp = exporter(
+            #     Odoo_generator(req.env),
+            #     req,
+            #     uid=uid,
+            #     database=database,
+            #     company=company_name,
+            #     mode=int(kwargs.get("mode", 1)),
+            #     timezone=kwargs.get("timezone", None),
+            #     singlecompany=kwargs.get("singlecompany", "false").lower() == "true",
+            #     version=version,
+            #     delta=float(kwargs.get("delta", 999)),
+            #     language=language,
+            #     apps=apps,
+            # )
+
+            # last empty double quote is to let python understand frepple is a folder.
+            xml_folder = os.path.join(str(Path.home()), "logs", "frepple", "")
+            os.makedirs(os.path.dirname(xml_folder), exist_ok=True)
+
+            tmpfile = NamedTemporaryFile(mode="w+t", delete=False, dir=xml_folder)
+            filename = tmpfile.name
+            tmpfile.close()
+
+            with gzip.open(filename, "wb") as tmpfile:
+                # for i in xp.run():
+                tmpfile.write("eeee".encode("utf-8"))
+
+            # Submitting
+            job.write({"status": "Submitting data"})
+            with open(filename, "rb") as f:
+
+                metadata = {
+                    "email": "my email",
+                    "odoo_url": "http://localhost:8069",
+                    "company": "company",
+                    "version": odoo.release.version,
+                    "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "token": token,
+                }
+
+                webtoken = encode_jwt(
+                    {"exp": round(time.time()) + 600, "user": "admin"},
+                    "%@mzit!i8b*$zc&6oev96=RANDOMSTRING",
+                )
+                if not isinstance(webtoken, str):
+                    webtoken = webtoken.decode("ascii")
+
+                response = requests.post(
+                    "http://host.docker.internal:8000/odoo/submit/",
+                    headers={"Authorization": f"Bearer {str(webtoken)}"},
+                    files={
+                        "datafile": ("odoo_data.json", f, "application/octet-stream"),
+                        "metadata": (
+                            "metadata.json",
+                            json.dumps(metadata),
+                            "application/json",
+                        ),
+                    },
+                    timeout=300,
+                )
+
+            if response.status_code != 200:
+                job.write({"status": f"Failure submitting: {response.content}"})
+                logger.critical("Job submission failed.")
+            else:
+                job.write({"status": "Waiting for results"})
+            return http.Response("done", status=200)
+        except Exception as e:
+            logger.exception(f"Error submitting frepple job: {e}")
+            return http.Response("Error submitting job: {e}", status=500)
+        finally:
+            if filename:
+                os.remove(filename)
