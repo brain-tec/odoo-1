@@ -13,3 +13,4 @@ from . import mrp_secondary_workcenter
 from . import mrp_workorder_secondary_workcenter
 from . import mrp_workorder_inherit
 from . import mrp_production_inherit
+from . import frepple_job
