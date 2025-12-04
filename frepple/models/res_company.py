@@ -51,7 +51,7 @@ class ResCompany(models.Model):
     )
 
     @api.model
-    def getFreppleURL(self, navbar=True, _url="/"):
+    def getFreppleURL(self, navbar=True, _url="/", branding=False):
         """
         Create an authorization header trusted by frePPLe
         """
@@ -59,7 +59,10 @@ class ResCompany(models.Model):
         if not user_company_webtoken:
             raise exceptions.UserError("FrePPLe company web token not configured")
         encode_params = dict(
-            exp=round(time.time()) + 600, user=self.env.user.login, navbar=navbar
+            exp=round(time.time()) + 60,
+            user=self.env.user.login,
+            navbar=navbar,
+            branding=branding,
         )
         webtoken = encode_jwt(encode_params, user_company_webtoken)
         if not isinstance(webtoken, str):
@@ -73,7 +76,7 @@ class ResCompany(models.Model):
     @api.model
     def actionOpenFreppleWindow(self):
         current_company = self.env.company
-        frepple_url = current_company.getFreppleURL(True, "/")
+        frepple_url = current_company.getFreppleURL(True, "/", True)
 
         if not frepple_url:
             # If the URL is missing, return a notification action
