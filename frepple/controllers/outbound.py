@@ -2701,10 +2701,14 @@ class exporter(object):
                                 - mv["product_qty"],
                             )
                         if qty_flow > 0:
-                            yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
-                                -qty_flow / qty,
-                                quoteattr(item["name"]),
-                            )
+                            operation_materials[item["name"]] = operation_materials.get(
+                                item["name"], 0
+                            ) + (-qty_flow / qty)
+                    for key, val in operation_materials.items():
+                        yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
+                            val,
+                            quoteattr(key),
+                        )
                     yield "</flows>"
                     if (
                         wo.operation_id
