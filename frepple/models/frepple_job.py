@@ -34,6 +34,9 @@ class FreppleJob(models.Model):
     _name = "frepple.job"
     _description = "Frepple Jobs"
 
+    company_id = fields.Many2one(
+        "res.company", string="Company", default=lambda self: self.env.company
+    )
     status = fields.Char("status")
     user_id = fields.Many2one(
         "res.users", string="Submitted by", default=lambda self: self.env.user
@@ -75,3 +78,12 @@ class FreppleJob(models.Model):
             if check_password_hash(j.hashed_token, token):
                 return j
         return None
+
+    def action_cancel(self):
+        for rec in self:
+            rec.status = "cancelled"
+
+    def action_start(self):
+        for rec in self:
+            rec.status = "started"
+            rec.started = fields.Datetime.now()

@@ -430,7 +430,41 @@ class XMLController(odoo.http.Controller):
                 )
             job_model = http.request.env["frepple.job"].sudo()
             r = job_model.findJob(token)
-            logger.critical(f"yup {r}")
+            # TODO: remove below line, the job should be found based on the received token
+            r = self.env["frepple.job"].sudo().search([], order="id", limit=1)
+
+            if not r:
+                raise Exception("Cannot find the job with the specified token")
+
+            # Retrieve the recommendations file in the POST request
+            jsonfile = kwargs.get("recommendations.json")
+            # Read content as bytes or string
+            content = jsonfile.read()  # bytes
+            # If you expect UTF-8 encoded JSON file, decode it
+            text = content.decode("utf-8")
+            # Parse JSON
+            data = json.loads(text)
+
+            # Empty the existing recommendations for the company of the job
+            company_id = r.company_id.id
+            recs = (
+                self.env["frepple.recommendation"]
+                .sudo()
+                .search([("company_id", "=", company_id)])
+            )
+            recs.unlink()
+
+            # Now `data` is a Python dict/list — we can create the recommendation in Odoo
+            for i in data.get("recommendations"):
+                # TODO: Remove purchase filter
+                if i["type"] == "purchase":
+                    i["company_id"] = r.company_id.id
+                    i["startdate"] = datetime.fromisoformat(i["startdate"])
+                    i["enddate"] = datetime.fromisoformat(i["enddate"])
+            # TODO: Remove purchase filter
+            self.env["frepple.recommendation"].sudo().create(
+                [i for i in data.get("recommendations") if i["type"] == "purchase"]
+            )
 
         except Exception as e:
             logger.exception(f"Error receiving frepple recommendations: {e}")
