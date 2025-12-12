@@ -424,29 +424,44 @@ class XMLController(odoo.http.Controller):
             method, token = odoo.http.request.httprequest.headers.get(
                 "authorization", ""
             ).split(" ", 1)
-            if not method or method.lower() != "bearer":
+            if method.lower() == "bearer":
+                # Authentication with a bearer token of a one-off anonymous run
+                job_model = http.request.env["frepple.job"].sudo()
+                job = job_model.findJob(token)
+                if not job:
+                    return http.Response(
+                        "Invalid token in authentication", status=500
+                    )
+            elif method.lower() == "basic":
+                # - Basic authentication when running from frepple user interface
+                job = None
+                # TODO
                 return http.Response(
                     "Expecting bearer authentication with a job token", status=500
                 )
-            job_model = http.request.env["frepple.job"].sudo()
-            r = job_model.findJob(token)
-            # TODO: remove below line, the job should be found based on the received token
-            r = self.env["frepple.job"].sudo().search([], order="id", limit=1)
-
-            if not r:
-                raise Exception("Cannot find the job with the specified token")
+            else:
+                return http.Response(
+                    "Missing or unsupported authentication", status=500
+                )
 
             # Retrieve the recommendations file in the POST request
             jsonfile = kwargs.get("recommendations.json")
-            # Read content as bytes or string
-            content = jsonfile.read()  # bytes
-            # If you expect UTF-8 encoded JSON file, decode it
-            text = content.decode("utf-8")
-            # Parse JSON
-            data = json.loads(text)
+            data = json.loads(jsonfile.read().decode("utf-8"))
+
+            # Pick up the company
+            if job:
+                company_id = job.company_id.id
+            else:
+                company_name = data.get("company", None)
+                if not company_name:
+                       return Response("Missing company name argument. Multi-database recommendations aren't supported.", 500)
+                company_model = http.request.env["res.company"].sudo()
+                for i in company_model.search([("name", "=", company_name)], limit=1):
+                    company_id = i.id
+                if not company_id:
+                    return Response("Invalid company name argument", 401)
 
             # Empty the existing recommendations for the company of the job
-            company_id = r.company_id.id
             recs = (
                 self.env["frepple.recommendation"]
                 .sudo()
@@ -531,6 +546,7 @@ class XMLController(odoo.http.Controller):
                     "version": odoo.release.version,
                     "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "token": token,
+                    "database": "database",
                 }
 
                 webtoken = encode_jwt(
