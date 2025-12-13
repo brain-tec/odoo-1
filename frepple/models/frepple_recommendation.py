@@ -43,9 +43,10 @@ class FreppleRecommendation(models.Model):
 
     type = fields.Selection(
         [
-            ("purchase", "Purchase Recommendation"),
-            ("manufacturing", "Manufacturing Recommendation"),
-            ("sales", "Sales Recommendation"),
+            ("purchase", "Purchase"),
+            ("mrp", "Manufacturing"),
+            ("sale", "Sales"),
+            ("stock", "Inventory"),
         ],
         string="Type",
         required=True,

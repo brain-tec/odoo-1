@@ -421,6 +421,9 @@ class XMLController(odoo.http.Controller):
     )
     def receiveRecommendations(self, **kwargs):
         try:
+            req = odoo.http.request
+
+            # Authentication
             method, token = odoo.http.request.httprequest.headers.get(
                 "authorization", ""
             ).split(" ", 1)
@@ -429,16 +432,38 @@ class XMLController(odoo.http.Controller):
                 job_model = http.request.env["frepple.job"].sudo()
                 job = job_model.findJob(token)
                 if not job:
-                    return http.Response(
-                        "Invalid token in authentication", status=500
-                    )
+                    return http.Response("Invalid token in authentication", status=500)
             elif method.lower() == "basic":
-                # - Basic authentication when running from frepple user interface
+                # Basic authentication when running from frepple user interface
                 job = None
-                # TODO
-                return http.Response(
-                    "Expecting bearer authentication with a job token", status=500
+                auth = base64.b64decode(token).decode("utf-8")
+                self.user, password = auth.split(":", 1)
+                database = odoo.http.db_list(force=True)[0]  # Not ok in multidb setups
+                req.session.db = database
+                if not self.user or not password or not database:
+                    raise Exception("Missing user or password")
+                # Authenticate with an API key
+                uid = req.env["res.users.apikeys"]._check_credentials(
+                    scope="rpc", key=password
                 )
+                if uid:
+                    req.update_env(user=uid)
+                else:
+                    # Authenticate with a password
+                    uid = req.session.authenticate(
+                        req.env,
+                        {
+                            "login": self.user,
+                            "password": password,
+                            "type": "password",
+                        },
+                    )
+                    if uid:
+                        uid = uid["uid"]
+                    else:
+                        return http.Response(
+                            "Odoo basic authentication failed", status=500
+                        )
             else:
                 return http.Response(
                     "Missing or unsupported authentication", status=500
@@ -454,7 +479,10 @@ class XMLController(odoo.http.Controller):
             else:
                 company_name = data.get("company", None)
                 if not company_name:
-                       return Response("Missing company name argument. Multi-database recommendations aren't supported.", 500)
+                    return Response(
+                        "Missing company name argument. Multi-database recommendations aren't supported.",
+                        500,
+                    )
                 company_model = http.request.env["res.company"].sudo()
                 for i in company_model.search([("name", "=", company_name)], limit=1):
                     company_id = i.id
@@ -469,22 +497,26 @@ class XMLController(odoo.http.Controller):
             )
             recs.unlink()
 
-            # Now `data` is a Python dict/list — we can create the recommendation in Odoo
-            for i in data.get("recommendations"):
-                # TODO: Remove purchase filter
-                if i["type"] == "purchase":
-                    i["company_id"] = r.company_id.id
+            # Generate recommendations
+            for i in data.get("recommendations", []):
+                i["company_id"] = company_id
+                if "startdate" in i:
                     i["startdate"] = datetime.fromisoformat(i["startdate"])
+                if "enddate" in i:
                     i["enddate"] = datetime.fromisoformat(i["enddate"])
-            # TODO: Remove purchase filter
+
             self.env["frepple.recommendation"].sudo().create(
-                [i for i in data.get("recommendations") if i["type"] == "purchase"]
+                data.get("recommendations")
             )
 
         except Exception as e:
-            logger.exception(f"Error receiving frepple recommendations: {e}")
+            traceback.print_exc()
             return http.Response(
-                "Error receiving frepple recommendations: {e}", status=500
+                "Error receiving frepple recommendations:\n\n"
+                f"Exception: {e}\n"
+                f"Stack trace:\n {'\n'.join(["       " + line for line in traceback.format_exc().splitlines()])}",
+                status=500,
+                headers=[("Content-Type", "text/plain")],
             )
         return http.Response("Successfully processed recommentations.", status=200)
 
