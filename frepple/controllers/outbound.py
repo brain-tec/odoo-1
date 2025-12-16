@@ -196,7 +196,6 @@ class exporter(object):
                 "current": "{datetime.now().replace(microsecond=0).isoformat()}",
                 "plan": {
                     "source":"odoo_{self.mode}"
-                    "stringproperty"
                 }
         """
 
