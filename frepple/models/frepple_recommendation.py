@@ -22,6 +22,8 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from odoo import fields, models, api
+from odoo.exceptions import UserError
+
 import secrets
 import logging
 from datetime import datetime, timedelta
@@ -67,3 +69,14 @@ class FreppleRecommendation(models.Model):
     data = fields.Json(string="Data (JSON)", default=dict)
 
     description = fields.Char(string="Description")
+
+    # Make sure the user cannot create a recommendation.
+    # backend should create recommendations like this:
+    # self.env["frepple.recommendation"].with_context(frepple_import=True).create(vals)
+    @api.model
+    def create(self, vals):
+        if not self.env.context.get("frepple_import"):
+            raise UserError(
+                "FrePPLe recommendations cannot be created manually."
+            )
+        return super().create(vals)

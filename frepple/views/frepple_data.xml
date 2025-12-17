@@ -33,13 +33,81 @@
     </record>
 
     <!-- frePPLe UI in manufacturing menu. -->
-    <menuitem id="menu_frepple_web" name="frePPLe" parent="mrp.menu_mrp_root" sequence="110" action="action_frepple_web" groups="frepple_user" />
+    <menuitem
+    id="menu_frepple_root_manufacturing"
+    name="frePPLe"
+    parent="mrp.menu_mrp_root"
+    sequence="110"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_web_manufacturing"
+    name="FrePPLe Web"
+    parent="menu_frepple_root_manufacturing"
+    action="action_frepple_web"
+    sequence="10"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_recommendations_manufacturing"
+    name="Recommendations"
+    parent="menu_frepple_root_manufacturing"
+    action="action_frepple_recommendation_dashboard"
+    sequence="20"
+    groups="frepple_user"/>
+
 
     <!-- frePPLe UI in purchasing menu. -->
-    <menuitem id="menu_frepple_web_procurement" name="frePPLe" parent="purchase.menu_purchase_root" sequence="110" action="action_frepple_web" groups="frepple_user" />
+
+  <menuitem
+    id="menu_frepple_root_purchase"
+    name="frePPLe"
+    parent="purchase.menu_purchase_root"
+    sequence="110"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_web_purchase"
+    name="FrePPLe Web"
+    parent="menu_frepple_root_purchase"
+    action="action_frepple_web"
+    sequence="10"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_recommendations_purchase"
+    name="Recommendations"
+    parent="menu_frepple_root_purchase"
+    action="action_frepple_recommendation_dashboard"
+    sequence="20"
+    groups="frepple_user"/>
+
+
 
     <!-- frePPLe UI in sales menu. -->
-    <menuitem id="menu_frepple_web_sales" name="frePPLe" parent="sale.sale_menu_root" sequence="99" action="action_frepple_web" groups="frepple_user" />
+
+    <menuitem
+    id="menu_frepple_root_sales"
+    name="frePPLe"
+    parent="sale.sale_menu_root"
+    sequence="110"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_web_sales"
+    name="FrePPLe Web"
+    parent="menu_frepple_root_sales"
+    action="action_frepple_web"
+    sequence="10"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_recommendations_sales"
+    name="Recommendations"
+    parent="menu_frepple_root_sales"
+    action="action_frepple_recommendation_dashboard"
+    sequence="20"
+    groups="frepple_user"/>
 
   </data>
 </odoo>
