@@ -347,7 +347,7 @@ class XMLController(odoo.http.Controller):
                     path=filename,
                     download_name="odoo_data_for_frepple",
                 ).get_response(
-                    mimetype="application/xml;charset=utf8",
+                    mimetype="application/json",
                     as_attachment=False,
                 )
                 res.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -355,9 +355,9 @@ class XMLController(odoo.http.Controller):
                 res.headers["Expires"] = "0"
                 return res
             except Exception as e:
-                logger.exception("Error generating frePPLe XML data")
+                logger.exception("Error generating frePPLe JSON data")
                 raise InternalServerError(
-                    description="Error generating frePPLe XML data:<br>%s"
+                    description="Error generating frePPLe JSON data:<br>%s"
                     % (
                         traceback.format_exc()
                         if company and company.disclose_stack_trace
