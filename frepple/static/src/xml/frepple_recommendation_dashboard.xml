@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ========================================================= -->
+    <!-- MAIN DASHBOARD                                            -->
+    <!-- ========================================================= -->
+    <t t-name="frepple.RecommendationDashboard">
+        <div class="o_form_view o_form_nosheet">
+
+            <!-- TABS HEADER -->
+            <ul class="nav nav-tabs o_notebook">
+                <li class="nav-item">
+                    <a class="nav-link active"
+                       data-bs-toggle="tab"
+                       href="#purchase">
+                        Purchase (<t t-esc="state.purchase.length"/>)
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link"
+                       data-bs-toggle="tab"
+                       href="#mrp">
+                        Manufacturing (<t t-esc="state.mrp.length"/>)
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link"
+                       data-bs-toggle="tab"
+                       href="#sale">
+                        Sales (<t t-esc="state.sale.length"/>)
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link"
+                       data-bs-toggle="tab"
+                       href="#stock">
+                        Inventory (<t t-esc="state.stock.length"/>)
+                    </a>
+                </li>
+            </ul>
+
+            <!-- TABS CONTENT -->
+            <div class="tab-content o_notebook_content">
+
+                <!-- PURCHASE -->
+                <div class="tab-pane fade show active" id="purchase">
+                    <t t-call="frepple.RecommendationTable">
+                        <t t-set="records" t-value="state.purchase"/>
+                        <t t-set="showSupplier" t-value="true"/>
+                        <t t-set="labels"
+                           t-value="{
+                               product: 'Product',
+                               supplier: 'Supplier',
+                               quantity: 'Qty',
+                               start: 'Ordering Date',
+                               end: 'Receipt Date',
+                               description: 'Description'
+                           }"/>
+                    </t>
+                </div>
+
+                <!-- MANUFACTURING -->
+                <div class="tab-pane fade" id="mrp">
+                    <t t-call="frepple.RecommendationTable">
+                        <t t-set="records" t-value="state.mrp"/>
+                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="labels"
+                           t-value="{
+                               product: 'Product',
+                               quantity: 'Qty',
+                               start: 'Start Date',
+                               end: 'End Date',
+                               description: 'Description'
+                           }"/>
+                    </t>
+                </div>
+
+                <!-- SALES -->
+                <div class="tab-pane fade" id="sale">
+                    <t t-call="frepple.RecommendationTable">
+                        <t t-set="records" t-value="state.sale"/>
+                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="labels"
+                           t-value="{
+                               product: 'Product',
+                               quantity: 'Qty',
+                               start: 'Ordering Date',
+                               end: 'Receipt Date',
+                               description: 'Description'
+                           }"/>
+                    </t>
+                </div>
+
+                <!-- INVENTORY -->
+                <div class="tab-pane fade" id="stock">
+                    <t t-call="frepple.RecommendationTable">
+                        <t t-set="records" t-value="state.stock"/>
+                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="labels"
+                           t-value="{
+                               product: 'Product',
+                               quantity: 'Qty',
+                               start: 'Ordering Date',
+                               end: 'Receipt Date',
+                               description: 'Description'
+                           }"/>
+                    </t>
+                </div>
+
+            </div>
+        </div>
+    </t>
+
+    <!-- ========================================================= -->
+    <!-- REUSABLE TABLE                                            -->
+    <!-- ========================================================= -->
+    <t t-name="frepple.RecommendationTable">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th><t t-esc="labels.product"/></th>
+
+                    <!-- OPTIONAL SUPPLIER -->
+                    <th t-if="showSupplier">
+                        <t t-esc="labels.supplier"/>
+                    </th>
+
+                    <th><t t-esc="labels.quantity"/></th>
+                    <th><t t-esc="labels.start"/></th>
+                    <th><t t-esc="labels.end"/></th>
+                    <th><t t-esc="labels.description"/></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <t t-foreach="records" t-as="r" t-key="r.id">
+                    <tr>
+                        <!-- PRODUCT -->
+                        <td class="o_many2one_cell">
+                            <t t-if="r.product_id">
+                                <span><t t-esc="r.product_id[1]"/></span>
+                                <a href="#"
+                                   class="ms-1 text-muted"
+                                   title="Open Product"
+                                   t-on-click.prevent="() => this.openProduct(r.product_id[0])">
+                                    <i class="fa fa-external-link"/>
+                                </a>
+                            </t>
+                        </td>
+
+                        <td t-if="showSupplier">
+                            <t t-esc="r.supplier_name"/>
+                            <a t-if="r.supplier_id"
+                            href="#"
+                            class="ms-1 text-muted"
+                            title="Open Supplier"
+                            t-on-click.prevent="() => this.openPartner(r.supplier_id)">
+                                <i class="fa fa-external-link"/>
+                            </a>
+                        </td>
+
+
+
+                        <!-- OTHER COLUMNS -->
+                        <td><t t-esc="r.quantity"/></td>
+                        <td><t t-esc="r.startdate"/></td>
+                        <td><t t-esc="r.enddate"/></td>
+                        <td><t t-esc="r.description"/></td>
+                    </tr>
+                </t>
+            </tbody>
+        </table>
+    </t>
+
+</templates>
