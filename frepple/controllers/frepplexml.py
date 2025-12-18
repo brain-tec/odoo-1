@@ -505,7 +505,7 @@ class XMLController(odoo.http.Controller):
                 if "enddate" in i:
                     i["enddate"] = datetime.fromisoformat(i["enddate"])
 
-            self.env["frepple.recommendation"].sudo().create(
+            self.env["frepple.recommendation"].sudo().with_context(frepple_import=True).create(
                 data.get("recommendations")
             )
 
