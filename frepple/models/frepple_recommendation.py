@@ -80,3 +80,39 @@ class FreppleRecommendation(models.Model):
                 "FrePPLe recommendations cannot be created manually."
             )
         return super().create(vals)
+
+    def action_approve(self):
+        for rec in self:
+            if rec.type == "purchase":
+                # 1. Create a purchase Order
+                logger.info(rec.data)
+                po_args = {"company_id": self.env.company.id,
+                           "partner_id": rec.data["supplier_id"],
+                          }
+                po = self.env["purchase.order"].with_user(self.env.user).create(po_args)
+                po.origin = "frePPLe recommendation"
+                # 2. Create a purchase order line
+                product = self.env['product.product'].with_user(self.env.user).browse(rec.product_id.id)
+                po_line = self.env["purchase.order.line"].with_user(self.env.user).create(
+                                {
+                                    "order_id": po.id,
+                                    "product_id": product.id,
+                                    "product_qty": rec.quantity,
+                                    "product_uom_id": product.uom_id.id,
+                                }
+                            )
+                d = po_line._prepare_purchase_order_line(
+                                product,
+                                rec.quantity,
+                                product.uom_id,
+                                self.company_id,
+                                po.partner_id,
+                                po,
+                            )
+                d["date_planned"] = rec.enddate
+                # Finally update the PO line
+                po_line.write(d)
+
+                # 3. Delete the recommendation
+                rec.unlink()
+                return True
