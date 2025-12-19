@@ -69,18 +69,18 @@ class FreppleRecommendationDashboard extends Component {
         this.state.purchase = purchase;
 
 
-        // Extract supplier from JSON
+        // Extract partner from JSON
         const partnerIds = [];
         for (const r of purchase) {
             if (r.data) {
                 try {
-                    const parsed = JSON.parse(r.data);
-                    if (parsed.partner_id) {
-                        r.supplier_id = parsed.partner_id;
-                        partnerIds.push(parsed.partner_id);
-                    }
-                } catch {
+
+                        r.partner_id = r.data.partner_id;
+                        partnerIds.push(r.data.partner_id);
+
+                } catch(e) {
                     // ignore invalid JSON
+                    console.error('Invalid JSON:', e);
                 }
             }
         }
@@ -99,8 +99,8 @@ class FreppleRecommendationDashboard extends Component {
         }
 
         for (const r of purchase) {
-            if (r.supplier_id) {
-                r.supplier_name = partnersById[r.supplier_id] || "";
+            if (r.partner_id) {
+                r.partner_name = partnersById[r.partner_id] || "";
             }
         }
 

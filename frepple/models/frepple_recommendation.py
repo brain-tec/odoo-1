@@ -65,7 +65,7 @@ class FreppleRecommendation(models.Model):
 
     quantity = fields.Float(string="Quantity")
 
-    # for specific recommendation data (supplier, operation...)
+    # for specific recommendation data (partner_id, operation...)
     data = fields.Json(string="Data (JSON)", default=dict)
 
     description = fields.Char(string="Description")
@@ -89,7 +89,7 @@ class FreppleRecommendation(models.Model):
                 # 1. Create Purchase Order
                 po_args = {
                     "company_id": self.env.company.id,
-                    "partner_id": rec.data["supplier_id"],
+                    "partner_id": rec.data["partner_id"],
                 }
                 po = self.env["purchase.order"].with_user(self.env.user).create(po_args)
                 po.origin = "frePPLe recommendation"

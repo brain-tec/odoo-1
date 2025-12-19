@@ -53,12 +53,12 @@
                 <div class="tab-pane fade show active" id="purchase">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.purchase"/>
-                        <t t-set="showSupplier" t-value="true"/>
+                        <t t-set="showPartner" t-value="true"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
-                               supplier: 'Supplier',
+                               partner: 'Vendor',
                                quantity: 'Qty',
                                start: 'Ordering Date',
                                end: 'Receipt Date',
@@ -71,7 +71,7 @@
                 <div class="tab-pane fade" id="mrp">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.mrp"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
@@ -88,7 +88,7 @@
                 <div class="tab-pane fade" id="sale">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.sale"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
                            t-value="{
@@ -105,7 +105,7 @@
                 <div class="tab-pane fade" id="stock">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.stock"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
                            t-value="{
@@ -140,8 +140,8 @@
 
                     <th><t t-esc="labels.product"/></th>
 
-                    <th t-if="showSupplier">
-                        <t t-esc="labels.supplier"/>
+                    <th t-if="showPartner">
+                        <t t-esc="labels.partner"/>
                     </th>
 
                     <th><t t-esc="labels.quantity"/></th>
@@ -177,13 +177,13 @@
                         </td>
 
                         <!-- SUPPLIER -->
-                        <td t-if="showSupplier">
-                            <t t-esc="r.supplier_name"/>
-                            <a t-if="r.supplier_id"
+                        <td t-if="showPartner">
+                            <t t-esc="r.partner_name"/>
+                            <a t-if="r.partner_id"
                                href="#"
                                class="ms-1 text-muted"
-                               title="Open Supplier"
-                               t-on-click.prevent="() => this.openPartner(r.supplier_id)">
+                               title="Open Partner"
+                               t-on-click.prevent="() => this.openPartner(r.partner_id)">
                                 <i class="fa fa-external-link"/>
                             </a>
                         </td>
