@@ -200,7 +200,7 @@ class exporter(object):
         # Synchronize users.
         # This needs to run before we restrict the context to the selected company!
 
-        # yield from self.export_users()
+        yield from self.export_users()
 
         if self.singlecompany:
             # Create a new context to limit the data to the selected company
@@ -452,7 +452,8 @@ class exporter(object):
             ):
                 if not self.singlecompany or self.company_id in usr["company_ids"]:
                     users.append((usr["name"], usr["login"], usr["lang"]))
-        yield '<stringproperty name="users" value=%s/>\n' % quoteattr(json.dumps(users))
+        users_string = json.dumps(users)
+        yield f'"users": "{json.dumps(users_string)[1:-1]}",\n'
 
     def export_calendar(self):
         """
