@@ -26,7 +26,25 @@ class FreppleRecommendationDashboard extends Component {
     // DATA LOADING
     // ------------------------------------------------------------
     async _load() {
-        const fields = [
+
+      // smaller font for the second line
+      function splitDescription(desc) {
+        if (!desc) {
+            return { first: "", rest: "" };
+        }
+
+        // IMPORTANT: split on literal "\n"
+        const lines = desc.split("\\n");
+
+        return {
+            first: lines[0],
+            rest: lines.slice(1).join("\n"),
+        };
+}
+
+
+
+      const fields = [
             "product_id",
             "quantity",
             "startdate",
@@ -41,6 +59,15 @@ class FreppleRecommendationDashboard extends Component {
             [["type", "=", "purchase"]],
             fields
         );
+
+        //split description and assign to state
+        for (const r of purchase) {
+            const d = splitDescription(r.description);
+            r.desc_first = d.first;
+            r.desc_rest = d.rest;
+        }
+        this.state.purchase = purchase;
+
 
         // Extract supplier from JSON
         const partnerIds = [];

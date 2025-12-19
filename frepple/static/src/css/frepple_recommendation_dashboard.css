@@ -1,0 +1,14 @@
+.o_reco_description {
+    line-height: 1.3;
+}
+
+.o_reco_desc_first {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.o_reco_desc_rest {
+    font-size: 11px;
+    color: #6c757d; /* Bootstrap muted */
+    white-space: pre-line; /* preserves line breaks */
+}

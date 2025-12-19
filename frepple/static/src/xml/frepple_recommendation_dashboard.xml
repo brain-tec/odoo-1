@@ -192,7 +192,16 @@
                         <td><t t-esc="r.quantity"/></td>
                         <td><t t-esc="r.startdate"/></td>
                         <td><t t-esc="r.enddate"/></td>
-                        <td><t t-esc="r.description"/></td>
+                        <td class="o_reco_description">
+                            <div class="o_reco_desc_first">
+                                <t t-esc="r.desc_first"/>
+                            </div>
+                            <div t-if="r.desc_rest" class="o_reco_desc_rest">
+                                <t t-esc="r.desc_rest"/>
+                            </div>
+                        </td>
+
+
 
                         <!-- APPROVE BUTTON -->
                         <td t-if="showApprove">
