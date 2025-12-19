@@ -2272,7 +2272,6 @@ class exporter(object):
             )
         }
 
-        first = True
         for i in po_line.values():
             if i.move_ids:
                 # METHOD 1: Use the stock move information rather than the po line
@@ -2360,24 +2359,19 @@ class exporter(object):
                     if not supplier:
                         continue
                     if qty >= 0:
-                        if first:
-                            first = False
-                        else:
-                            yield ",\n"
                         poline = {
-                            "reference": po_line_reference,
                             "ordertype": "PO",
+                            "reference": po_line_reference,
                             "start": start,
                             "end": end,
                             "quantity": qty,
-                            "item": {"item": {"name": item["name"]}},
-                            "location": {"location": {"location": location}},
-                            "supplier": {"supplier": {"name": supplier}},
+                            "item": {"name": item["name"]},
+                            "location": {"name": location},
+                            "supplier": {"name": supplier},
                         }
                         if batch:
                             poline["batch"] = batch
-
-                        yield json.dumps(poline)
+                        yield f"{json.dumps(poline)},\n"
 
             else:
                 # METHOD 2: Create purchasing operations from purchase order lines
@@ -2440,23 +2434,18 @@ class exporter(object):
                         batch = None
 
                     poline = {
-                        "reference": "%s - %s" % (j.name, i.id),
                         "ordertype": "PO",
+                        "reference": "%s - %s" % (j.name, i.id),
                         "start": start,
                         "end": end,
                         "quantity": qty,
                         "item": {"name": item["name"]},
-                        "location": {"location": location},
+                        "location": {"name": location},
                         "supplier": {"name": supplier},
                     }
                     if batch:
                         poline["batch"] = batch
-                    if first:
-                        first = False
-                    else:
-                        yield ",\n"
-
-                    yield json.dumps(poline)
+                    yield f"{json.dumps(poline)},\n"
 
     def export_manufacturingorders(self):
         """
@@ -2501,7 +2490,6 @@ class exporter(object):
                     reserved_quantity.get((i["origin"], i["product_id"][0]), 0)
                     + i["quantity"]
                 )
-        first = True
         for i in self.generator.getData(
             "mrp.production",
             # Option 1: import only the odoo status from "confirmed" onwards
@@ -2557,9 +2545,8 @@ class exporter(object):
 
             # Create a record for the MO
             operationplan = {
-                "type": "MO",
+                "ordertype": "MO",
                 "reference": i.name,
-                "batch": batch,
                 (
                     "start"  # Option 1: compute MO end date based on the start date
                     if self.manage_work_orders or not enddate
@@ -2572,6 +2559,8 @@ class exporter(object):
                     else "confirmed"
                 ),
             }
+            if batch:
+                operationplan["batch"] = batch
 
             # Collect move info
             if i.move_raw_ids:
@@ -2662,11 +2651,9 @@ class exporter(object):
                                 "resource": {"name": r},
                             }
                         )
-                if first:
-                    first = False
-                else:
-                    yield ",\n"
-                yield json.dumps(operationplan)
+                if not operation_json["flows"]:
+                    del operation_json["flows"]
+                yield f"{json.dumps(operationplan)},\n"
             else:
                 # Define an operation for the MO
                 operation_json = {
@@ -2710,9 +2697,7 @@ class exporter(object):
                             "flows": [],
                         }
                     }
-                    operation_json["suboperations"].append(
-                        {"operation": suboperation_json}
-                    )
+                    operation_json["suboperations"].append(suboperation_json)
                     idx += 10
                     # dictionary needed as BOM in Odoo might have multiple lines with the same product
                     operation_materials = {}
@@ -2822,11 +2807,7 @@ class exporter(object):
                                     break
                     first_wo = False
 
-                if first:
-                    first = False
-                else:
-                    yield ",\n"
-                yield json.dumps(operationplan)
+                yield f"{json.dumps(operationplan)},\n"
 
                 # Create operationplans for each WO, starting with the last one
                 idx = 0
@@ -2869,7 +2850,7 @@ class exporter(object):
                     except Exception:
                         wo_opplan_json = {}
                     wo_opplan_json = wo_opplan_json | {
-                        "type": "MO",
+                        "ordertype": "MO",
                         "reference": wo.display_name,
                         "quantity": qty,
                         "status": state,
@@ -2908,11 +2889,7 @@ class exporter(object):
                                         }
                                     }
                                 )
-                    if first:
-                        first = False
-                    else:
-                        yield ",\n"
-                    yield json.dumps(suboperation_json)
+                    yield f"{json.dumps(wo_opplan_json)},\n"
 
     def export_orderpoints(self):
         """
@@ -3218,4 +3195,3 @@ class exporter(object):
                     "location": {"name": key[1]},
                 }
             )
-        yield "]\n"
