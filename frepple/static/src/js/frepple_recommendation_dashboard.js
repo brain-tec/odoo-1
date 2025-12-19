@@ -3,18 +3,19 @@
 import { registry } from "@web/core/registry";
 import { Component, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { useState } from "@odoo/owl";
 
 class FreppleRecommendationDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
 
-        this.state = {
+        this.state = useState({
             purchase: [],
             mrp: [],
             sale: [],
             stock: [],
-        };
+        });
 
         onWillStart(async () => {
             await this._load();
@@ -115,7 +116,22 @@ openPartner(partnerId) {
     });
 }
 
+async approveRecommendation(recId) {
+    this._removeFromState(recId);
+    await this.orm.call(
+        "frepple.recommendation",
+        "action_approve",
+        [[recId]]
+    );
+}
 
+
+_removeFromState(recId) {
+    this.state.purchase = this.state.purchase.filter(r => r.id !== recId);
+    this.state.mrp = this.state.mrp.filter(r => r.id !== recId);
+    this.state.sale = this.state.sale.filter(r => r.id !== recId);
+    this.state.stock = this.state.stock.filter(r => r.id !== recId);
+}
 
 }
 

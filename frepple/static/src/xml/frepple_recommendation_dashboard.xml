@@ -50,6 +50,7 @@
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.purchase"/>
                         <t t-set="showSupplier" t-value="true"/>
+                        <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
@@ -67,6 +68,7 @@
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.mrp"/>
                         <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
@@ -132,6 +134,7 @@
                     <th><t t-esc="labels.start"/></th>
                     <th><t t-esc="labels.end"/></th>
                     <th><t t-esc="labels.description"/></th>
+                    <th t-if="showApprove"></th>
                 </tr>
             </thead>
 
@@ -169,6 +172,13 @@
                         <td><t t-esc="r.startdate"/></td>
                         <td><t t-esc="r.enddate"/></td>
                         <td><t t-esc="r.description"/></td>
+                        <td t-if="showApprove">
+                            <button type="button"
+                                    class="btn btn-sm btn-primary"
+                                    t-on-click.prevent="() => this.approveRecommendation(r.id)">
+                                Approve
+                            </button>
+                        </td>
                     </tr>
                 </t>
             </tbody>
