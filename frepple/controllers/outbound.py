@@ -427,15 +427,9 @@ class exporter(object):
 
     def convert_float_time(self, float_time, units="days"):
         """
-        Convert Odoo float time to ISO 8601 duration.
+        Convert Odoo float time to number of seconds.
         """
-        d = timedelta(**{units: float_time})
-        return "P%dDT%dH%dM%dS" % (
-            d.days,  # duration: days
-            int(d.seconds / 3600),  # duration: hours
-            int((d.seconds % 3600) / 60),  # duration: minutes
-            int(d.seconds % 60),  # duration: seconds
-        )
+        return timedelta(**{units: float_time}).seconds
 
     def formatDateTime(self, d, tmzone=None):
         if not isinstance(d, datetime):
@@ -649,7 +643,7 @@ class exporter(object):
                                     if j.get("date_to")
                                     else "2030-12-31T00:00:00"
                                 ),
-                                "value": "1" if j["attendance"] else "0",
+                                "value": 1 if j["attendance"] else 0,
                                 "days": (
                                     (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                     if "dayofweek" in j
@@ -661,14 +655,10 @@ class exporter(object):
                                     else priority_leave
                                 ),
                                 "starttime": (
-                                    ("PT%dM" % round(j["hour_from"] * 60))
-                                    if "hour_from" in j
-                                    else "PT0M"
+                                    j["hour_from"] * 3600 if "hour_from" in j else 0
                                 ),
                                 "endtime": (
-                                    ("PT%dM" % round(j["hour_to"] * 60))
-                                    if "hour_to" in j
-                                    else "PT1440M"
+                                    j["hour_to"] * 3600 if "hour_to" in j else 24 * 3600
                                 ),
                             }
                         )
@@ -693,7 +683,7 @@ class exporter(object):
                                             min(t + timedelta(7 - t.weekday()), end),
                                             cal_tz[i],
                                         ),
-                                        "value": "1",
+                                        "value": 1,
                                         "days": (
                                             (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                             if "dayofweek" in j
@@ -701,14 +691,14 @@ class exporter(object):
                                         ),
                                         "priority": priority_attendance,
                                         "starttime": (
-                                            ("PT%dM" % round(j["hour_from"] * 60))
+                                            j["hour_from"] * 3600
                                             if "hour_from" in j
-                                            else "PT0M"
+                                            else 0
                                         ),
                                         "endtime": (
-                                            ("PT%dM" % round(j["hour_to"] * 60))
+                                            j["hour_to"] * 3600
                                             if "hour_to" in j
-                                            else "PT1440M"
+                                            else 24 * 2600
                                         ),
                                     }
                                 )
@@ -3005,8 +2995,8 @@ class exporter(object):
                                     "value": (i["product_min_qty"] * uom_factor),
                                     "days": "127",
                                     "priority": "998",
-                                    "starttime": "PT0M",
-                                    "endtime": "PT1440M",
+                                    "starttime": 0,
+                                    "endtime": 24 * 3600,
                                 },
                             ],
                         }
@@ -3032,8 +3022,8 @@ class exporter(object):
                                     ),
                                     "days": "127",
                                     "priority": "998",
-                                    "starttime": "PT0M",
-                                    "endtime": "PT1440M",
+                                    "starttime": 0,
+                                    "endtime": 24 * 3600,
                                 },
                             ],
                         }
