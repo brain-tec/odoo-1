@@ -7,54 +7,58 @@
     <t t-name="frepple.RecommendationDashboard">
         <div class="o_form_view o_form_nosheet">
 
-            <!-- TABS HEADER -->
+            <!-- ===================== -->
+            <!-- TABS HEADER           -->
+            <!-- ===================== -->
             <ul class="nav nav-tabs o_notebook">
                 <li class="nav-item">
-                    <a class="nav-link active"
-                       data-bs-toggle="tab"
-                       href="#purchase">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#purchase">
                         Purchase (<t t-esc="state.purchase.length"/>)
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link"
-                       data-bs-toggle="tab"
-                       href="#mrp">
+                    <a class="nav-link" data-bs-toggle="tab" href="#mrp">
                         Manufacturing (<t t-esc="state.mrp.length"/>)
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link"
-                       data-bs-toggle="tab"
-                       href="#sale">
+                    <a class="nav-link" data-bs-toggle="tab" href="#sale">
                         Sales (<t t-esc="state.sale.length"/>)
                     </a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link"
-                       data-bs-toggle="tab"
-                       href="#stock">
+                    <a class="nav-link" data-bs-toggle="tab" href="#stock">
                         Inventory (<t t-esc="state.stock.length"/>)
                     </a>
                 </li>
             </ul>
 
-            <!-- TABS CONTENT -->
+            <!-- ===================== -->
+            <!-- BULK ACTION BAR       -->
+            <!-- ===================== -->
+            <div class="my-2" t-if="state.selected.size">
+                <button type="button"
+                        class="btn btn-primary"
+                        t-on-click="() => this.bulkApprove()">
+                    Approve selected (<t t-esc="state.selected.size"/>)
+                </button>
+            </div>
+
+            <!-- ===================== -->
+            <!-- TABS CONTENT          -->
+            <!-- ===================== -->
             <div class="tab-content o_notebook_content">
 
                 <!-- PURCHASE -->
                 <div class="tab-pane fade show active" id="purchase">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.purchase"/>
-                        <t t-set="showSupplier" t-value="true"/>
+                        <t t-set="showPartner" t-value="true"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
-                               supplier: 'Supplier',
+                               partner: 'Vendor',
                                quantity: 'Qty',
                                start: 'Ordering Date',
                                end: 'Receipt Date',
@@ -67,7 +71,7 @@
                 <div class="tab-pane fade" id="mrp">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.mrp"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
@@ -84,7 +88,8 @@
                 <div class="tab-pane fade" id="sale">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.sale"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
+                        <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
@@ -100,7 +105,8 @@
                 <div class="tab-pane fade" id="stock">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.stock"/>
-                        <t t-set="showSupplier" t-value="false"/>
+                        <t t-set="showPartner" t-value="false"/>
+                        <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
@@ -123,24 +129,40 @@
         <table class="table table-sm table-hover">
             <thead>
                 <tr>
+                    <!-- Checkbox column -->
+                    <th style="width: 32px;">
+                        <input type="checkbox"
+                            t-att-checked="this.areAllSelected(records)"
+                            t-on-click.stop="() => this.toggleSelectAll(records)"
+                        />
+                    </th>
+
+
                     <th><t t-esc="labels.product"/></th>
 
-                    <!-- OPTIONAL SUPPLIER -->
-                    <th t-if="showSupplier">
-                        <t t-esc="labels.supplier"/>
+                    <th t-if="showPartner">
+                        <t t-esc="labels.partner"/>
                     </th>
 
                     <th><t t-esc="labels.quantity"/></th>
                     <th><t t-esc="labels.start"/></th>
                     <th><t t-esc="labels.end"/></th>
                     <th><t t-esc="labels.description"/></th>
-                    <th t-if="showApprove"></th>
+
+                    <th t-if="showApprove" style="width: 90px;"></th>
                 </tr>
             </thead>
 
             <tbody>
                 <t t-foreach="records" t-as="r" t-key="r.id">
                     <tr>
+                        <!-- Selection checkbox -->
+                        <td>
+                            <input type="checkbox"
+                                   t-att-checked="this.isSelected(r.id)"
+                                   t-on-click.stop="() => this.toggleSelection(r.id)"/>
+                        </td>
+
                         <!-- PRODUCT -->
                         <td class="o_many2one_cell">
                             <t t-if="r.product_id">
@@ -154,24 +176,34 @@
                             </t>
                         </td>
 
-                        <td t-if="showSupplier">
-                            <t t-esc="r.supplier_name"/>
-                            <a t-if="r.supplier_id"
-                            href="#"
-                            class="ms-1 text-muted"
-                            title="Open Supplier"
-                            t-on-click.prevent="() => this.openPartner(r.supplier_id)">
+                        <!-- SUPPLIER -->
+                        <td t-if="showPartner">
+                            <t t-esc="r.partner_name"/>
+                            <a t-if="r.partner_id"
+                               href="#"
+                               class="ms-1 text-muted"
+                               title="Open Partner"
+                               t-on-click.prevent="() => this.openPartner(r.partner_id)">
                                 <i class="fa fa-external-link"/>
                             </a>
                         </td>
 
-
-
-                        <!-- OTHER COLUMNS -->
+                        <!-- OTHER FIELDS -->
                         <td><t t-esc="r.quantity"/></td>
                         <td><t t-esc="r.startdate"/></td>
                         <td><t t-esc="r.enddate"/></td>
-                        <td><t t-esc="r.description"/></td>
+                        <td class="o_reco_description">
+                            <div class="o_reco_desc_first">
+                                <t t-esc="r.desc_first"/>
+                            </div>
+                            <div t-if="r.desc_rest" class="o_reco_desc_rest">
+                                <t t-esc="r.desc_rest"/>
+                            </div>
+                        </td>
+
+
+
+                        <!-- APPROVE BUTTON -->
                         <td t-if="showApprove">
                             <button type="button"
                                     class="btn btn-sm btn-primary"

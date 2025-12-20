@@ -41,6 +41,7 @@
         "web.assets_backend": [
             "frepple/static/src/js/frepple.js",
             "frepple/static/src/css/my_small_button.scss",
+            'frepple/static/src/css/frepple_recommendation_dashboard.css',
             "frepple/static/src/js/frepple_recommendation_dashboard.js",
             "frepple/static/src/xml/frepple_recommendation_dashboard.xml",
         ],

@@ -200,7 +200,7 @@ class exporter(object):
         # Synchronize users.
         # This needs to run before we restrict the context to the selected company!
 
-        # yield from self.export_users()
+        yield from self.export_users()
 
         if self.singlecompany:
             # Create a new context to limit the data to the selected company
@@ -427,15 +427,9 @@ class exporter(object):
 
     def convert_float_time(self, float_time, units="days"):
         """
-        Convert Odoo float time to ISO 8601 duration.
+        Convert Odoo float time to number of seconds.
         """
-        d = timedelta(**{units: float_time})
-        return "P%dDT%dH%dM%dS" % (
-            d.days,  # duration: days
-            int(d.seconds / 3600),  # duration: hours
-            int((d.seconds % 3600) / 60),  # duration: minutes
-            int(d.seconds % 60),  # duration: seconds
-        )
+        return timedelta(**{units: float_time}).seconds
 
     def formatDateTime(self, d, tmzone=None):
         if not isinstance(d, datetime):
@@ -458,7 +452,8 @@ class exporter(object):
             ):
                 if not self.singlecompany or self.company_id in usr["company_ids"]:
                     users.append((usr["name"], usr["login"], usr["lang"]))
-        yield '<stringproperty name="users" value=%s/>\n' % quoteattr(json.dumps(users))
+        users_string = json.dumps(users)
+        yield f'"users": "{json.dumps(users_string)[1:-1]}",\n'
 
     def export_calendar(self):
         """
@@ -649,7 +644,7 @@ class exporter(object):
                                     if j.get("date_to")
                                     else "2030-12-31T00:00:00"
                                 ),
-                                "value": "1" if j["attendance"] else "0",
+                                "value": 1 if j["attendance"] else 0,
                                 "days": (
                                     (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                     if "dayofweek" in j
@@ -661,14 +656,10 @@ class exporter(object):
                                     else priority_leave
                                 ),
                                 "starttime": (
-                                    ("PT%dM" % round(j["hour_from"] * 60))
-                                    if "hour_from" in j
-                                    else "PT0M"
+                                    j["hour_from"] * 3600 if "hour_from" in j else 0
                                 ),
                                 "endtime": (
-                                    ("PT%dM" % round(j["hour_to"] * 60))
-                                    if "hour_to" in j
-                                    else "PT1440M"
+                                    j["hour_to"] * 3600 if "hour_to" in j else 24 * 3600
                                 ),
                             }
                         )
@@ -693,7 +684,7 @@ class exporter(object):
                                             min(t + timedelta(7 - t.weekday()), end),
                                             cal_tz[i],
                                         ),
-                                        "value": "1",
+                                        "value": 1,
                                         "days": (
                                             (2 ** ((int(j["dayofweek"]) + 1) % 7))
                                             if "dayofweek" in j
@@ -701,14 +692,14 @@ class exporter(object):
                                         ),
                                         "priority": priority_attendance,
                                         "starttime": (
-                                            ("PT%dM" % round(j["hour_from"] * 60))
+                                            j["hour_from"] * 3600
                                             if "hour_from" in j
-                                            else "PT0M"
+                                            else 0
                                         ),
                                         "endtime": (
-                                            ("PT%dM" % round(j["hour_to"] * 60))
+                                            j["hour_to"] * 3600
                                             if "hour_to" in j
-                                            else "PT1440M"
+                                            else 24 * 2600
                                         ),
                                     }
                                 )
@@ -2272,7 +2263,6 @@ class exporter(object):
             )
         }
 
-        first = True
         for i in po_line.values():
             if i.move_ids:
                 # METHOD 1: Use the stock move information rather than the po line
@@ -2360,24 +2350,19 @@ class exporter(object):
                     if not supplier:
                         continue
                     if qty >= 0:
-                        if first:
-                            first = False
-                        else:
-                            yield ",\n"
                         poline = {
-                            "reference": po_line_reference,
                             "ordertype": "PO",
+                            "reference": po_line_reference,
                             "start": start,
                             "end": end,
                             "quantity": qty,
-                            "item": {"item": {"name": item["name"]}},
-                            "location": {"location": {"location": location}},
-                            "supplier": {"supplier": {"name": supplier}},
+                            "item": {"name": item["name"]},
+                            "location": {"name": location},
+                            "supplier": {"name": supplier},
                         }
                         if batch:
                             poline["batch"] = batch
-
-                        yield json.dumps(poline)
+                        yield f"{json.dumps(poline)},\n"
 
             else:
                 # METHOD 2: Create purchasing operations from purchase order lines
@@ -2440,23 +2425,18 @@ class exporter(object):
                         batch = None
 
                     poline = {
-                        "reference": "%s - %s" % (j.name, i.id),
                         "ordertype": "PO",
+                        "reference": "%s - %s" % (j.name, i.id),
                         "start": start,
                         "end": end,
                         "quantity": qty,
                         "item": {"name": item["name"]},
-                        "location": {"location": location},
+                        "location": {"name": location},
                         "supplier": {"name": supplier},
                     }
                     if batch:
                         poline["batch"] = batch
-                    if first:
-                        first = False
-                    else:
-                        yield ",\n"
-
-                    yield json.dumps(poline)
+                    yield f"{json.dumps(poline)},\n"
 
     def export_manufacturingorders(self):
         """
@@ -2501,7 +2481,6 @@ class exporter(object):
                     reserved_quantity.get((i["origin"], i["product_id"][0]), 0)
                     + i["quantity"]
                 )
-        first = True
         for i in self.generator.getData(
             "mrp.production",
             # Option 1: import only the odoo status from "confirmed" onwards
@@ -2557,9 +2536,8 @@ class exporter(object):
 
             # Create a record for the MO
             operationplan = {
-                "type": "MO",
+                "ordertype": "MO",
                 "reference": i.name,
-                "batch": batch,
                 (
                     "start"  # Option 1: compute MO end date based on the start date
                     if self.manage_work_orders or not enddate
@@ -2572,6 +2550,8 @@ class exporter(object):
                     else "confirmed"
                 ),
             }
+            if batch:
+                operationplan["batch"] = batch
 
             # Collect move info
             if i.move_raw_ids:
@@ -2662,11 +2642,9 @@ class exporter(object):
                                 "resource": {"name": r},
                             }
                         )
-                if first:
-                    first = False
-                else:
-                    yield ",\n"
-                yield json.dumps(operationplan)
+                if not operation_json["flows"]:
+                    del operation_json["flows"]
+                yield f"{json.dumps(operationplan)},\n"
             else:
                 # Define an operation for the MO
                 operation_json = {
@@ -2710,9 +2688,7 @@ class exporter(object):
                             "flows": [],
                         }
                     }
-                    operation_json["suboperations"].append(
-                        {"operation": suboperation_json}
-                    )
+                    operation_json["suboperations"].append(suboperation_json)
                     idx += 10
                     # dictionary needed as BOM in Odoo might have multiple lines with the same product
                     operation_materials = {}
@@ -2822,11 +2798,7 @@ class exporter(object):
                                     break
                     first_wo = False
 
-                if first:
-                    first = False
-                else:
-                    yield ",\n"
-                yield json.dumps(operationplan)
+                yield f"{json.dumps(operationplan)},\n"
 
                 # Create operationplans for each WO, starting with the last one
                 idx = 0
@@ -2869,7 +2841,7 @@ class exporter(object):
                     except Exception:
                         wo_opplan_json = {}
                     wo_opplan_json = wo_opplan_json | {
-                        "type": "MO",
+                        "ordertype": "MO",
                         "reference": wo.display_name,
                         "quantity": qty,
                         "status": state,
@@ -2908,11 +2880,7 @@ class exporter(object):
                                         }
                                     }
                                 )
-                    if first:
-                        first = False
-                    else:
-                        yield ",\n"
-                    yield json.dumps(suboperation_json)
+                    yield f"{json.dumps(wo_opplan_json)},\n"
 
     def export_orderpoints(self):
         """
@@ -3028,8 +2996,8 @@ class exporter(object):
                                     "value": (i["product_min_qty"] * uom_factor),
                                     "days": "127",
                                     "priority": "998",
-                                    "starttime": "PT0M",
-                                    "endtime": "PT1440M",
+                                    "starttime": 0,
+                                    "endtime": 24 * 3600,
                                 },
                             ],
                         }
@@ -3055,8 +3023,8 @@ class exporter(object):
                                     ),
                                     "days": "127",
                                     "priority": "998",
-                                    "starttime": "PT0M",
-                                    "endtime": "PT1440M",
+                                    "starttime": 0,
+                                    "endtime": 24 * 3600,
                                 },
                             ],
                         }
@@ -3218,4 +3186,3 @@ class exporter(object):
                     "location": {"name": key[1]},
                 }
             )
-        yield "]\n"
