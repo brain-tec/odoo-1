@@ -86,16 +86,6 @@
                            <field name="respect_reservations"/>
                         </div>
                      </div>
-                     <div class="col-12 col-lg-6 o_setting_box" id="frepple_disclose_stack_trace">
-                        <div class="o_setting_left_pane"/>
-                        <div class="o_setting_right_pane">
-                           <label for="disclose_stack_trace"/>
-                           <div class="text-muted">
-                              Send stack trace to your frepple server upon connector exceptions.
-                           </div>
-                           <field name="disclose_stack_trace"/>
-                        </div>
-                     </div>
                   </div>
                </app>
             </xpath>
