@@ -357,12 +357,7 @@ class XMLController(odoo.http.Controller):
             except Exception as e:
                 logger.exception("Error generating frePPLe JSON data")
                 raise InternalServerError(
-                    description="Error generating frePPLe JSON data:<br>%s"
-                    % (
-                        traceback.format_exc()
-                        if company and company.disclose_stack_trace
-                        else e
-                    )
+                    description=f"Error generating frePPLe JSON data:<br>{traceback.format_exc()}"
                 )
         elif req.httprequest.method == "POST":
             # Import the data
@@ -389,7 +384,6 @@ class XMLController(odoo.http.Controller):
                     database=database,
                     company=company,
                     mode=req.httprequest.form.get("mode", 1),
-                    disclose_stack_trace=company and company.disclose_stack_trace,
                 )
 
                 return req.make_response(
@@ -404,12 +398,7 @@ class XMLController(odoo.http.Controller):
             except Exception as e:
                 logger.exception("Error processing data posted by frePPLe")
                 raise InternalServerError(
-                    description="Error processing data posted by frePPLe:<br>%s"
-                    % (
-                        traceback.format_exc()
-                        if company and company.disclose_stack_trace
-                        else e
-                    )
+                    description=f"Error processing data posted by frePPLe:<br>{traceback.format_exc()}"
                 )
 
     @odoo.http.route(
@@ -505,9 +494,9 @@ class XMLController(odoo.http.Controller):
                 if "enddate" in i:
                     i["enddate"] = datetime.fromisoformat(i["enddate"])
 
-            self.env["frepple.recommendation"].sudo().with_context(frepple_import=True).create(
-                data.get("recommendations")
-            )
+            self.env["frepple.recommendation"].sudo().with_context(
+                frepple_import=True
+            ).create(data.get("recommendations"))
 
         except Exception as e:
             traceback.print_exc()
