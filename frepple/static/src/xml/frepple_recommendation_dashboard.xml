@@ -7,6 +7,23 @@
     <t t-name="frepple.RecommendationDashboard">
         <div class="o_form_view o_form_nosheet">
 
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="text-muted">
+                    Recommendation generated on:
+                    <t t-if="state.lastRunDate">
+                        <t t-esc="this.formatDate(state.lastRunDate)"/>
+                    </t>
+                    <t t-else="">—</t>
+                </span>
+
+                <button type="button"
+                        class="btn btn-link btn-sm p-0"
+                        t-on-click="() => this.refreshRecommendations()"
+                        title="Refresh recommendations">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+
             <!-- ===================== -->
             <!-- TABS HEADER           -->
             <!-- ===================== -->

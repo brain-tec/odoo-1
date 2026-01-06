@@ -3,11 +3,14 @@
 import { registry } from "@web/core/registry";
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";
+
 
 class FreppleRecommendationDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.notification = useService("notification");
 
         this.state = useState({
             purchase: [],
@@ -15,11 +18,18 @@ class FreppleRecommendationDashboard extends Component {
             sale: [],
             stock: [],
             selected: new Set(),
+            lastRunDate: null,
         });
 
         onWillStart(async () => {
             await this._load();
         });
+    }
+
+    formatDate(dateStr) {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        return d.toLocaleString(); // user locale
     }
 
     // ------------------------------------------------------------
@@ -42,7 +52,8 @@ class FreppleRecommendationDashboard extends Component {
         };
 }
 
-
+      // Read the active companies, used to filter data in the orm calls
+      const activeCompanyIds = user.activeCompanies.map((c) => c.id);
 
       const fields = [
             "product_id",
@@ -53,11 +64,14 @@ class FreppleRecommendationDashboard extends Component {
             "data",
         ];
 
+
         // PURCHASE
+
         const purchase = await this.orm.searchRead(
             "frepple.recommendation",
-            [["type", "=", "purchase"]],
-            fields
+            [["type", "=", "purchase"],
+             ["company_id", "in", activeCompanyIds]],
+             fields
         );
 
         //split description and assign to state
@@ -109,21 +123,42 @@ class FreppleRecommendationDashboard extends Component {
         // OTHER TABS
         this.state.mrp = await this.orm.searchRead(
             "frepple.recommendation",
-            [["type", "=", "mrp"]],
+            [["type", "=", "mrp"],
+             ["company_id", "in", activeCompanyIds]],
             fields
         );
         this.state.sale = await this.orm.searchRead(
             "frepple.recommendation",
-            [["type", "=", "sale"]],
+            [["type", "=", "sale"],
+             ["company_id", "in", activeCompanyIds]],
             fields
         );
         this.state.stock = await this.orm.searchRead(
             "frepple.recommendation",
-            [["type", "=", "stock"]],
+            [["type", "=", "stock"],
+             ["company_id", "in", activeCompanyIds]],
             fields
         );
 
         this.state.selected.clear();
+
+
+        // ------------------------------------------------------------
+        // LAST FREPPLE RUN DATE
+        // ------------------------------------------------------------
+
+        const jobs = await this.orm.searchRead(
+            "frepple.job",
+            [["status", "=", "done"],
+             ["company_id", "in", activeCompanyIds]],
+            ["finished"],
+            {
+                order: "finished desc",
+                limit: 1,
+            }
+        );
+
+        this.state.lastRunDate = jobs.length ? jobs[0].finished : null;
     }
 
     // ------------------------------------------------------------
@@ -225,6 +260,50 @@ class FreppleRecommendationDashboard extends Component {
         this.state.sale = this.state.sale.filter(r => r.id !== recId);
         this.state.stock = this.state.stock.filter(r => r.id !== recId);
     }
+
+    // Refresh recommendations
+    async refreshRecommendations() {
+      const activeCompanyIds = user.activeCompanies.map((c) => c.id);
+
+      if (activeCompanyIds.length !== 1) {
+          this.notification.add(
+              "Please select exactly one company to refresh recommendations.",
+              { type: "danger" }
+          );
+          return;
+      }
+
+      const companyId = activeCompanyIds[0];
+
+      try {
+          await fetch("/frepple/submit", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-Openerp-CSRFToken": odoo.csrf_token,
+              },
+              body: JSON.stringify({
+                  company_id: companyId,
+              }),
+          });
+
+          this.notification.add(
+              "Recommendation refresh started.",
+              { type: "success" }
+          );
+
+          // Reload dashboard data
+          await this._load();
+
+      } catch (err) {
+          this.notification.add(
+              "Failed to refresh recommendations.",
+              { type: "danger" }
+          );
+          console.error(err);
+      }
+  }
+
 }
 
 FreppleRecommendationDashboard.template = "frepple.RecommendationDashboard";
