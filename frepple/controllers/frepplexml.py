@@ -45,6 +45,7 @@ from werkzeug.wrappers import Response
 
 
 from odoo import http
+from odoo.http import request
 
 logger = logging.getLogger(__name__)
 
@@ -516,11 +517,21 @@ class XMLController(odoo.http.Controller):
         """Temp method until we put this in more appropriate place"""
         filename = None
         try:
+            # Retrieve the company id of the job
+            try:
+                data = json.loads(request.httprequest.data)
+            except json.JSONDecodeError:
+                return request.make_response("Invalid JSON", 400)
+
+            company_id = data.get("company_id")
+            if not company_id:
+                return {"error": "Missing company_id"}
+
             # Access the database using a Superuser (necessary because auth="none" lacks user permissions)
             # self.env is NOT available in http.Controller methods, so we use http.request.env
             # .sudo() elevates the privileges to the superuser (admin)
             job_model = http.request.env["frepple.job"].sudo()
-            job, token = job_model.createJob()
+            job, token = job_model.createJob(company_id)
 
             # Generate a file with all data
             job.write({"status": "Collecting data"})

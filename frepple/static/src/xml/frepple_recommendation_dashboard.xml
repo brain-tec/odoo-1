@@ -17,11 +17,17 @@
                 </span>
 
                 <button type="button"
-                        class="btn btn-link btn-sm p-0"
+                        class="btn btn-primary btn-sm ms-2"
                         t-on-click="() => this.refreshRecommendations()"
                         title="Refresh recommendations">
-                    <i class="fa fa-refresh"/>
+                    <t t-if="state.hasRunningJob">
+                        Cancel
+                    </t>
+                    <t t-else="">
+                        Refresh
+                    </t>
                 </button>
+
             </div>
 
             <!-- ===================== -->

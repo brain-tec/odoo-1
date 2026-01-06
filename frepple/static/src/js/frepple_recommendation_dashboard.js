@@ -24,6 +24,8 @@ class FreppleRecommendationDashboard extends Component {
         onWillStart(async () => {
             await this._load();
         });
+
+        hasRunningJob: false
     }
 
     formatDate(dateStr) {
@@ -159,6 +161,30 @@ class FreppleRecommendationDashboard extends Component {
         );
 
         this.state.lastRunDate = jobs.length ? jobs[0].finished : null;
+
+        await this._checkRunningJobs();
+    }
+
+    // Read running jobs for the Refresh button
+    async _checkRunningJobs() {
+        const activeCompanyIds = user.activeCompanies.map((c) => c.id);
+
+        if (!activeCompanyIds.length) {
+            this.state.hasRunningJob = false;
+            return;
+        }
+
+        const jobs = await this.orm.searchRead(
+            "frepple.job",
+            [
+                ["status", "=", "Waiting for results"],
+                ["company_id", "in", activeCompanyIds],
+            ],
+            ["id"],
+            { limit: 1 }
+        );
+
+        this.state.hasRunningJob = jobs.length > 0;
     }
 
     // ------------------------------------------------------------
@@ -266,16 +292,31 @@ class FreppleRecommendationDashboard extends Component {
       const activeCompanyIds = user.activeCompanies.map((c) => c.id);
 
       if (activeCompanyIds.length !== 1) {
-          this.notification.add(
-              "Please select exactly one company to refresh recommendations.",
-              { type: "danger" }
-          );
-          return;
+          this.action.doAction({
+            type: "ir.actions.client",
+            tag: "display_notification",
+            params: {
+                title: "Invalid company selection",
+                message: "Please select exactly one company to refresh or cancel recommendations.",
+                type: "danger",
+            },
+        });
+        return;
       }
 
       const companyId = activeCompanyIds[0];
 
       try {
+
+          if (this.state.hasRunningJob) {
+            // CANCEL JOB
+            await this.orm.call(
+                "frepple.job",
+                "action_cancel_all",
+                [companyId]
+            );
+        } else {
+
           await fetch("/frepple/submit", {
               method: "POST",
               headers: {
@@ -283,14 +324,11 @@ class FreppleRecommendationDashboard extends Component {
                   "X-Openerp-CSRFToken": odoo.csrf_token,
               },
               body: JSON.stringify({
-                  company_id: companyId,
+                  "company_id": companyId,
               }),
           });
 
-          this.notification.add(
-              "Recommendation refresh started.",
-              { type: "success" }
-          );
+        }
 
           // Reload dashboard data
           await this._load();
