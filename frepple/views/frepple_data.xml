@@ -41,7 +41,7 @@
 
     <menuitem
     id="menu_frepple_web_manufacturing"
-    name="FrePPLe Web"
+    name="FrePPLe APS"
     parent="menu_frepple_root_manufacturing"
     action="action_frepple_web"
     sequence="10"
@@ -67,7 +67,7 @@
 
     <menuitem
     id="menu_frepple_web_purchase"
-    name="FrePPLe Web"
+    name="FrePPLe APS"
     parent="menu_frepple_root_purchase"
     action="action_frepple_web"
     sequence="10"
@@ -94,7 +94,7 @@
 
     <menuitem
     id="menu_frepple_web_sales"
-    name="FrePPLe Web"
+    name="FrePPLe APS"
     parent="menu_frepple_root_sales"
     action="action_frepple_web"
     sequence="10"

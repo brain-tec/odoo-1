@@ -36,9 +36,10 @@
             <!-- ===================== -->
             <!-- BULK ACTION BAR       -->
             <!-- ===================== -->
-            <div class="my-2" t-if="state.selected.size">
+            <div class="my-2">
                 <button type="button"
                         class="btn btn-primary"
+                        t-att-disabled="!state.selected.size"
                         t-on-click="() => this.bulkApprove()">
                     Approve selected (<t t-esc="state.selected.size"/>)
                 </button>
@@ -94,14 +95,14 @@
                            t-value="{
                                product: 'Product',
                                quantity: 'Qty',
-                               start: 'Ordering Date',
-                               end: 'Receipt Date',
+                               start: 'Due Date',
+                               end: 'Delivery Date',
                                description: 'Description'
                            }"/>
                     </t>
                 </div>
 
-                <!-- INVENTORY -->
+                <!-- INVENTORY
                 <div class="tab-pane fade" id="stock">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.stock"/>
@@ -110,13 +111,11 @@
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
-                               quantity: 'Qty',
-                               start: 'Ordering Date',
-                               end: 'Receipt Date',
                                description: 'Description'
                            }"/>
                     </t>
                 </div>
+                -->
 
             </div>
         </div>
