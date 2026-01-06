@@ -26,7 +26,7 @@ class SaleOrder(models.Model):
         if not groups:
             enable_quoting_module = False
         else:
-            enable_quoting_module = self.user_id.id in groups.users.ids
+            enable_quoting_module = self.user_id.id in groups.user_ids.ids
         for order in self:
             order._without_quote = order.state != "draft" or not enable_quoting_module
 
