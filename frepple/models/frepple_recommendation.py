@@ -43,12 +43,24 @@ class FreppleRecommendation(models.Model):
         required=True,
     )
 
-    type = fields.Selection(
+    tab = fields.Selection(
         [
             ("purchase", "Purchase"),
             ("mrp", "Manufacturing"),
             ("sale", "Sales"),
             ("stock", "Inventory"),
+        ],
+        string="Tab",
+        required=True,
+    )
+
+    type = fields.Selection(
+        [
+            ("purchase", "purchase"),
+            ("produce", "produce"),
+            ("reschedule", "reschedule"),
+            ("adjustreorderingrule", "adjustreorderingrule"),
+            ("latedelivery", "late delivery"),
         ],
         string="Type",
         required=True,
@@ -70,15 +82,32 @@ class FreppleRecommendation(models.Model):
 
     description = fields.Char(string="Description")
 
+    res_partner_id = fields.Many2one(
+        "res.partner",
+        string="Vendor",
+        ondelete="cascade",
+    )
+
+    sale_order_line_id = fields.Many2one(
+        "sale.order.line",
+        string="Sales Order Line",
+        ondelete="cascade",
+    )
+
+    sale_order_id = fields.Many2one(
+        related="sale_order_line_id.order_id",
+        string="Sales Order",
+        readonly=True,
+        store=True,
+    )
+
     # Make sure the user cannot create a recommendation.
     # backend should create recommendations like this:
     # self.env["frepple.recommendation"].with_context(frepple_import=True).create(vals)
     @api.model
     def create(self, vals):
         if not self.env.context.get("frepple_import"):
-            raise UserError(
-                "FrePPLe recommendations cannot be created manually."
-            )
+            raise UserError("FrePPLe recommendations cannot be created manually.")
         return super().create(vals)
 
     def action_approve(self):
@@ -96,12 +125,18 @@ class FreppleRecommendation(models.Model):
 
                 # 2. Create Purchase Order Line
                 product = rec.product_id
-                po_line = self.env["purchase.order.line"].with_user(self.env.user).create({
-                    "order_id": po.id,
-                    "product_id": product.id,
-                    "product_qty": rec.quantity,
-                    "product_uom_id": product.uom_id.id,
-                })
+                po_line = (
+                    self.env["purchase.order.line"]
+                    .with_user(self.env.user)
+                    .create(
+                        {
+                            "order_id": po.id,
+                            "product_id": product.id,
+                            "product_qty": rec.quantity,
+                            "product_uom_id": product.uom_id.id,
+                        }
+                    )
+                )
 
                 vals = po_line._prepare_purchase_order_line(
                     product,
@@ -122,4 +157,3 @@ class FreppleRecommendation(models.Model):
             to_unlink.unlink()
 
         return True
-

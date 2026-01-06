@@ -26,11 +26,13 @@
                         Sales (<t t-esc="state.sale.length"/>)
                     </a>
                 </li>
+                <!--
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="tab" href="#stock">
                         Inventory (<t t-esc="state.stock.length"/>)
                     </a>
                 </li>
+                -->
             </ul>
 
             <!-- ===================== -->
@@ -54,6 +56,7 @@
                 <div class="tab-pane fade show active" id="purchase">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.purchase"/>
+                        <t t-set="showSalesOrder" t-value="false"/>
                         <t t-set="showPartner" t-value="true"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
@@ -72,6 +75,7 @@
                 <div class="tab-pane fade" id="mrp">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.mrp"/>
+                        <t t-set="showSalesOrder" t-value="false"/>
                         <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
@@ -89,12 +93,14 @@
                 <div class="tab-pane fade" id="sale">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.sale"/>
+                        <t t-set="showSalesOrder" t-value="true"/>
                         <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
                                quantity: 'Qty',
+                               sale_order: 'Sales Order',
                                start: 'Due Date',
                                end: 'Delivery Date',
                                description: 'Description'
@@ -131,11 +137,15 @@
                     <!-- Checkbox column -->
                     <th style="width: 32px;">
                         <input type="checkbox"
+                            class="form-check-input"
                             t-att-checked="this.areAllSelected(records)"
                             t-on-click.stop="() => this.toggleSelectAll(records)"
                         />
                     </th>
 
+                    <th t-if="showSalesOrder">
+                        <t t-esc="labels.sales_order"/>
+                    </th>
 
                     <th><t t-esc="labels.product"/></th>
 
@@ -158,32 +168,45 @@
                         <!-- Selection checkbox -->
                         <td>
                             <input type="checkbox"
-                                   t-att-checked="this.isSelected(r.id)"
-                                   t-on-click.stop="() => this.toggleSelection(r.id)"/>
+                              class="form-check-input"
+                              t-att-checked="this.isSelected(r.id)"
+                              t-on-click.stop="() => this.toggleSelection(r.id)"/>
+                        </td>
+
+                        <!-- SALES ORDER -->
+                        <td t-if="showSalesOrder">
+                            <t t-esc="r.sales_order_id?. [1] or ''"/>
+                            <a t-if="r.sales_order_id"
+                               href="#"
+                               class="ms-1 text-muted"
+                               t-att-title="r.sales_order_id?. [1] or 'View sales order'"
+                               t-on-click.prevent="() => this.openSalesOrder(r.sales_order_id[0])">
+                                <i class="fa fa-external-link me-1"/>
+                            </a>
                         </td>
 
                         <!-- PRODUCT -->
                         <td class="o_many2one_cell">
                             <t t-if="r.product_id">
-                                <span><t t-esc="r.product_id[1]"/></span>
+                                <span><t t-esc="r.product_id?. [1] or ''"/></span>
                                 <a href="#"
                                    class="ms-1 text-muted"
-                                   title="Open Product"
+                                   t-att-title="r.product_id?. [1] or 'View product'"
                                    t-on-click.prevent="() => this.openProduct(r.product_id[0])">
-                                    <i class="fa fa-external-link"/>
+                                    <i class="fa fa-external-link me-1"/>
                                 </a>
                             </t>
                         </td>
 
                         <!-- SUPPLIER -->
                         <td t-if="showPartner">
-                            <t t-esc="r.partner_name"/>
-                            <a t-if="r.partner_id"
+                            <t t-esc="r.res_partner_id?. [1] or ''"/>
+                            <a t-if="r.res_partner_id"
                                href="#"
                                class="ms-1 text-muted"
-                               title="Open Partner"
-                               t-on-click.prevent="() => this.openPartner(r.partner_id)">
-                                <i class="fa fa-external-link"/>
+                               t-att-title="r.res_partner_id?. [1] or 'View vendor'"
+                               t-on-click.prevent="() => this.openPartner(r.res_partner_id[0])">
+                                <i class="fa fa-external-link me-1"/>
                             </a>
                         </td>
 
@@ -199,8 +222,6 @@
                                 <t t-esc="r.desc_rest"/>
                             </div>
                         </td>
-
-
 
                         <!-- APPROVE BUTTON -->
                         <td t-if="showApprove">
