@@ -77,62 +77,68 @@
 
                 <!-- PURCHASE -->
                 <div class="tab-pane fade show active" id="purchase">
-                    <t t-call="frepple.RecommendationTable">
-                        <t t-set="records" t-value="state.purchase"/>
-                        <t t-set="showManufacturingOrder" t-value="false"/>
-                        <t t-set="showSalesOrder" t-value="false"/>
-                        <t t-set="showPartner" t-value="true"/>
-                        <t t-set="showApprove" t-value="true"/>
-                        <t t-set="labels"
-                           t-value="{
-                               product: 'Product',
-                               partner: 'Vendor',
-                               quantity: 'Qty',
-                               start: 'Ordering Date',
-                               end: 'Receipt Date',
-                               description: 'Description'
-                           }"/>
-                    </t>
+                    <div class="o_tab_scroll">
+                        <t t-call="frepple.RecommendationTable">
+                            <t t-set="records" t-value="state.purchase"/>
+                            <t t-set="showManufacturingOrder" t-value="false"/>
+                            <t t-set="showSalesOrder" t-value="false"/>
+                            <t t-set="showPartner" t-value="true"/>
+                            <t t-set="showApprove" t-value="true"/>
+                            <t t-set="labels"
+                            t-value="{
+                                product: 'Product',
+                                partner: 'Vendor',
+                                quantity: 'Qty',
+                                start: 'Ordering Date',
+                                end: 'Receipt Date',
+                                description: 'Description'
+                            }"/>
+                        </t>
+                    </div>
                 </div>
 
                 <!-- MANUFACTURING -->
                 <div class="tab-pane fade" id="mrp">
-                    <t t-call="frepple.RecommendationTable">
-                        <t t-set="records" t-value="state.mrp"/>
-                        <t t-set="showManufacturingOrder" t-value="true"/>
-                        <t t-set="showSalesOrder" t-value="false"/>
-                        <t t-set="showPartner" t-value="false"/>
-                        <t t-set="showApprove" t-value="true"/>
-                        <t t-set="labels"
-                           t-value="{
-                               product: 'Product',
-                               mrp_production: 'Manufacturing Order',
-                               quantity: 'Qty',
-                               start: 'Start Date',
-                               end: 'End Date',
-                               description: 'Description'
-                           }"/>
-                    </t>
+                    <div class="o_tab_scroll">
+                        <t t-call="frepple.RecommendationTable">
+                            <t t-set="records" t-value="state.mrp"/>
+                            <t t-set="showManufacturingOrder" t-value="true"/>
+                            <t t-set="showSalesOrder" t-value="false"/>
+                            <t t-set="showPartner" t-value="false"/>
+                            <t t-set="showApprove" t-value="true"/>
+                            <t t-set="labels"
+                            t-value="{
+                                product: 'Product',
+                                mrp_production: 'Manufacturing Order',
+                                quantity: 'Qty',
+                                start: 'Start Date',
+                                end: 'End Date',
+                                description: 'Description'
+                            }"/>
+                        </t>
+                    </div>
                 </div>
 
                 <!-- SALES -->
                 <div class="tab-pane fade" id="sale">
-                    <t t-call="frepple.RecommendationTable">
-                        <t t-set="records" t-value="state.sale"/>
-                        <t t-set="showManufacturingOrder" t-value="false"/>
-                        <t t-set="showSalesOrder" t-value="true"/>
-                        <t t-set="showPartner" t-value="false"/>
-                        <t t-set="showApprove" t-value="false"/>
-                        <t t-set="labels"
-                           t-value="{
-                               product: 'Product',
-                               quantity: 'Qty',
-                               sale_order: 'Sales Order',
-                               start: 'Due Date',
-                               end: 'Delivery Date',
-                               description: 'Description'
-                           }"/>
-                    </t>
+                    <div class="o_tab_scroll">
+                        <t t-call="frepple.RecommendationTable">
+                            <t t-set="records" t-value="state.sale"/>
+                            <t t-set="showManufacturingOrder" t-value="false"/>
+                            <t t-set="showSalesOrder" t-value="true"/>
+                            <t t-set="showPartner" t-value="false"/>
+                            <t t-set="showApprove" t-value="false"/>
+                            <t t-set="labels"
+                            t-value="{
+                                product: 'Product',
+                                quantity: 'Qty',
+                                sale_order: 'Sales Order',
+                                start: 'Due Date',
+                                end: 'Delivery Date',
+                                description: 'Description'
+                            }"/>
+                        </t>
+                    </div>
                 </div>
 
                 <!-- INVENTORY

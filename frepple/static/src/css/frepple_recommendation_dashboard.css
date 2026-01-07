@@ -12,3 +12,15 @@
     color: #6c757d; /* Bootstrap muted */
     white-space: pre-line; /* preserves line breaks */
 }
+
+.o_form_view.o_form_nosheet {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.o_tab_scroll {
+    max-height: calc(100vh - 250px); /* adjust depending on header + tabs + buttons */
+    overflow-y: auto;
+}
+
