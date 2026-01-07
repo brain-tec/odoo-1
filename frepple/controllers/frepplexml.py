@@ -492,9 +492,28 @@ class XMLController(odoo.http.Controller):
                 for i in data.get("recommendations"):
                     i["company_id"] = company_id
                     if "startdate" in i:
-                        i["startdate"] = datetime.fromisoformat(i["startdate"])
+                        try:
+                            i["startdate"] = datetime.fromisoformat(i["startdate"])
+                        except Exception:
+                            del i["startdate"]
                     if "enddate" in i:
-                        i["enddate"] = datetime.fromisoformat(i["enddate"])
+                        try:
+                            i["enddate"] = datetime.fromisoformat(i["enddate"])
+                        except Exception:
+                            del i["enddate"]
+                    if "mrp_production_id" in i:
+                        try:
+                            i["mrp_production_id"] = (
+                                self.env["mrp.production"]
+                                .sudo()
+                                .search(
+                                    [("name", "=", i["mrp_production_id"])], limit=1
+                                )
+                                .id
+                            )
+                        except Exception:
+                            # MO no longer exists. Skip this recommendation
+                            continue
 
                 self.env["frepple.recommendation"].sudo().with_context(
                     frepple_import=True
