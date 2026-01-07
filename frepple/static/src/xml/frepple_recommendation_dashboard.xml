@@ -23,7 +23,6 @@
                     <t t-if="state.hasRunningJob">Cancel</t>
                     <t t-else="">Recompute</t>
                 </button>
-
             </div>
 
             <!-- ===================== -->
@@ -45,18 +44,8 @@
                         Sales (<t t-esc="state.pagination.sale.total"/>)
                     </a>
                 </li>
-                <!--
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#stock">
-                        Inventory (<t t-esc="state.stock.length"/>)
-                    </a>
-                </li>
-                -->
             </ul>
 
-            <!-- ===================== -->
-            <!-- BULK ACTION BAR       -->
-            <!-- ===================== -->
             <div class="my-2">
                 <button type="button"
                         class="btn btn-primary"
@@ -81,51 +70,17 @@
                             <t t-set="showSalesOrder" t-value="false"/>
                             <t t-set="showPartner" t-value="true"/>
                             <t t-set="showApprove" t-value="true"/>
-                            <t t-set="labels"
-                            t-value="{
+                            <t t-set="labels" t-value="{
                                 product: 'Product',
                                 partner: 'Vendor',
-                                quantity: 'Qty',
+                                quantity: 'Quantity',
                                 start: 'Ordering Date',
                                 end: 'Receipt Date',
                                 description: 'Description'
                             }"/>
                         </t>
                     </div>
-
-                    <t t-if="Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize) > 1">
-                        <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
-
-                            <!-- LEFT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.purchase.page &gt; 1"
-                            class="text-primary"
-                            t-att-class="state.pagination.purchase.page &lt;= 1 ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.prevPage('purchase')"
-                            title="Previous page">
-                                <i class="fa fa-chevron-left"/>
-                            </a>
-
-                            <!-- PAGE COUNTER -->
-                            <span class="fw-semibold">
-                                Page
-                                <t t-esc="state.pagination.purchase.page"/>
-                                /
-                                <t t-esc="Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize)"/>
-                            </span>
-
-                            <!-- RIGHT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.purchase.page &lt; Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize)"
-                            class="text-primary"
-                            t-att-class="state.pagination.purchase.page &gt;= Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize) ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.nextPage('purchase')"
-                            title="Next page">
-                                <i class="fa fa-chevron-right"/>
-                            </a>
-
-                        </div>
-                    </t>
+                    <t t-call="frepple.RecommendationPagination"><t t-set="tab" t-value="'purchase'"/></t>
                 </div>
 
                 <!-- MANUFACTURING -->
@@ -138,51 +93,17 @@
                             <t t-set="showSalesOrder" t-value="false"/>
                             <t t-set="showPartner" t-value="false"/>
                             <t t-set="showApprove" t-value="true"/>
-                            <t t-set="labels"
-                            t-value="{
+                            <t t-set="labels" t-value="{
                                 product: 'Product',
                                 mrp_production: 'Manufacturing Order',
-                                quantity: 'Qty',
+                                quantity: 'Quantity',
                                 start: 'Start Date',
                                 end: 'End Date',
                                 description: 'Description'
                             }"/>
                         </t>
                     </div>
-
-                    <t t-if="Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize) > 1">
-                        <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
-
-                            <!-- LEFT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.mrp.page &gt; 1"
-                            class="text-primary"
-                            t-att-class="state.pagination.mrp.page &lt;= 1 ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.prevPage('mrp')"
-                            title="Previous page">
-                                <i class="fa fa-chevron-left"/>
-                            </a>
-
-                            <!-- PAGE COUNTER -->
-                            <span class="fw-semibold">
-                                Page
-                                <t t-esc="state.pagination.mrp.page"/>
-                                /
-                                <t t-esc="Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize)"/>
-                            </span>
-
-                            <!-- RIGHT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.mrp.page &lt; Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize)"
-                            class="text-primary"
-                            t-att-class="state.pagination.mrp.page &gt;= Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize) ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.nextPage('mrp')"
-                            title="Next page">
-                                <i class="fa fa-chevron-right"/>
-                            </a>
-
-                        </div>
-                    </t>
+                    <t t-call="frepple.RecommendationPagination"><t t-set="tab" t-value="'mrp'"/></t>
                 </div>
 
                 <!-- SALES -->
@@ -195,10 +116,9 @@
                             <t t-set="showSalesOrder" t-value="true"/>
                             <t t-set="showPartner" t-value="false"/>
                             <t t-set="showApprove" t-value="false"/>
-                            <t t-set="labels"
-                            t-value="{
+                            <t t-set="labels" t-value="{
                                 product: 'Product',
-                                quantity: 'Qty',
+                                quantity: 'Quantity',
                                 sale_order: 'Sales Order',
                                 start: 'Due Date',
                                 end: 'Delivery Date',
@@ -206,59 +126,8 @@
                             }"/>
                         </t>
                     </div>
-
-                    <t t-if="Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize) > 1">
-                        <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
-
-                            <!-- LEFT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.sale.page &gt; 1"
-                            class="text-primary"
-                            t-att-class="state.pagination.sale.page &lt;= 1 ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.prevPage('sale')"
-                            title="Previous page">
-                                <i class="fa fa-chevron-left"/>
-                            </a>
-
-                            <!-- PAGE COUNTER -->
-                            <span class="fw-semibold">
-                                Page
-                                <t t-esc="state.pagination.sale.page"/>
-                                /
-                                <t t-esc="Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize)"/>
-                            </span>
-
-                            <!-- RIGHT ARROW -->
-                            <a href="#"
-                            t-if="state.pagination.sale.page &lt; Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize)"
-                            class="text-primary"
-                            t-att-class="state.pagination.sale.page &gt;= Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize) ? 'text-muted disabled' : ''"
-                            t-on-click.prevent="() => this.nextPage('sale')"
-                            title="Next page">
-                                <i class="fa fa-chevron-right"/>
-                            </a>
-
-                        </div>
-                    </t>
+                    <t t-call="frepple.RecommendationPagination"><t t-set="tab" t-value="'sale'"/></t>
                 </div>
-
-                <!-- INVENTORY
-                <div class="tab-pane fade" id="stock">
-                    <t t-call="frepple.RecommendationTable">
-                        <t t-set="records" t-value="state.stock"/>
-                        <t t-set="showManufacturingOrder" t-value="false"/>
-                        <t t-set="showSalesOrder" t-value="true"/>
-                        <t t-set="showPartner" t-value="false"/>
-                        <t t-set="showApprove" t-value="false"/>
-                        <t t-set="labels"
-                           t-value="{
-                               product: 'Product',
-                               description: 'Description'
-                           }"/>
-                    </t>
-                </div>
-                -->
-
             </div>
         </div>
     </t>
@@ -267,121 +136,144 @@
     <!-- REUSABLE TABLE                                            -->
     <!-- ========================================================= -->
     <t t-name="frepple.RecommendationTable">
-        <table class="table table-sm table-hover">
-            <thead>
-                <tr>
-                    <!-- Checkbox column -->
-                    <th style="width: 32px;">
-                        <input type="checkbox"
-                            class="form-check-input"
-                            t-att-checked="this.areAllSelected(records)"
-                            t-on-click.stop="() => this.toggleSelectAll(records)"
-                        />
-                    </th>
-
-                    <th t-if="showManufacturingOrder">
-                        <t t-esc="labels.mrp_production"/>
-                    </th>
-
-                    <th t-if="showSalesOrder">
-                        <t t-esc="labels.sale_order"/>
-                    </th>
-
-                    <th><t t-esc="labels.product"/></th>
-
-                    <th t-if="showPartner">
-                        <t t-esc="labels.partner"/>
-                    </th>
-
-                    <th><t t-esc="labels.quantity"/></th>
-                    <th><t t-esc="labels.start"/></th>
-                    <th><t t-esc="labels.end"/></th>
-                    <th><t t-esc="labels.description"/></th>
-
-                    <th t-if="showApprove" style="width: 90px;"></th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <t t-foreach="records" t-as="r" t-key="r.id">
+        <div class="o_list_view">
+            <table class="table table-sm table-hover o_list_table" style="table-layout: fixed; width: 100%;">
+                <thead>
+                    <t t-set="tabSort" t-value="state.pagination[tabName]"/>
                     <tr>
-                        <!-- Selection checkbox -->
-                        <td>
-                            <input type="checkbox"
-                              class="form-check-input"
-                              t-att-checked="this.isSelected(r.id)"
-                              t-on-click.stop="() => this.toggleSelection(r.id)"/>
-                        </td>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input"
+                                   t-att-checked="this.areAllSelected(records)"
+                                   t-on-click.stop="() => this.toggleSelectAll(records)"/>
+                        </th>
 
-                        <!-- MANUFACTURING ORDER -->
-                        <td t-if="showManufacturingOrder">
-                            <t t-esc="r.mrp_production_id?. [1] or ''"/>
-                            <a t-if="r.mrp_production_id"
-                               href="#"
-                               class="ms-1 text-muted"
-                               t-att-title="r.mrp_production_id?. [1] or 'View manufacturing order'"
-                               t-on-click.prevent="() => this.openManufacturingOrder(r.mrp_production_id[0])">
-                                <i class="fa fa-external-link me-1"/>
-                            </a>
-                        </td>
+                        <th t-if="showManufacturingOrder" style="width: 150px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'mrp_production_id' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'mrp_production_id')">
+                            <t t-esc="labels.mrp_production"/>
+                        </th>
 
-                        <!-- SALES ORDER -->
-                        <td t-if="showSalesOrder">
-                            <t t-esc="r.sale_order_id?. [1] or ''"/>
-                            <a t-if="r.sale_order_id"
-                               href="#"
-                               class="ms-1 text-muted"
-                               t-att-title="r.sale_order_id?. [1] or 'View sales order'"
-                               t-on-click.prevent="() => this.openSalesOrder(r.sale_order_id[0])">
-                                <i class="fa fa-external-link me-1"/>
-                            </a>
-                        </td>
+                        <th t-if="showSalesOrder" style="width: 150px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'sale_order_id' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'sale_order_id')">
+                            <t t-esc="labels.sale_order"/>
+                        </th>
 
-                        <!-- PRODUCT -->
-                        <td class="o_many2one_cell">
-                            <t t-if="r.product_id">
-                                <span><t t-esc="r.product_id?. [1] or ''"/></span>
-                                <a href="#"
-                                   class="ms-1 text-muted"
-                                   t-att-title="r.product_id?. [1] or 'View product'"
-                                   t-on-click.prevent="() => this.openProduct(r.product_id[0])">
+                        <th style="width: 200px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'product_id' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'product_id')">
+                            <t t-esc="labels.product"/>
+                        </th>
+
+                        <th t-if="showPartner" style="width: 150px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'res_partner_id' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'res_partner_id')">
+                            <t t-esc="labels.partner"/>
+                        </th>
+
+                        <th style="width: 80px;" class="o_column_sortable o_list_number"
+                            t-att-class="tabSort.sortField == 'quantity' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'quantity')">
+                            <t t-esc="labels.quantity"/>
+                        </th>
+
+                        <th style="width: 160px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'startdate' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'startdate')">
+                            <t t-esc="labels.start"/>
+                        </th>
+
+                        <th style="width: 160px;" class="o_column_sortable"
+                            t-att-class="tabSort.sortField == 'enddate' ? (tabSort.sortAsc ? 'o_order_asc' : 'o_order_desc') : ''"
+                            t-on-click="() => this.setSort(tabName, 'enddate')">
+                            <t t-esc="labels.end"/>
+                        </th>
+
+                        <th style="width: auto;"><t t-esc="labels.description"/></th>
+
+                        <th t-if="showApprove" style="width: 100px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="records" t-as="r" t-key="r.id">
+                        <tr>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input"
+                                  t-att-checked="this.isSelected(r.id)"
+                                  t-on-click.stop="() => this.toggleSelection(r.id)"/>
+                            </td>
+                            <!-- MANUFACTURING ORDER -->
+                            <td t-if="showManufacturingOrder" class="text-truncate">
+                                <t t-esc="r.mrp_production_id ? r.mrp_production_id[1] : ''"/>
+                                <a t-if="r.mrp_production_id" href="#" class="ms-1 text-muted"
+                                   t-on-click.prevent="() => this.openManufacturingOrder(r.mrp_production_id[0])">
                                     <i class="fa fa-external-link me-1"/>
                                 </a>
-                            </t>
-                        </td>
+                            </td>
+                            <!-- SALES ORDER -->
+                            <td t-if="showSalesOrder" class="text-truncate">
+                                <t t-esc="r.sale_order_id ? r.sale_order_id[1] : ''"/>
+                                <a t-if="r.sale_order_id" href="#" class="ms-1 text-muted"
+                                   t-on-click.prevent="() => this.openSalesOrder(r.sale_order_id[0])">
+                                    <i class="fa fa-external-link me-1"/>
+                                </a>
+                            </td>
+                            <!-- PRODUCT -->
+                            <td class="reco_data_cell"> <t t-if="r.product_id">
+                                    <div class="d-flex align-items-center w-100">
+                                        <span class="text-truncate flex-grow-1" t-att-title="r.product_id[1]">
+                                            <t t-esc="r.product_id[1]"/>
+                                        </span>
+                                        <a href="#" class="ms-1 text-muted flex-shrink-0"
+                                        t-on-click.prevent="() => this.openProduct(r.product_id[0])">
+                                            <i class="fa fa-external-link"/>
+                                        </a>
+                                    </div>
+                                </t>
+                            </td>
+                            <!-- SUPPLIER -->
+                            <td t-if="showPartner" class="reco_data_cell"> <t t-if="r.res_partner_id">
+                                    <div class="d-flex align-items-center w-100">
+                                        <span class="text-truncate flex-grow-1" t-att-title="r.res_partner_id[1]">
+                                            <t t-esc="r.res_partner_id[1]"/>
+                                        </span>
+                                        <a href="#" class="ms-1 text-muted flex-shrink-0"
+                                        t-on-click.prevent="() => this.openPartner(r.res_partner_id[0])">
+                                            <i class="fa fa-external-link"/>
+                                        </a>
+                                    </div>
+                                </t>
+                            </td>
+                            <td class="o_list_number"><t t-esc="r.quantity"/></td>
+                            <td class="text-nowrap"><t t-esc="r.startdate"/></td>
+                            <td class="text-nowrap"><t t-esc="r.enddate"/></td>
+                            <td class="o_reco_description"><t t-out="formatDescription(r.description)"/></td>
+                            <!-- APPROVE BUTTON -->
+                            <td t-if="showApprove">
+                                <button type="button" class="btn btn-sm btn-primary" t-on-click.prevent="() => this.approveRecommendation(r.id)">
+                                    Approve
+                                </button>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </div>
+    </t>
 
-                        <!-- SUPPLIER -->
-                        <td t-if="showPartner">
-                            <t t-esc="r.res_partner_id?. [1] or ''"/>
-                            <a t-if="r.res_partner_id"
-                               href="#"
-                               class="ms-1 text-muted"
-                               t-att-title="r.res_partner_id?. [1] or 'View vendor'"
-                               t-on-click.prevent="() => this.openPartner(r.res_partner_id[0])">
-                                <i class="fa fa-external-link me-1"/>
-                            </a>
-                        </td>
-
-                        <!-- OTHER FIELDS -->
-                        <td><t t-esc="r.quantity"/></td>
-                        <td><t t-esc="r.startdate"/></td>
-                        <td><t t-esc="r.enddate"/></td>
-                        <td class="o_reco_description">
-                            <t t-out="formatDescription(r.description)"/>
-                        </td>
-
-                        <!-- APPROVE BUTTON -->
-                        <td t-if="showApprove">
-                            <button type="button"
-                                    class="btn btn-sm btn-primary"
-                                    t-on-click.prevent="() => this.approveRecommendation(r.id)">
-                                Approve
-                            </button>
-                        </td>
-                    </tr>
-                </t>
-            </tbody>
-        </table>
+    <t t-name="frepple.RecommendationPagination">
+        <t t-set="p" t-value="state.pagination[tab]"/>
+        <t t-if="p and Math.ceil(p.total / p.pageSize) > 1">
+            <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
+                <a href="#" t-if="p.page > 1" class="text-primary" t-on-click.prevent="() => this.prevPage(tab)">
+                    <i class="fa fa-chevron-left"/>
+                </a>
+                <span class="fw-semibold">Page <t t-esc="p.page"/> / <t t-esc="Math.ceil(p.total / p.pageSize)"/></span>
+                <a href="#" t-if="p.page &lt; Math.ceil(p.total / p.pageSize)" class="text-primary" t-on-click.prevent="() => this.nextPage(tab)">
+                    <i class="fa fa-chevron-right"/>
+                </a>
+            </div>
+        </t>
     </t>
 
 </templates>
