@@ -19,7 +19,13 @@ class FreppleRecommendationDashboard extends Component {
       stock: [],
       selected: new Set(),
       lastRunDate: null,
-      hasRunningJob: false
+      hasRunningJob: false,
+       // Pagination per tab
+      pagination: {
+          purchase: { page: 1, pageSize: 100, total: 0 },
+          mrp: { page: 1, pageSize: 100, total: 0 },
+          sale: { page: 1, pageSize: 100, total: 0 },
+      },
     });
 
     onWillStart(async () => {
@@ -53,76 +59,90 @@ class FreppleRecommendationDashboard extends Component {
     // Read the active companies, used to filter data in the orm calls
     const activeCompanyIds = user.activeCompanies.map((c) => c.id);
 
-    this.state.purchase = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "purchase"],
-      ["company_id", "in", activeCompanyIds]],
-      [
+    const loadTab = async (tabName, fields) => {
+        const pageInfo = this.state.pagination[tabName];
+        const offset = (pageInfo.page - 1) * pageInfo.pageSize;
+
+        // Get total count for pagination
+        const total = await this.orm.searchCount("frepple.recommendation", [
+            ["tab", "=", tabName],
+            ["company_id", "in", activeCompanyIds],
+        ]);
+
+        this.state.pagination[tabName] = {
+        ...pageInfo,
+        total: total,
+        };
+
+        // Fetch only current page
+        return await this.orm.searchRead(
+            "frepple.recommendation",
+            [
+                ["tab", "=", tabName],
+                ["company_id", "in", activeCompanyIds],
+            ],
+            fields,
+            {
+                offset: offset,
+                limit: pageInfo.pageSize,
+                order: undefined, // you can add sorting later
+            }
+        );
+    };
+
+    // Load each tab
+    this.state.purchase = await loadTab("purchase", [
         "product_id",
         "res_partner_id",
         "quantity",
         "startdate",
         "enddate",
         "description",
-      ]
-    );
-    this.state.mrp = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "mrp"],
-      ["company_id", "in", activeCompanyIds]],
-      [
+    ]);
+
+    this.state.mrp = await loadTab("mrp", [
         "mrp_production_id",
         "product_id",
         "quantity",
         "startdate",
         "enddate",
         "description",
-      ]
-    );
-    this.state.sale = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "sale"],
-      ["company_id", "in", activeCompanyIds]],
-      [
+    ]);
+
+    this.state.sale = await loadTab("sale", [
         "product_id",
         "sale_order_id",
         "quantity",
         "startdate",
         "enddate",
         "description",
-      ]
-    );
-    /*
-    this.state.stock = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "stock"],
-      ["company_id", "in", activeCompanyIds]],
-      fields
-    );
-    */
+    ]);
 
+    // Clear selections on reload
     this.state.selected.clear();
-
 
     // ------------------------------------------------------------
     // LAST FREPPLE RUN DATE
     // ------------------------------------------------------------
-
     const jobs = await this.orm.searchRead(
-      "frepple.job",
-      [["status", "=", "done"],
-      ["company_id", "in", activeCompanyIds]],
-      ["finished"],
-      {
-        order: "finished desc",
-        limit: 1,
-      }
+        "frepple.job",
+        [
+            ["status", "=", "done"],
+            ["company_id", "in", activeCompanyIds],
+        ],
+        ["finished"],
+        {
+            order: "finished desc",
+            limit: 1,
+        }
     );
 
     this.state.lastRunDate = jobs.length ? jobs[0].finished : null;
 
+    // Check for running jobs
     await this._checkRunningJobs();
-  }
+}
+
 
   // Read running jobs for the Refresh button
   async _checkRunningJobs() {
@@ -188,6 +208,23 @@ class FreppleRecommendationDashboard extends Component {
       target: "current",
     });
   }
+
+  prevPage(tabName) {
+    if (this.state.pagination[tabName].page > 1) {
+        this.state.pagination[tabName].page -= 1;
+        this._load();
+    }
+  }
+
+  nextPage(tabName) {
+      const pageInfo = this.state.pagination[tabName];
+      const maxPage = Math.ceil(pageInfo.total / pageInfo.pageSize);
+      if (pageInfo.page < maxPage) {
+          pageInfo.page += 1;
+          this._load();
+      }
+  }
+
 
   // ------------------------------------------------------------
   // SELECTION LOGIC

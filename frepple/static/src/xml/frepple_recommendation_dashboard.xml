@@ -36,17 +36,17 @@
             <ul class="nav nav-tabs o_notebook">
                 <li class="nav-item">
                     <a class="nav-link active" data-bs-toggle="tab" href="#purchase">
-                        Purchase (<t t-esc="state.purchase.length"/>)
+                        Purchase (<t t-esc="state.pagination.purchase.total"/>)
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="tab" href="#mrp">
-                        Manufacturing (<t t-esc="state.mrp.length"/>)
+                        Manufacturing (<t t-esc="state.pagination.mrp.total"/>)
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="tab" href="#sale">
-                        Sales (<t t-esc="state.sale.length"/>)
+                        Sales (<t t-esc="state.pagination.sale.total"/>)
                     </a>
                 </li>
                 <!--
@@ -79,6 +79,7 @@
                 <div class="tab-pane fade show active" id="purchase">
                     <div class="o_tab_scroll">
                         <t t-call="frepple.RecommendationTable">
+                            <t t-set="tabName" t-value="'purchase'"/>
                             <t t-set="records" t-value="state.purchase"/>
                             <t t-set="showManufacturingOrder" t-value="false"/>
                             <t t-set="showSalesOrder" t-value="false"/>
@@ -95,12 +96,46 @@
                             }"/>
                         </t>
                     </div>
+
+                    <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
+
+                        <!-- LEFT ARROW -->
+                        <a href="#"
+                        t-if="state.pagination.purchase.page &gt; 1"
+                        class="text-primary"
+                        t-att-class="state.pagination.purchase.page &lt;= 1 ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.prevPage('purchase')"
+                        title="Previous page">
+                            <i class="fa fa-chevron-left"/>
+                        </a>
+
+                        <!-- PAGE COUNTER -->
+                        <span class="fw-semibold">
+                            Page
+                            <t t-esc="state.pagination.purchase.page"/>
+                            /
+                            <t t-esc="Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize)"/>
+                        </span>
+
+                        <!-- RIGHT ARROW -->
+                        <a href="#"
+                         t-if="state.pagination.purchase.page &lt; Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize)"
+                        class="text-primary"
+                        t-att-class="state.pagination.purchase.page &gt;= Math.ceil(state.pagination.purchase.total / state.pagination.purchase.pageSize) ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.nextPage('purchase')"
+                        title="Next page">
+                            <i class="fa fa-chevron-right"/>
+                        </a>
+
+                    </div>
+
                 </div>
 
                 <!-- MANUFACTURING -->
                 <div class="tab-pane fade" id="mrp">
                     <div class="o_tab_scroll">
                         <t t-call="frepple.RecommendationTable">
+                            <t t-set="tabName" t-value="'mrp'"/>
                             <t t-set="records" t-value="state.mrp"/>
                             <t t-set="showManufacturingOrder" t-value="true"/>
                             <t t-set="showSalesOrder" t-value="false"/>
@@ -117,12 +152,44 @@
                             }"/>
                         </t>
                     </div>
+                    <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
+
+                        <!-- LEFT ARROW -->
+                        <a href="#"
+                        t-if="state.pagination.mrp.page &gt; 1"
+                        class="text-primary"
+                        t-att-class="state.pagination.mrp.page &lt;= 1 ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.prevPage('mrp')"
+                        title="Previous page">
+                            <i class="fa fa-chevron-left"/>
+                        </a>
+
+                        <!-- PAGE COUNTER -->
+                        <span class="fw-semibold">
+                            Page
+                            <t t-esc="state.pagination.mrp.page"/>
+                            /
+                            <t t-esc="Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize)"/>
+                        </span>
+
+                        <!-- RIGHT ARROW -->
+                        <a href="#"
+                         t-if="state.pagination.mrp.page &lt; Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize)"
+                        class="text-primary"
+                        t-att-class="state.pagination.mrp.page &gt;= Math.ceil(state.pagination.mrp.total / state.pagination.mrp.pageSize) ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.nextPage('mrp')"
+                        title="Next page">
+                            <i class="fa fa-chevron-right"/>
+                        </a>
+
+                    </div>
                 </div>
 
                 <!-- SALES -->
                 <div class="tab-pane fade" id="sale">
                     <div class="o_tab_scroll">
                         <t t-call="frepple.RecommendationTable">
+                            <t t-set="tabName" t-value="'sale'"/>
                             <t t-set="records" t-value="state.sale"/>
                             <t t-set="showManufacturingOrder" t-value="false"/>
                             <t t-set="showSalesOrder" t-value="true"/>
@@ -138,6 +205,37 @@
                                 description: 'Description'
                             }"/>
                         </t>
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
+
+                        <!-- LEFT ARROW -->
+                        <a href="#"
+                        t-if="state.pagination.sale.page &gt; 1"
+                        class="text-primary"
+                        t-att-class="state.pagination.sale.page &lt;= 1 ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.prevPage('sale')"
+                        title="Previous page">
+                            <i class="fa fa-chevron-left"/>
+                        </a>
+
+                        <!-- PAGE COUNTER -->
+                        <span class="fw-semibold">
+                            Page
+                            <t t-esc="state.pagination.sale.page"/>
+                            /
+                            <t t-esc="Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize)"/>
+                        </span>
+
+                        <!-- RIGHT ARROW -->
+                        <a href="#"
+                         t-if="state.pagination.sale.page &lt; Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize)"
+                        class="text-primary"
+                        t-att-class="state.pagination.sale.page &gt;= Math.ceil(state.pagination.sale.total / state.pagination.sale.pageSize) ? 'text-muted disabled' : ''"
+                        t-on-click.prevent="() => this.nextPage('sale')"
+                        title="Next page">
+                            <i class="fa fa-chevron-right"/>
+                        </a>
+
                     </div>
                 </div>
 

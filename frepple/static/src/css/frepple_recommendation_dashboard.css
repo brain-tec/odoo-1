@@ -21,6 +21,13 @@
 
 .o_tab_scroll {
     max-height: calc(100vh - 250px); /* adjust depending on header + tabs + buttons */
-    overflow-y: auto;
+    overflow-y: auto;        /* vertical scrolling */
 }
 
+.o_tab_scroll table thead th {
+    position: sticky;
+    top: 0;
+    background: white;       /* keep header readable */
+    z-index: 10;             /* on top of table body */
+    box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); /* shadow for separation */
+}
