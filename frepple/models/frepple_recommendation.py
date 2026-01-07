@@ -166,7 +166,7 @@ class FreppleRecommendation(models.Model):
                 }
                 mo = self.env["mrp.production"].with_user(self.env.user).create(mo_args)
 
-                # Mrk recommendation for deletion
+                # Mark recommendation for deletion
                 to_unlink |= rec
 
         # unlink ALL approved recommendations at once

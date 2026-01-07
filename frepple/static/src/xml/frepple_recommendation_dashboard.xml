@@ -167,7 +167,7 @@
                     </th>
 
                     <th t-if="showSalesOrder">
-                        <t t-esc="labels.sales_order"/>
+                        <t t-esc="labels.sale_order"/>
                     </th>
 
                     <th><t t-esc="labels.product"/></th>
@@ -198,12 +198,12 @@
 
                         <!-- SALES ORDER -->
                         <td t-if="showSalesOrder">
-                            <t t-esc="r.sales_order_id?. [1] or ''"/>
-                            <a t-if="r.sales_order_id"
+                            <t t-esc="r.sale_order_id?. [1] or ''"/>
+                            <a t-if="r.sale_order_id"
                                href="#"
                                class="ms-1 text-muted"
-                               t-att-title="r.sales_order_id?. [1] or 'View sales order'"
-                               t-on-click.prevent="() => this.openSalesOrder(r.sales_order_id[0])">
+                               t-att-title="r.sale_order_id?. [1] or 'View sales order'"
+                               t-on-click.prevent="() => this.openSalesOrder(r.sale_order_id[0])">
                                 <i class="fa fa-external-link me-1"/>
                             </a>
                         </td>

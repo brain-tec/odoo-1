@@ -488,16 +488,17 @@ class XMLController(odoo.http.Controller):
             recs.unlink()
 
             # Generate recommendations
-            for i in data.get("recommendations", []):
-                i["company_id"] = company_id
-                if "startdate" in i:
-                    i["startdate"] = datetime.fromisoformat(i["startdate"])
-                if "enddate" in i:
-                    i["enddate"] = datetime.fromisoformat(i["enddate"])
+            if data.get("recommendations", None):
+                for i in data.get("recommendations"):
+                    i["company_id"] = company_id
+                    if "startdate" in i:
+                        i["startdate"] = datetime.fromisoformat(i["startdate"])
+                    if "enddate" in i:
+                        i["enddate"] = datetime.fromisoformat(i["enddate"])
 
-            self.env["frepple.recommendation"].sudo().with_context(
-                frepple_import=True
-            ).create(data.get("recommendations"))
+                self.env["frepple.recommendation"].sudo().with_context(
+                    frepple_import=True
+                ).create(data.get("recommendations"))
 
         except Exception as e:
             traceback.print_exc()
