@@ -48,7 +48,7 @@ class FreppleJob(models.Model):
     )
 
     @api.model
-    def createJob(self):
+    def createJob(self, company_id):
         token = secrets.token_urlsafe(64)
         j = self.env["frepple.job"].create(
             {
@@ -56,6 +56,7 @@ class FreppleJob(models.Model):
                 "started": datetime.now(),
                 "user_id": self.env.user.id,
                 "hashed_token": generate_password_hash(token),
+                "company_id": company_id,
             }
         )
         self.env.cr.commit()
@@ -82,6 +83,16 @@ class FreppleJob(models.Model):
     def action_cancel(self):
         for rec in self:
             rec.status = "cancelled"
+
+    @api.model
+    def action_cancel_all(self, company_id):
+        for j in self.env["frepple.job"].search(
+            [
+                ("company_id.id", "=", company_id),
+                ("finished", "=", False),
+                ("status", "=", "Waiting for results"),
+            ]):
+            j.status = "cancelled"
 
     def action_start(self):
         for rec in self:
