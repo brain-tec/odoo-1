@@ -19,13 +19,9 @@
                 <button type="button"
                         class="btn btn-primary btn-sm ms-2"
                         t-on-click="() => this.refreshRecommendations()"
-                        title="Refresh recommendations">
-                    <t t-if="state.hasRunningJob">
-                        Cancel
-                    </t>
-                    <t t-else="">
-                        Refresh
-                    </t>
+                        title="Recompute recommendations">
+                    <t t-if="state.hasRunningJob">Cancel</t>
+                    <t t-else="">Recompute</t>
                 </button>
 
             </div>

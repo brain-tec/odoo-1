@@ -286,35 +286,17 @@ class FreppleRecommendationDashboard extends Component {
     const companyId = activeCompanyIds[0];
 
     try {
-
-      if (this.state.hasRunningJob) {
-        // CANCEL JOB
-        await this.orm.call(
-          "frepple.job",
-          "action_cancel_all",
-          [companyId]
-        );
-      } else {
-
-        await fetch("/frepple/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Openerp-CSRFToken": odoo.csrf_token,
-          },
-          body: JSON.stringify({
-            "company_id": companyId,
-          }),
-        });
-
-      }
+      await this.orm.call(
+        "frepple.job",
+        this.state.hasRunningJob ? "action_cancel_all" : "action_launch",
+        [companyId]
+      );
 
       // Reload dashboard data
       await this._load();
-
     } catch (err) {
       this.notification.add(
-        "Failed to refresh recommendations.",
+        "Failed to recompute recommendations.",
         { type: "danger" }
       );
       console.error(err);
