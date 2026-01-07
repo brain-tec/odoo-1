@@ -79,6 +79,7 @@
                 <div class="tab-pane fade show active" id="purchase">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.purchase"/>
+                        <t t-set="showManufacturingOrder" t-value="false"/>
                         <t t-set="showSalesOrder" t-value="false"/>
                         <t t-set="showPartner" t-value="true"/>
                         <t t-set="showApprove" t-value="true"/>
@@ -98,12 +99,14 @@
                 <div class="tab-pane fade" id="mrp">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.mrp"/>
+                        <t t-set="showManufacturingOrder" t-value="true"/>
                         <t t-set="showSalesOrder" t-value="false"/>
                         <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="true"/>
                         <t t-set="labels"
                            t-value="{
                                product: 'Product',
+                               mrp_production: 'Manufacturing Order',
                                quantity: 'Qty',
                                start: 'Start Date',
                                end: 'End Date',
@@ -116,6 +119,7 @@
                 <div class="tab-pane fade" id="sale">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.sale"/>
+                        <t t-set="showManufacturingOrder" t-value="false"/>
                         <t t-set="showSalesOrder" t-value="true"/>
                         <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="false"/>
@@ -135,6 +139,8 @@
                 <div class="tab-pane fade" id="stock">
                     <t t-call="frepple.RecommendationTable">
                         <t t-set="records" t-value="state.stock"/>
+                        <t t-set="showManufacturingOrder" t-value="false"/>
+                        <t t-set="showSalesOrder" t-value="true"/>
                         <t t-set="showPartner" t-value="false"/>
                         <t t-set="showApprove" t-value="false"/>
                         <t t-set="labels"
@@ -166,6 +172,10 @@
                         />
                     </th>
 
+                    <th t-if="showManufacturingOrder">
+                        <t t-esc="labels.mrp_production"/>
+                    </th>
+
                     <th t-if="showSalesOrder">
                         <t t-esc="labels.sale_order"/>
                     </th>
@@ -194,6 +204,18 @@
                               class="form-check-input"
                               t-att-checked="this.isSelected(r.id)"
                               t-on-click.stop="() => this.toggleSelection(r.id)"/>
+                        </td>
+
+                        <!-- MANUFACTURING ORDER -->
+                        <td t-if="showManufacturingOrder">
+                            <t t-esc="r.mrp_production_id?. [1] or ''"/>
+                            <a t-if="r.mrp_production_id"
+                               href="#"
+                               class="ms-1 text-muted"
+                               t-att-title="r.mrp_production_id?. [1] or 'View manufacturing order'"
+                               t-on-click.prevent="() => this.openManufacturingOrder(r.mrp_production_id[0])">
+                                <i class="fa fa-external-link me-1"/>
+                            </a>
                         </td>
 
                         <!-- SALES ORDER -->

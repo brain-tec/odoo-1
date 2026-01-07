@@ -50,21 +50,6 @@ class FreppleRecommendationDashboard extends Component {
   // ------------------------------------------------------------
   async _load() {
 
-    // smaller font for the second line
-    function splitDescription(desc) {
-      if (!desc) {
-        return { first: "", rest: "" };
-      }
-
-      // IMPORTANT: split on literal "\n"
-      const lines = desc.split("\\n");
-
-      return {
-        first: lines[0],
-        rest: lines.slice(1).join("\n"),
-      };
-    }
-
     // Read the active companies, used to filter data in the orm calls
     const activeCompanyIds = user.activeCompanies.map((c) => c.id);
 
@@ -86,6 +71,7 @@ class FreppleRecommendationDashboard extends Component {
       [["tab", "=", "mrp"],
       ["company_id", "in", activeCompanyIds]],
       [
+        "mrp_production_id",
         "product_id",
         "quantity",
         "startdate",
@@ -187,6 +173,16 @@ class FreppleRecommendationDashboard extends Component {
     this.action.doAction({
       type: "ir.actions.act_window",
       res_model: "res.partner",
+      res_id: theId,
+      views: [[false, "form"]],
+      target: "current",
+    });
+  }
+
+  openManufacturingOrder(theId) {
+    this.action.doAction({
+      type: "ir.actions.act_window",
+      res_model: "mrp.production",
       res_id: theId,
       views: [[false, "form"]],
       target: "current",
