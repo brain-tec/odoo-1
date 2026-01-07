@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
-
+import { markup } from "@odoo/owl";
 
 class FreppleRecommendationDashboard extends Component {
   setup() {
@@ -40,8 +40,9 @@ class FreppleRecommendationDashboard extends Component {
     const lines = desc.split("\\n");
     const firstline = lines[0];
     const restlines = lines.slice(1).join("\n");
-    return `<div class="o_reco_desc_first">${firstline}</div>` +
-      (restlines ? `<div class="o_reco_desc_rest">${restlines}</div>` : "");
+    return markup(
+      `<div class="o_reco_desc_first">${firstline}</div>` +
+      (restlines ? `<div class="o_reco_desc_rest">${restlines}</div>` : ""));
   }
 
   // ------------------------------------------------------------
@@ -73,7 +74,7 @@ class FreppleRecommendationDashboard extends Component {
       ["company_id", "in", activeCompanyIds]],
       [
         "product_id",
-        "partner_id",
+        "res_partner_id",
         "quantity",
         "startdate",
         "enddate",
