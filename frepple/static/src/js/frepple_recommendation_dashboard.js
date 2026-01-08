@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { user } from "@web/core/user";
-
+import { markup } from "@odoo/owl";
 
 class FreppleRecommendationDashboard extends Component {
   setup() {
@@ -19,7 +19,13 @@ class FreppleRecommendationDashboard extends Component {
       stock: [],
       selected: new Set(),
       lastRunDate: null,
-      hasRunningJob: false
+      hasRunningJob: false,
+       // Pagination per tab
+      pagination: {
+          purchase: { page: 1, pageSize: 100, total: 0, sortField: 'id', sortAsc: true },
+          mrp: { page: 1, pageSize: 100, total: 0, sortField: 'id', sortAsc: true },
+          sale: { page: 1, pageSize: 100, total: 0, sortField: 'id', sortAsc: true },
+      },
     });
 
     onWillStart(async () => {
@@ -40,8 +46,9 @@ class FreppleRecommendationDashboard extends Component {
     const lines = desc.split("\\n");
     const firstline = lines[0];
     const restlines = lines.slice(1).join("\n");
-    return `<div class="o_reco_desc_first">${firstline}</div>` +
-      (restlines ? `<div class="o_reco_desc_rest">${restlines}</div>` : "");
+    return markup(
+      `<div class="o_reco_desc_first">${firstline}</div>` +
+      (restlines ? `<div class="o_reco_desc_rest">${restlines}</div>` : ""));
   }
 
   // ------------------------------------------------------------
@@ -49,286 +56,108 @@ class FreppleRecommendationDashboard extends Component {
   // ------------------------------------------------------------
   async _load() {
 
-    // smaller font for the second line
-    function splitDescription(desc) {
-      if (!desc) {
-        return { first: "", rest: "" };
-      }
-
-      // IMPORTANT: split on literal "\n"
-      const lines = desc.split("\\n");
-
-      return {
-        first: lines[0],
-        rest: lines.slice(1).join("\n"),
-      };
-    }
-
     // Read the active companies, used to filter data in the orm calls
     const activeCompanyIds = user.activeCompanies.map((c) => c.id);
 
-    this.state.purchase = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "purchase"],
-      ["company_id", "in", activeCompanyIds]],
-      [
-        "product_id",
-        "partner_id",
-        "quantity",
-        "startdate",
-        "enddate",
-        "description",
-      ]
-    );
-    this.state.mrp = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "mrp"],
-      ["company_id", "in", activeCompanyIds]],
-      [
-        "product_id",
-        "quantity",
-        "startdate",
-        "enddate",
-        "description",
-      ]
-    );
-    this.state.sale = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "sale"],
-      ["company_id", "in", activeCompanyIds]],
-      [
-        "product_id",
-        "sale_order_id",
-        "quantity",
-        "startdate",
-        "enddate",
-        "description",
-      ]
-    );
-    /*
-    this.state.stock = await this.orm.searchRead(
-      "frepple.recommendation",
-      [["tab", "=", "stock"],
-      ["company_id", "in", activeCompanyIds]],
-      fields
-    );
-    */
+    const loadTab = async (tabName, fields) => {
+        const pageInfo = this.state.pagination[tabName];
+        const offset = (pageInfo.page - 1) * pageInfo.pageSize;
+        const order = `${pageInfo.sortField} ${pageInfo.sortAsc ? 'asc' : 'desc'}`;
 
+        // Get total count for pagination
+        const total = await this.orm.searchCount("frepple.recommendation", [
+            ["tab", "=", tabName],
+            ["company_id", "in", activeCompanyIds],
+        ]);
+
+        this.state.pagination[tabName].total = total;
+
+        return await this.orm.searchRead(
+            "frepple.recommendation",
+            [["tab", "=", tabName], ["company_id", "in", activeCompanyIds]],
+            fields,
+            { offset: offset, limit: pageInfo.pageSize, order: order }
+        );
+    };
+
+    // Load each tab
+    this.state.purchase = await loadTab("purchase", ["product_id", "res_partner_id", "quantity", "startdate", "enddate", "description"]);
+    this.state.mrp = await loadTab("mrp", ["mrp_production_id", "product_id", "quantity", "startdate", "enddate", "description"]);
+    this.state.sale = await loadTab("sale", ["product_id", "sale_order_id", "quantity", "startdate", "enddate", "description"]);
+
+    // Clear selections on reload
     this.state.selected.clear();
-
 
     // ------------------------------------------------------------
     // LAST FREPPLE RUN DATE
     // ------------------------------------------------------------
 
-    const jobs = await this.orm.searchRead(
-      "frepple.job",
-      [["status", "=", "done"],
-      ["company_id", "in", activeCompanyIds]],
-      ["finished"],
-      {
-        order: "finished desc",
-        limit: 1,
-      }
-    );
-
+    const jobs = await this.orm.searchRead("frepple.job", [["status", "=", "done"], ["company_id", "in", activeCompanyIds]], ["finished"], { order: "finished desc", limit: 1 });
     this.state.lastRunDate = jobs.length ? jobs[0].finished : null;
-
+    // Check for running jobs
     await this._checkRunningJobs();
   }
 
-  // Read running jobs for the Refresh button
-  async _checkRunningJobs() {
+// Read running jobs for the Refresh button
+async _checkRunningJobs() {
     const activeCompanyIds = user.activeCompanies.map((c) => c.id);
-
-    if (!activeCompanyIds.length) {
-      this.state.hasRunningJob = false;
-      return;
-    }
-
-    const jobs = await this.orm.searchRead(
-      "frepple.job",
-      [
-        ["status", "=", "Waiting for results"],
-        ["company_id", "in", activeCompanyIds],
-      ],
-      ["id"],
-      { limit: 1 }
-    );
-
+    if (!activeCompanyIds.length) { this.state.hasRunningJob = false; return; }
+    const jobs = await this.orm.searchRead("frepple.job", [["status", "=", "Waiting for results"], ["company_id", "in", activeCompanyIds]], ["id"], { limit: 1 });
     this.state.hasRunningJob = jobs.length > 0;
   }
 
-  // ------------------------------------------------------------
   // NAVIGATION
-  // ------------------------------------------------------------
-  openProduct(theId) {
-    this.action.doAction({
-      type: "ir.actions.act_window",
-      res_model: "product.product",
-      res_id: theId,
-      views: [[false, "form"]],
-      target: "current",
-    });
+  openProduct(id) { this.action.doAction({ type: "ir.actions.act_window", res_model: "product.product", res_id: id, views: [[false, "form"]], target: "current" }); }
+  openSaleOrder(id) { this.action.doAction({ type: "ir.actions.act_window", res_model: "sale.order", res_id: id, views: [[false, "form"]], target: "current" }); }
+  openPartner(id) { this.action.doAction({ type: "ir.actions.act_window", res_model: "res.partner", res_id: id, views: [[false, "form"]], target: "current" }); }
+  openManufacturingOrder(id) { this.action.doAction({ type: "ir.actions.act_window", res_model: "mrp.production", res_id: id, views: [[false, "form"]], target: "current" }); }
+
+  // PAGING & SORTING
+  prevPage(tab) { if (this.state.pagination[tab].page > 1) { this.state.pagination[tab].page -= 1; this._load(); } }
+  nextPage(tab) { const p = this.state.pagination[tab]; if (p.page < Math.ceil(p.total / p.pageSize)) { p.page += 1; this._load(); } }
+
+  setSort(tabName, fieldName) {
+    const tab = this.state.pagination[tabName];
+    if (tab.sortField === fieldName) { tab.sortAsc = !tab.sortAsc; }
+    else { tab.sortField = fieldName; tab.sortAsc = true; }
+    this._load();
   }
 
-  openSaleOrder(theId) {
-    this.action.doAction({
-      type: "ir.actions.act_window",
-      res_model: "sale.order",
-      res_id: theId,
-      views: [[false, "form"]],
-      target: "current",
-    });
+  // SELECTION
+  toggleSelection(id) { if (this.state.selected.has(id)) this.state.selected.delete(id); else this.state.selected.add(id); }
+  isSelected(id) { return this.state.selected.has(id); }
+  toggleSelectAll(recs) {
+    const all = recs.every(r => this.state.selected.has(r.id));
+    recs.forEach(r => all ? this.state.selected.delete(r.id) : this.state.selected.add(r.id));
   }
+  areAllSelected(recs) { return recs.length > 0 && recs.every(r => this.state.selected.has(r.id)); }
 
-  openPartner(theId) {
-    this.action.doAction({
-      type: "ir.actions.act_window",
-      res_model: "res.partner",
-      res_id: theId,
-      views: [[false, "form"]],
-      target: "current",
-    });
-  }
-
-  // ------------------------------------------------------------
-  // SELECTION LOGIC
-  // ------------------------------------------------------------
-  toggleSelection(recId) {
-    if (this.state.selected.has(recId)) {
-      this.state.selected.delete(recId);
-    } else {
-      this.state.selected.add(recId);
-    }
-  }
-
-  isSelected(recId) {
-    return this.state.selected.has(recId);
-  }
-
-  toggleSelectAll(records) {
-    const allSelected = records.every(r =>
-      this.state.selected.has(r.id)
-    );
-
-    for (const r of records) {
-      if (allSelected) {
-        this.state.selected.delete(r.id);
-      } else {
-        this.state.selected.add(r.id);
-      }
-    }
-  }
-
-  areAllSelected(records) {
-    if (!records.length) {
-      return false;
-    }
-    return records.every(r => this.state.selected.has(r.id));
-  }
-
-  clearSelection() {
-    this.state.selected.clear();
-  }
-
-  // ------------------------------------------------------------
-  // APPROVAL
-  // ------------------------------------------------------------
-  async approveRecommendation(recId) {
-    this._removeFromState(recId);
-    await this.orm.call(
-      "frepple.recommendation",
-      "action_approve",
-      [[recId]]
-    );
-    this.state.selected.delete(recId);
-  }
-
+  // ACTIONS
+  async approveRecommendation(id) { this._removeFromState(id); await this.orm.call("frepple.recommendation", "action_approve", [[id]]); this.state.selected.delete(id); }
   async bulkApprove() {
     const ids = Array.from(this.state.selected);
-    if (!ids.length) return;
-
-    for (const id of ids) {
-      this._removeFromState(id);
-    }
-
-    await this.orm.call(
-      "frepple.recommendation",
-      "action_approve",
-      [ids]
-    );
-
-    this.clearSelection();
+    ids.forEach(id => this._removeFromState(id));
+    await this.orm.call("frepple.recommendation", "action_approve", [ids]);
+    this.state.selected.clear();
+  }
+  _removeFromState(id) {
+    this.state.purchase = this.state.purchase.filter(r => r.id !== id);
+    this.state.mrp = this.state.mrp.filter(r => r.id !== id);
+    this.state.sale = this.state.sale.filter(r => r.id !== id);
   }
 
-  _removeFromState(recId) {
-    this.state.purchase = this.state.purchase.filter(r => r.id !== recId);
-    this.state.mrp = this.state.mrp.filter(r => r.id !== recId);
-    this.state.sale = this.state.sale.filter(r => r.id !== recId);
-    this.state.stock = this.state.stock.filter(r => r.id !== recId);
-  }
-
-  // Refresh recommendations
   async refreshRecommendations() {
     const activeCompanyIds = user.activeCompanies.map((c) => c.id);
-
     if (activeCompanyIds.length !== 1) {
-      this.action.doAction({
-        type: "ir.actions.client",
-        tag: "display_notification",
-        params: {
-          title: "Invalid company selection",
-          message: "Please select exactly one company to refresh or cancel recommendations.",
-          type: "danger",
-        },
-      });
+      this.action.doAction({ type: "ir.actions.client", tag: "display_notification", params: { title: "Invalid selection", message: "Select exactly one company.", type: "danger" } });
       return;
     }
-
-    const companyId = activeCompanyIds[0];
-
     try {
-
-      if (this.state.hasRunningJob) {
-        // CANCEL JOB
-        await this.orm.call(
-          "frepple.job",
-          "action_cancel_all",
-          [companyId]
-        );
-      } else {
-
-        await fetch("/frepple/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Openerp-CSRFToken": odoo.csrf_token,
-          },
-          body: JSON.stringify({
-            "company_id": companyId,
-          }),
-        });
-
-      }
-
-      // Reload dashboard data
+      await this.orm.call("frepple.job", this.state.hasRunningJob ? "action_cancel_all" : "action_launch", [activeCompanyIds[0]]);
       await this._load();
-
-    } catch (err) {
-      this.notification.add(
-        "Failed to refresh recommendations.",
-        { type: "danger" }
-      );
-      console.error(err);
-    }
+    } catch (err) { this.notification.add("Action failed.", { type: "danger" }); }
   }
-
 }
 
 FreppleRecommendationDashboard.template = "frepple.RecommendationDashboard";
-
-registry.category("actions").add(
-  "frepple_recommendation_dashboard",
-  FreppleRecommendationDashboard
-);
+registry.category("actions").add("frepple_recommendation_dashboard", FreppleRecommendationDashboard);

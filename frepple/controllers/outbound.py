@@ -1183,7 +1183,6 @@ class exporter(object):
                     self.product_product[i["id"]] = prod_obj
                     self.product_template_product[i["product_tmpl_id"][0]] = prod_obj
 
-                    # For make-to-order items the next line needs to XML snippet ' type="item_mto"'.
                     item = {
                         "name": name,
                         "uom": tmpl["uom_id"][1] if tmpl["uom_id"] else "",

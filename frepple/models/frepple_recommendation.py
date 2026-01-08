@@ -99,6 +99,12 @@ class FreppleRecommendation(models.Model):
         store=True,
     )
 
+    mrp_production_id = fields.Many2one(
+        "mrp.production",
+        string="Manufacturing Order",
+        ondelete="cascade",
+    )
+
     # Make sure the user cannot create a recommendation.
     # backend should create recommendations like this:
     # self.env["frepple.recommendation"].with_context(frepple_import=True).create(vals)
@@ -166,7 +172,7 @@ class FreppleRecommendation(models.Model):
                 }
                 mo = self.env["mrp.production"].with_user(self.env.user).create(mo_args)
 
-                # Mrk recommendation for deletion
+                # Mark recommendation for deletion
                 to_unlink |= rec
 
         # unlink ALL approved recommendations at once
