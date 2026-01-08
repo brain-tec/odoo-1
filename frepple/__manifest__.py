@@ -19,6 +19,7 @@
         "security/frepple_security.xml",
         "security/ir.model.access.csv",
         "views/frepple_recommendation_dashboard.xml",
+        "views/frepple_recommendation.xml",
         "views/frepple_data.xml",
         "views/res_config_settings_views.xml",
         "views/mrp_bom.xml",
