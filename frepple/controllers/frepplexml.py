@@ -314,11 +314,15 @@ class XMLController(odoo.http.Controller):
                 xml_folder = os.path.join(str(Path.home()), "logs", "frepple", "")
                 os.makedirs(os.path.dirname(xml_folder), exist_ok=True)
 
-                # delete any old xml file in that folder
+                # delete any old file in that folder
+                current_time = time.time()
                 for file_name in os.listdir(xml_folder):
                     # construct full file path
                     file = xml_folder + file_name
-                    if os.path.isfile(file):
+                    if (
+                        os.path.isfile(file)
+                        and current_time - os.path.getmtime(file) > 24 * 3600
+                    ):
                         os.remove(file)
 
                 with NamedTemporaryFile(
