@@ -153,8 +153,17 @@ async _checkRunningJobs() {
       return;
     }
     try {
-      await this.orm.call("frepple.job", this.state.hasRunningJob ? "action_cancel_all" : "action_launch", [activeCompanyIds[0]]);
-      await this._load();
+      if (this.state.hasRunningJob) {
+        // Synchronous canceling of a running job
+        await this.orm.call("frepple.job", "action_cancel_all", [activeCompanyIds[0]]);
+        await this._load();
+      }
+      else {
+        // Launch a new job asynchronously
+        this.orm.call("frepple.job", "action_launch", [activeCompanyIds[0]])
+          .then(() => { this._load(); })
+          .catch(() => { this._load(); });
+      }
     } catch (err) { this.notification.add("Action failed.", { type: "danger" }); }
   }
 }
