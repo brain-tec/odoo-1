@@ -31,18 +31,24 @@
         <field name="name">FrePPLe Recommendations List</field>
         <field name="model">frepple.recommendation</field>
         <field name="arch" type="xml">
-            <list create="false" delete="false">
-                <field name="type" />
-                <field name="product_id" />
+            <list create="false" delete="false" editable="bottom">
+                <header>
+                    <button name="action_generate_recommendations"
+                            string="Generate Recommendations"
+                            type="object"
+                            class="oe_highlight"
+                            display="always"/>
+                </header>
+                <field name="type" readonly="1"/>
+                <field name="product_id" readonly="1" widget="many2one"/>
                 <field name="quantity" />
                 <field name="startdate" optional="show"/>
                 <field name="enddate" optional="show"/>
-                <field name="quantity" />
                 <field name="res_partner_id" optional="show"/>
-                <field name="sale_order_id" optional="show"/>
-                <field name="sale_order_line_id" optional="show"/>
-                <field name="mrp_production_id" optional="show"/>
-                <field name="description" optional="show"/>
+                <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="sale_order_line_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="description" optional="show" readonly="1"/>
 
                 <button name="action_approve"
                     string="Create Quote"
