@@ -78,7 +78,7 @@ class FreppleRecommendation(models.Model):
     # for specific recommendation data (partner_id, operation...)
     data = fields.Json(string="Data (JSON)", default=dict)
 
-    description = fields.Char(string="Description")
+    description = fields.Html(string="Description")
 
     res_partner_id = fields.Many2one(
         "res.partner",
@@ -112,6 +112,9 @@ class FreppleRecommendation(models.Model):
     def create(self, vals):
         if not self.env.context.get("frepple_import"):
             raise UserError("FrePPLe recommendations cannot be created manually.")
+        for item in vals:
+            if item.get("description"):
+                item["description"] = self._format_description(item.get("description"))
         return super().create(vals)
 
     def action_approve(self):
@@ -122,7 +125,7 @@ class FreppleRecommendation(models.Model):
                 # 1. Create Purchase Order
                 po_args = {
                     "company_id": self.env.company.id,
-                    "partner_id": rec.partner_id,
+                    "partner_id": rec.res_partner_id.id,
                 }
                 po = self.env["purchase.order"].with_user(self.env.user).create(po_args)
                 po.origin = "frePPLe recommendation"
@@ -180,3 +183,16 @@ class FreppleRecommendation(models.Model):
             to_unlink.unlink()
 
         return True
+
+
+    # Used to format the description in the list view
+    def _format_description(self, raw_text):
+        lines = raw_text.split('\\n')
+        if not lines:
+            return ""
+        first_line = f"<b>{lines[0]}</b>"
+        if len(lines) > 1:
+            # Wrap remaining lines in a small tag
+            other_lines = "<br/>".join(lines[1:])
+            return f"{first_line}<br/><small class='text-muted'>{other_lines}</small>"
+        return first_line
