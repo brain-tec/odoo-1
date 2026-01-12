@@ -1,25 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="frepple_recommendation_search" model="ir.ui.view">
+        <field name="name">frepple.recommendation.search</field>
+        <field name="model">frepple.recommendation</field>
+        <field name="arch" type="xml">
+            <search>
+                <filter name="type_sales"
+                        string="Sales recommendations"
+                        domain="[('type','=','latedelivery')]"/>
+                <filter name="type_purchase"
+                        string="Purchase recommendations"
+                        domain="[('type','=','purchase')]"/>
+                <filter name="type_manufacturing"
+                        string="Manufacturing recommendations"
+                        domain="[('type','in',('produce','reschedule'))]"/>
+            </search>
+        </field>
+    </record>
     <record id="frepple_recommendation_action_manufacturing" model="ir.actions.act_window">
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('type','in',['produce','reschedule'])]</field>
+        <field name="context">
+            {
+                "search_default_type_manufacturing": 1
+            }
+        </field>
     </record>
     <record id="frepple_recommendation_action_purchase" model="ir.actions.act_window">
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('type','=','purchase')]</field>
+        <field name="context">
+            {
+                "search_default_type_purchase": 1
+            }
+        </field>
     </record>
     <record id="frepple_recommendation_action_sales" model="ir.actions.act_window">
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('type','=','latedelivery')]</field>
+        <field name="context">
+            {
+                "search_default_type_sales": 1
+            }
+        </field>
     </record>
 
     <record id="frepple_recommendation_view_form" model="ir.ui.view">
