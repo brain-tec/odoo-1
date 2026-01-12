@@ -203,20 +203,19 @@ class FreppleRecommendation(models.Model):
         self.env["frepple.job"].action_launch(company_id)
 
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Computing frePPLe recommendations',
-                'message': f'Data collection started for {self.env.company.name}.',
-                'type': 'success',
-                'sticky': False,
-            }
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Computing frePPLe recommendations",
+                "message": f"Data collection started for {self.env.company.name}.",
+                "type": "success",
+                "sticky": False,
+            },
         }
-
 
     # Used to format the description in the list view
     def _format_description(self, raw_text):
-        lines = raw_text.split('\\n')
+        lines = raw_text.split("\\n")
         if not lines:
             return ""
         first_line = f"<b>{lines[0]}</b>"
@@ -225,3 +224,18 @@ class FreppleRecommendation(models.Model):
             other_lines = "<br/>".join(lines[1:])
             return f"{first_line}<br/><small class='text-muted'>{other_lines}</small>"
         return first_line
+
+    def action_open_forecast(self):
+        self.ensure_one()
+        if not self.product_id:
+            return False
+
+        # This method is defined in the 'stock' module and returns the correct action.
+        action = self.product_id.action_product_forecast_report()
+
+        # Ensure the context is pointing to our specific product
+        action["context"] = {
+            "active_id": self.product_id.id,
+            "active_model": "product.product",
+        }
+        return action

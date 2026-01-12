@@ -42,6 +42,11 @@
                 <field name="type" readonly="1"/>
                 <field name="product_id" readonly="1" widget="many2one"/>
                 <field name="quantity" />
+                    <button name="action_open_forecast"
+                type="object"
+                icon="fa-area-chart"
+                title="Forecast"
+                invisible="not product_id"/>
                 <field name="startdate" optional="show"/>
                 <field name="enddate" optional="show"/>
                 <field name="res_partner_id" optional="show"/>
