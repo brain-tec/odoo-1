@@ -77,13 +77,13 @@
     </record>
 
     <record id="action_server_bulk_approve" model="ir.actions.server">
-    <field name="name">Approve Recommendations</field>
-    <field name="model_id" ref="model_frepple_recommendation"/>
-    <field name="binding_model_id" ref="model_frepple_recommendation"/>
-    <field name="binding_view_types">list</field>
-    <field name="state">code</field>
-    <field name="code">
-        action = records.action_approve()
-    </field>
-</record>
+        <field name="name">Approve Recommendations</field>
+        <field name="model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            records.action_approve()
+        </field>
+    </record>
 </odoo>
