@@ -2918,7 +2918,7 @@ class exporter(object):
                                 "operation": {
                                     "name": "%s - %s" % (suboperation, wo.id)
                                 },
-                                "owner": i.name,
+                                "owner": {"reference": i.name},
                             }
 
                             wo_opplan_json["loadplans"] = []
