@@ -120,41 +120,69 @@ class FreppleRecommendation(models.Model):
     def action_approve(self):
         to_unlink = self.browse()  # empty recordset
 
+        # One PO per supplier
+        # key is supplier id, value is po object
+        pos = {}
+
+        # One PO line per supplier,product
+        # key is (supplier_id, product_id)
+        # value is po line
+        po_lines = {}
+
         for rec in self:
             if rec.type == "purchase":
-                # 1. Create Purchase Order
-                po_args = {
-                    "company_id": self.env.company.id,
-                    "partner_id": rec.res_partner_id.id,
-                }
-                po = self.env["purchase.order"].with_user(self.env.user).create(po_args)
-                po.origin = "frePPLe recommendation"
 
-                # 2. Create Purchase Order Line
-                product = rec.product_id
-                po_line = (
-                    self.env["purchase.order.line"]
-                    .with_user(self.env.user)
-                    .create(
-                        {
-                            "order_id": po.id,
-                            "product_id": product.id,
-                            "product_qty": rec.quantity,
-                            "product_uom_id": product.uom_id.id,
-                        }
+                # 1. Check if a PO already exists for that supplier
+                if rec.res_partner_id.id in pos:
+                    po = pos[rec.res_partner_id.id]
+
+                # 2 Else create a PO
+                else:
+                    po_args = {
+                        "company_id": self.env.company.id,
+                        "partner_id": rec.res_partner_id.id,
+                    }
+                    po = (
+                        self.env["purchase.order"]
+                        .with_user(self.env.user)
+                        .create(po_args)
                     )
-                )
+                    po.origin = "frePPLe recommendation"
 
-                vals = po_line._prepare_purchase_order_line(
-                    product,
-                    rec.quantity,
-                    product.uom_id,
-                    self.company_id,
-                    po.partner_id,
-                    po,
-                )
-                vals["date_planned"] = rec.enddate
-                po_line.write(vals)
+                    pos[rec.res_partner_id.id] = po
+
+                # 2. check if a Purchase Order Line already exists for that product
+                product = rec.product_id
+
+                if (rec.res_partner_id.id, product.id) in po_lines:
+                    po_line = po_lines[(rec.res_partner_id.id, product.id)]
+                    po_line.date_planned = min(po_line.date_planned, rec.enddate)
+                    po_line.product_qty += rec.quantity
+                else:
+                    po_line = (
+                        self.env["purchase.order.line"]
+                        .with_user(self.env.user)
+                        .create(
+                            {
+                                "order_id": po.id,
+                                "product_id": product.id,
+                                "product_qty": rec.quantity,
+                                "product_uom_id": product.uom_id.id,
+                            }
+                        )
+                    )
+
+                    vals = po_line._prepare_purchase_order_line(
+                        product,
+                        rec.quantity,
+                        product.uom_id,
+                        self.company_id,
+                        po.partner_id,
+                        po,
+                    )
+                    vals["date_planned"] = rec.enddate
+                    po_line.write(vals)
+                    po_lines[(rec.res_partner_id.id, product.id)] = po_line
 
                 # Mark recommendation for deletion
                 to_unlink |= rec
@@ -203,20 +231,19 @@ class FreppleRecommendation(models.Model):
         self.env["frepple.job"].action_launch(company_id)
 
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Computing frePPLe recommendations',
-                'message': f'Data collection started for {self.env.company.name}.',
-                'type': 'success',
-                'sticky': False,
-            }
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Computing frePPLe recommendations",
+                "message": f"Data collection started for {self.env.company.name}.",
+                "type": "success",
+                "sticky": False,
+            },
         }
-
 
     # Used to format the description in the list view
     def _format_description(self, raw_text):
-        lines = raw_text.split('\\n')
+        lines = raw_text.split("\\n")
         if not lines:
             return ""
         first_line = f"<b>{lines[0]}</b>"
@@ -225,3 +252,18 @@ class FreppleRecommendation(models.Model):
             other_lines = "<br/>".join(lines[1:])
             return f"{first_line}<br/><small class='text-muted'>{other_lines}</small>"
         return first_line
+
+    def action_open_forecast(self):
+        self.ensure_one()
+        if not self.product_id:
+            return False
+
+        # This method is defined in the 'stock' module and returns the correct action.
+        action = self.product_id.action_product_forecast_report()
+
+        # Ensure the context is pointing to our specific product
+        action["context"] = {
+            "active_id": self.product_id.id,
+            "active_model": "product.product",
+        }
+        return action

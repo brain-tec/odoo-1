@@ -2275,7 +2275,7 @@ class exporter(object):
                         (
                             "order_id.state",
                             "not in",
-                            # Comment out on of the following alternative approaches:
+                            # Comment out one of the following alternative approaches:
                             # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
                             (
                                 "draft",
@@ -2396,6 +2396,7 @@ class exporter(object):
                                     "item": {"name": item["name"]},
                                     "location": {"name": location},
                                     "supplier": {"name": supplier},
+                                    "status": "confirmed",
                                 }
                                 if batch:
                                     poline["batch"] = batch
@@ -2470,6 +2471,7 @@ class exporter(object):
                                 "item": {"name": item["name"]},
                                 "location": {"name": location},
                                 "supplier": {"name": supplier},
+                                "status": "confirmed",
                             }
                             if batch:
                                 poline["batch"] = batch
@@ -2916,7 +2918,7 @@ class exporter(object):
                                 "operation": {
                                     "name": "%s - %s" % (suboperation, wo.id)
                                 },
-                                "owner": i.name,
+                                "owner": {"reference": i.name},
                             }
 
                             wo_opplan_json["loadplans"] = []
