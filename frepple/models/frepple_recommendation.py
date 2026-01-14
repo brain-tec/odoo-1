@@ -78,7 +78,7 @@ class FreppleRecommendation(models.Model):
     # for specific recommendation data (partner_id, operation...)
     data = fields.Json(string="Data (JSON)", default=dict)
 
-    description = fields.Html(string="Description")
+    recommendation = fields.Html(string="Recommendation")
 
     res_partner_id = fields.Many2one(
         "res.partner",
@@ -113,8 +113,10 @@ class FreppleRecommendation(models.Model):
         if not self.env.context.get("frepple_import"):
             raise UserError("FrePPLe recommendations cannot be created manually.")
         for item in vals:
-            if item.get("description"):
-                item["description"] = self._format_description(item.get("description"))
+            if item.get("recommendation"):
+                item["recommendation"] = self._format_recommendation(
+                    item.get("recommendation")
+                )
         return super().create(vals)
 
     def action_approve(self):
@@ -241,8 +243,8 @@ class FreppleRecommendation(models.Model):
             },
         }
 
-    # Used to format the description in the list view
-    def _format_description(self, raw_text):
+    # Used to format the recommendation in the list view
+    def _format_recommendation(self, raw_text):
         lines = raw_text.split("\\n")
         if not lines:
             return ""
