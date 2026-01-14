@@ -82,7 +82,7 @@
                         class="btn-primary"
                         invisible="type != 'produce'"/>
 
-                <field name="recommendation" optional="show" readonly="1"/>
+                <field name="recommendation" optional="show" readonly="1" widget="html_hover"/>
                 <field name="type" readonly="1"/>
                 <field name="product_id" readonly="1" widget="many2one"/>
                 <field name="quantity" />

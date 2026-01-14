@@ -34,6 +34,7 @@
     "assets": {
         "web.assets_backend": [
             "frepple/static/src/js/frepple.js",
+            "frepple/static/src/js/html_tooltip_widget.js",
             "frepple/static/src/js/frepple_recommendation_banner.js",
             "frepple/static/src/xml/frepple_recommendation_banner.xml",
         ],
