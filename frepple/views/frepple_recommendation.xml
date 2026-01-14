@@ -4,24 +4,23 @@
         <field name="name">frepple.recommendation.search</field>
         <field name="model">frepple.recommendation</field>
         <field name="arch" type="xml">
-            <search>
-                <filter name="product_id"
-                        string="product"/>
-                <filter name="res_partner_id"
-                        string="vendor"/>
-                <filter name="sale_order_id"
-                        string="sales order"/>
-                <filter name="mrp_production_id"
-                        string="manufacturing order"/>
-                <filter name="type_sales"
-                        string="Sales recommendations"
-                        domain="[('type','=','latedelivery')]"/>
-                <filter name="type_purchase"
-                        string="Purchase recommendations"
-                        domain="[('type','=','purchase')]"/>
-                <filter name="type_manufacturing"
-                        string="Manufacturing recommendations"
-                        domain="[('type','in',('produce','reschedule'))]"/>
+                <search>
+                    <field name="product_id" string="product"/>
+                    <field name="res_partner_id" string="vendor"/>
+                    <field name="sale_order_id" string="sales order"/>
+                    <field name="mrp_production_id" string="manufacturing order"/>
+
+                    <separator/>
+
+                    <filter name="type_sales"
+                            string="Sales recommendations"
+                            domain="[('type','=','latedelivery')]"/>
+                    <filter name="type_purchase"
+                            string="Purchase recommendations"
+                            domain="[('type','=','purchase')]"/>
+                    <filter name="type_manufacturing"
+                            string="Manufacturing recommendations"
+                            domain="[('type','in',('produce','reschedule'))]"/>
             </search>
         </field>
     </record>
