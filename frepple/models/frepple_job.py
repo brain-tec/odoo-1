@@ -85,6 +85,10 @@ class FreppleJob(models.Model):
             rec.started = fields.Datetime.now()
 
     @api.model
+    def get_status(self, company_id):
+        return {"message": f"python says it's {datetime.now()} for {company_id}"}
+
+    @api.model
     def action_cancel_all(self, company_id):
         jobs_to_cancel = self.env["frepple.job"].search(
             [

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-
-    <record id="action_frepple_recommendation_dashboard" model="ir.actions.client">
-        <field name="name">Recommendations</field>
-        <field name="tag">frepple_recommendation_dashboard</field>
-    </record>
-
-</odoo>
