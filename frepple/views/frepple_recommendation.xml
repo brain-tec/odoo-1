@@ -4,19 +4,27 @@
         <field name="name">frepple.recommendation.search</field>
         <field name="model">frepple.recommendation</field>
         <field name="arch" type="xml">
-            <search>
-                <filter name="type_sales"
-                        string="Sales recommendations"
-                        domain="[('type','=','latedelivery')]"/>
-                <filter name="type_purchase"
-                        string="Purchase recommendations"
-                        domain="[('type','=','purchase')]"/>
-                <filter name="type_manufacturing"
-                        string="Manufacturing recommendations"
-                        domain="[('type','in',('produce','reschedule'))]"/>
+                <search>
+                    <field name="product_id" string="product"/>
+                    <field name="res_partner_id" string="vendor"/>
+                    <field name="sale_order_id" string="sales order"/>
+                    <field name="mrp_production_id" string="manufacturing order"/>
+
+                    <separator/>
+
+                    <filter name="type_sales"
+                            string="Sales recommendations"
+                            domain="[('type','=','latedelivery')]"/>
+                    <filter name="type_purchase"
+                            string="Purchase recommendations"
+                            domain="[('type','=','purchase')]"/>
+                    <filter name="type_manufacturing"
+                            string="Manufacturing recommendations"
+                            domain="[('type','in',('produce','reschedule'))]"/>
             </search>
         </field>
     </record>
+
     <record id="frepple_recommendation_action_manufacturing" model="ir.actions.act_window">
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
@@ -51,54 +59,11 @@
         </field>
     </record>
 
-    <record id="frepple_recommendation_view_form" model="ir.ui.view">
-        <field name="name">Frepple Recommendations Form</field>
-        <field name="model">frepple.recommendation</field>
-        <field name="arch" type="xml">
-            <form edit="0" create="0" delete="0">
-                <group>
-                    <group>
-                        <field name="type" />
-                        <field name="product_id" />
-                        <field name="quantity" />
-                        <field name="res_partner_id" />
-                        <field name="sale_order_id" />
-                        <field name="sale_order_line_id" />
-                        <field name="mrp_production_id" />
-                        <field name="description" />
-                    </group>
-                </group>
-            </form>
-        </field>
-    </record>
     <record id="frepple_recommendation_view_tree" model="ir.ui.view">
         <field name="name">FrePPLe Recommendations List</field>
         <field name="model">frepple.recommendation</field>
         <field name="arch" type="xml">
-            <list create="false" delete="false" editable="bottom">
-                <header>
-                    <button name="action_generate_recommendations"
-                            string="Generate Recommendations"
-                            type="object"
-                            class="oe_highlight"
-                            display="always"/>
-                </header>
-                <field name="type" readonly="1"/>
-                <field name="product_id" readonly="1" widget="many2one"/>
-                <field name="quantity" />
-                    <button name="action_open_forecast"
-                type="object"
-                icon="fa-area-chart"
-                title="Forecast"
-                invisible="not product_id"/>
-                <field name="startdate" optional="show"/>
-                <field name="enddate" optional="show"/>
-                <field name="res_partner_id" optional="show"/>
-                <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
-                <field name="sale_order_line_id" optional="show" readonly="1" widget="many2one"/>
-                <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
-                <field name="description" optional="show" readonly="1"/>
-
+            <list create="false" delete="false" editable="bottom" js_class="frepple_recommendation_list">
                 <button name="action_approve"
                     string="Create Quote"
                     type="object"
@@ -116,6 +81,22 @@
                         type="object"
                         class="btn-primary"
                         invisible="type != 'produce'"/>
+
+                <field name="recommendation" optional="show" readonly="1" widget="html_hover"/>
+                <field name="type" readonly="1"/>
+                <field name="product_id" readonly="1" widget="many2one"/>
+                <field name="quantity" />
+                    <button name="action_open_forecast"
+                type="object"
+                icon="fa-area-chart"
+                title="Forecast"
+                invisible="not product_id"/>
+                <field name="startdate" optional="show"/>
+                <field name="enddate" optional="show"/>
+                <field name="res_partner_id" optional="show"/>
+                <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="sale_order_line_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
             </list>
         </field>
     </record>
