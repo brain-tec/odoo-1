@@ -26,6 +26,7 @@ import gzip
 import json
 import logging
 from odoo import fields, models, api, release
+from odoo.exceptions import ValidationError
 import os
 from pathlib import Path
 import requests
@@ -86,7 +87,23 @@ class FreppleJob(models.Model):
 
     @api.model
     def get_status(self, company_id):
-        return {"message": f"python says it's {datetime.now()} for {company_id}"}
+        last_job = self.env["frepple.job"].search(
+            [
+                ("company_id.id", "=", company_id),
+                ("finished", "!=", False),
+                ("status", "=", "Done"),
+            ],
+            order="finished desc",
+            limit=1,
+        )
+        if last_job:
+            return {
+                "message": f"last refresh for {self.env.company.name}: {last_job[0].finished.strftime("%Y-%m-%d %H:%M:%S")}"
+            }
+        else:
+            return {
+                "message": f"Click on the generate recommendations button to get your first recommendations"
+            }
 
     @api.model
     def action_cancel_all(self, company_id):
@@ -101,6 +118,10 @@ class FreppleJob(models.Model):
 
     @api.model
     def action_launch(self, company_id):
+
+        if len(self.env.companies) > 1:
+            raise ValidationError(f"Please select one company only and try again.")
+
         filename = None
         try:
             # Create a job and its token

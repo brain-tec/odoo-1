@@ -3,6 +3,7 @@ import { ListController } from "@web/views/list/list_controller";
 import { registry } from "@web/core/registry";
 import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { session } from "@web/session";
 
 export class FreppleRecommendationBanner extends Component {
   static template = "frepple.RecommendationBanner";
@@ -30,10 +31,14 @@ export class FreppleRecommendationBanner extends Component {
   async fetchData() {
     try {
       // TODO avoid hardcoded company id
-      const data = await this.orm.call("frepple.job", "get_status", [1]);
-      this.state.message = data.message;
+      // session.user_context contains the same info as the user service
+        const userContext = this.env.services.user?.context || session.user_context || {};
+        const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
+
+        const data = await this.orm.call("frepple.job", "get_status", [companyId]);
+        this.state.message = data.message;
     } catch (error) {
-      this.state.message = "Connection lost...";
+      this.state.message = error;
     }
   }
 
@@ -56,6 +61,7 @@ export class FreppleRecommendationBanner extends Component {
 }
 
 export class FreppleListController extends ListController {
+  static template = "frepple.ListView";
   static components = { ...ListController.components, FreppleRecommendationBanner };
 }
 

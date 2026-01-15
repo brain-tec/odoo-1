@@ -16,7 +16,7 @@
         </div>
     </t>
 
-    <t t-name="frepple.ListView" t-inherit="web.ListView" t-inherit-mode="extension">
+    <t t-name="frepple.ListView" t-inherit="web.ListView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="before">
             <FreppleRecommendationBanner/>
         </xpath>
