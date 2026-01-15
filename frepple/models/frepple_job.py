@@ -96,14 +96,26 @@ class FreppleJob(models.Model):
             order="finished desc",
             limit=1,
         )
-        if last_job:
-            return {
-                "message": f"last refresh for {self.env.company.name}: {last_job[0].finished.strftime("%Y-%m-%d %H:%M:%S")}"
-            }
+        running_job = self.env["frepple.job"].search(
+            [
+                ("company_id.id", "=", company_id),
+                ("finished", "=", False),
+                ("status", "=", "Waiting for results"),
+            ],
+            order="started desc",
+            limit=1,
+        )
+        if running_job:
+            message = f"Job in progress for {self.env.company.name} since {running_job.started.strftime("%Y-%m-%d %H:%M:%S")}"
         else:
-            return {
-                "message": f"Click on the generate recommendations button to get your first recommendations"
-            }
+            if last_job:
+                message = f"last refresh for {self.env.company.name}: {last_job[0].finished.strftime("%Y-%m-%d %H:%M:%S")}"
+            else:
+                message = f"Click on the generate recommendations button to get your first recommendations"
+
+        r = {"message": message, "is_running": len(running_job) > 0}
+        logger.info(r)
+        return r
 
     @api.model
     def action_cancel_all(self, company_id):

@@ -14,6 +14,7 @@ export class FreppleRecommendationBanner extends Component {
 
     this.state = useState({
       message: "Loading...",
+      isRunning: false, // track if a job is running
     });
 
     this.timer = null;
@@ -30,13 +31,13 @@ export class FreppleRecommendationBanner extends Component {
 
   async fetchData() {
     try {
-      // TODO avoid hardcoded company id
       // session.user_context contains the same info as the user service
-        const userContext = this.env.services.user?.context || session.user_context || {};
-        const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
+      const userContext = this.env.services.user?.context || session.user_context || {};
+      const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
 
-        const data = await this.orm.call("frepple.job", "get_status", [companyId]);
-        this.state.message = data.message;
+      const data = await this.orm.call("frepple.job", "get_status", [companyId]);
+      this.state.message = data.message;
+      this.state.isRunning = data.is_running;
     } catch (error) {
       this.state.message = error;
     }
@@ -47,12 +48,21 @@ export class FreppleRecommendationBanner extends Component {
   }
 
   async onButtonClick() {
+    const userContext = this.env.services.user?.context || session.user_context || {};
+    const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
     try {
-      // TODO avoid hardcoded company id
-      await this.orm.call("frepple.job", "action_launch", [1]);
-      this.notification.add("Process started successfully!", {
-        type: "success",
-      });
+      if (this.state.isRunning) {
+        // Logic to cancel the job
+        await this.orm.call("frepple.job", "action_cancel_all", [companyId]);
+        this.notification.add("Stopping process...", { type: "warning" });
+      } else {
+        await this.orm.call("frepple.job", "action_launch", [companyId]);
+        this.notification.add("Process started successfully!", {
+          type: "success",
+        });
+      }
+      // Refresh data immediately after click
+      await this.fetchData();
     } catch (error) {
       this.notification.add("Action failed", { type: "danger" });
     }
