@@ -95,7 +95,7 @@
                 <field name="enddate" optional="show"/>
                 <field name="res_partner_id" optional="show"/>
                 <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
-                <field name="sale_order_line_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="sale_order_line_id" optional="hide" readonly="1" widget="many2one"/>
                 <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
             </list>
         </field>

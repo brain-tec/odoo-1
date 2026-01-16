@@ -3,6 +3,7 @@ import { ListController } from "@web/views/list/list_controller";
 import { registry } from "@web/core/registry";
 import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { session } from "@web/session";
 
 export class FreppleRecommendationBanner extends Component {
   static template = "frepple.RecommendationBanner";
@@ -13,6 +14,7 @@ export class FreppleRecommendationBanner extends Component {
 
     this.state = useState({
       message: "Loading...",
+      isRunning: false, // track if a job is running
     });
 
     this.timer = null;
@@ -29,11 +31,15 @@ export class FreppleRecommendationBanner extends Component {
 
   async fetchData() {
     try {
-      // TODO avoid hardcoded company id
-      const data = await this.orm.call("frepple.job", "get_status", [1]);
+      // session.user_context contains the same info as the user service
+      const userContext = this.env.services.user?.context || session.user_context || {};
+      const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
+
+      const data = await this.orm.call("frepple.job", "get_status", [companyId]);
       this.state.message = data.message;
+      this.state.isRunning = data.is_running;
     } catch (error) {
-      this.state.message = "Connection lost...";
+      this.state.message = error;
     }
   }
 
@@ -42,12 +48,21 @@ export class FreppleRecommendationBanner extends Component {
   }
 
   async onButtonClick() {
+    const userContext = this.env.services.user?.context || session.user_context || {};
+    const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
     try {
-      // TODO avoid hardcoded company id
-      await this.orm.call("frepple.job", "action_launch", [1]);
-      this.notification.add("Process started successfully!", {
-        type: "success",
-      });
+      if (this.state.isRunning) {
+        // Logic to cancel the job
+        await this.orm.call("frepple.job", "action_cancel_all", [companyId]);
+        this.notification.add("Stopping process...", { type: "warning" });
+      } else {
+        await this.orm.call("frepple.job", "action_launch", [companyId]);
+        this.notification.add("Process started successfully!", {
+          type: "success",
+        });
+      }
+      // Refresh data immediately after click
+      await this.fetchData();
     } catch (error) {
       this.notification.add("Action failed", { type: "danger" });
     }
@@ -56,6 +71,7 @@ export class FreppleRecommendationBanner extends Component {
 }
 
 export class FreppleListController extends ListController {
+  static template = "frepple.ListView";
   static components = { ...ListController.components, FreppleRecommendationBanner };
 }
 
