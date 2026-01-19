@@ -54,9 +54,7 @@ class FreppleJob(models.Model):
     )
     started = fields.Datetime(string="Date when the job was launched")
     finished = fields.Datetime(string="Date when a response was received from frePPLe")
-    hashed_token = fields.Char(
-        string="Hashed secret token", groups="base.group_system", required=True
-    )
+    hashed_token = fields.Char(string="Hashed secret token", groups="base.group_system")
 
     @api.model
     def findJob(self, token):

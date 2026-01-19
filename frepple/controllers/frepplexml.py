@@ -523,6 +523,15 @@ class XMLController(odoo.http.Controller):
                 if job:
                     # Mark the job as done
                     job.write({"status": "Done", "finished": datetime.now()})
+                else:
+                    # recommendations are coming from frepple, new job to be created
+                    self.env["frepple.job"].sudo().create(
+                        {
+                            "status": "Done",
+                            "started": datetime.now(),
+                            "finished": datetime.now(),
+                        }
+                    )
 
         except Exception as e:
             traceback.print_exc()
