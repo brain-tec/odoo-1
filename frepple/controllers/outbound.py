@@ -2542,7 +2542,11 @@ class exporter(object):
                             reserved_quantity[
                                 (m["raw_material_production_id"][1], m["product_id"][0])
                             ] = reserved_quantity.get(
-                                (m["raw_material_production_id"][1], m["product_id"][0]), 0
+                                (
+                                    m["raw_material_production_id"][1],
+                                    m["product_id"][0],
+                                ),
+                                0,
                             ) + line_qty_map.get(
                                 line_id, 0
                             )
@@ -2658,11 +2662,17 @@ class exporter(object):
                             )
                             if not consumed_item:
                                 continue
-                            qty_flow = max(
-                                0,
-                                mv.product_qty
-                                - (mv.quantity if self.respect_reservations else 0),
+                            reserved = (
+                                max(
+                                    reserved_quantity.get(
+                                        (i["name"], mv.product_id.id), 0
+                                    ),
+                                    mv.product_qty,
+                                )
+                                if self.respect_reservations
+                                else 0
                             )
+                            qty_flow = mv.product_qty - reserved
                             # subtract the reserved quantity if product is twice in the BOM
                             if self.respect_reservations:
                                 reserved_quantity[(i["name"], mv.product_id.id)] = max(
@@ -2670,7 +2680,7 @@ class exporter(object):
                                     reserved_quantity.get(
                                         (i["name"], mv.product_id.id), 0
                                     )
-                                    - mv.product_qty,
+                                    - reserved,
                                 )
                             if qty_flow > 0:
                                 operation_materials[consumed_item["name"]] = (
