@@ -1959,11 +1959,7 @@ class exporter(object):
                 fields=[
                     "qty_delivered",
                     "state",
-                    "product_id",
-                    "product_uom_qty",
-                    "product_uom_id",
-                    "order_id",
-                    "move_ids",
+                    "move_line_ids",
                 ],
             )
 
@@ -2012,14 +2008,17 @@ class exporter(object):
                 )
             }
 
-            def getReservedQuantity(stock_move_id):
+            def getReservedQuantity(sm):
                 reserved_quantity = 0
-                mv = stock_moves_dict.get(stock_move_id, None)
-                if mv and mv["procure_method"] != "make_to_order":
-                    reserved_quantity = mv["quantity"] or 0
-                    for i in mv["move_orig_ids"]:
-                        if i != stock_move_id:
-                            reserved_quantity += getReservedQuantity(i)
+                for i in self.generator.getData(
+                    "stock.move.line",
+                    ids=sm["move_line_ids"],
+                    search=[("state", "not in", ("done", "cancel"))],
+                    fields=[
+                        "quantity_product_uom",
+                    ],
+                ):
+                    reserved_quantity += i["quantity_product_uom"] or 0
                 return reserved_quantity
 
             # Generate the demand records
@@ -2099,7 +2098,7 @@ class exporter(object):
                                         sm_product["template"],
                                     )
                                     reserved_quantity = (
-                                        getReservedQuantity(mv_id)
+                                        getReservedQuantity(sm)
                                         if self.respect_reservations
                                         else 0
                                     )
@@ -2511,20 +2510,46 @@ class exporter(object):
                 ]
                 # a second call to get the reserved quantities
                 reserved_quantity = {}
-                for i in self.generator.getData(
+                moves = self.generator.getData(
                     "stock.move",
                     search=[
                         ("state", "in", ["partially_available", "assigned"]),
                         ("production_id", "=", False),
                         ("workorder_id", "=", False),
-                        ("origin", "in", confirmed_mos),
+                        ("raw_material_production_id", "in", confirmed_mos),
                     ],
-                    fields=["origin", "product_id", "quantity"],
-                ):
-                    reserved_quantity[(i["origin"], i["product_id"][0])] = (
-                        reserved_quantity.get((i["origin"], i["product_id"][0]), 0)
-                        + i["quantity"]
-                    )
+                    fields=[
+                        "raw_material_production_id",
+                        "product_id",
+                        "move_line_ids",
+                    ],
+                )
+                all_line_ids = []
+                for m in moves:
+                    all_line_ids.extend(m["move_line_ids"])
+                reserved_quantity = {}
+                if all_line_ids:
+                    line_qty_map = {
+                        l["id"]: l["quantity"]
+                        for l in self.generator.getData(
+                            "stock.move.line",
+                            search=[("id", "in", list(set(all_line_ids)))],
+                            fields=["quantity"],
+                        )
+                    }
+                    for m in moves:
+                        for line_id in m["move_line_ids"]:
+                            reserved_quantity[
+                                (m["raw_material_production_id"][1], m["product_id"][0])
+                            ] = reserved_quantity.get(
+                                (m["raw_material_production_id"][1], m["product_id"][0]), 0
+                            ) + line_qty_map.get(
+                                line_id, 0
+                            )
+                # Release temp variables
+                all_line_ids = None
+                moves = None
+
             for i in self.generator.getData(
                 "mrp.production",
                 # Option 1: import only the odoo status from "confirmed" onwards
