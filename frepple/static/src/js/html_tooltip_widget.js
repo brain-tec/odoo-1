@@ -58,7 +58,10 @@ class HtmlTooltipContent extends Component {
         </div>
     `;
 }
-HtmlTooltipContent.props = ["htmlContent"];
+HtmlTooltipContent.props = {
+    htmlContent: { type: String },
+    close: { type: Function, optional: true },
+};
 
 HtmlTooltipField.props = { ...standardFieldProps };
 

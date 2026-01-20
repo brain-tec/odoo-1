@@ -21,6 +21,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from datetime import datetime
+
 from odoo import fields, models, api
 from odoo.exceptions import UserError
 
@@ -206,6 +208,21 @@ class FreppleRecommendation(models.Model):
                 mo = self.env["mrp.production"].with_user(self.env.user).create(mo_args)
 
                 # Mark recommendation for deletion
+                to_unlink |= rec
+            elif rec.type == "reschedule":
+                if (
+                    hasattr(rec.mrp_production_id, "workorder_ids")
+                    and rec.mrp_production_id.workorder_ids
+                    and rec.data.get("workorders")
+                ):
+                    index = 0
+                    for wo in rec.mrp_production_id.workorder_ids:
+                        wo.date_start = datetime.fromisoformat(
+                            rec.data.get("workorders")[index][1]
+                        )
+                        index += 1
+                else:
+                    self.mrp_production_id.date_start = rec.startdate
                 to_unlink |= rec
 
         # unlink ALL approved recommendations at once
