@@ -1959,7 +1959,11 @@ class exporter(object):
                 fields=[
                     "qty_delivered",
                     "state",
-                    "move_line_ids",
+                    "product_id",
+                    "product_uom_qty",
+                    "product_uom_id",
+                    "order_id",
+                    "move_ids",
                 ],
             )
 
@@ -2004,6 +2008,7 @@ class exporter(object):
                         "product_uom_qty",
                         "product_uom",
                         "state",
+                        "move_line_ids",
                     ],
                 )
             }
