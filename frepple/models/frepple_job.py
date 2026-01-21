@@ -104,10 +104,16 @@ class FreppleJob(models.Model):
             limit=1,
         )
         if running_job:
-            message = f"Job in progress for {self.env.company.name} since {running_job.started.strftime("%Y-%m-%d %H:%M:%S")}"
+            raw_utc_time = running_job.started
+            # get the user time in the user time zone
+            local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
+            message = f"Job in progress for {self.env.company.name} since {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
         else:
             if last_job:
-                message = f"last refresh for {self.env.company.name}: {last_job[0].finished.strftime("%Y-%m-%d %H:%M:%S")}"
+                raw_utc_time = last_job[0].finished
+                # get the user time in the user time zone
+                local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
+                message = f"last refresh for {self.env.company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
