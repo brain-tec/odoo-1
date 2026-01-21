@@ -111,7 +111,11 @@ class FreppleJob(models.Model):
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
-        r = {"message": message, "is_running": len(running_job) > 0}
+        r = {
+            "message": message,
+            "is_running": len(running_job) > 0,
+            "last_update_date": last_job.finished.isoformat() if last_job else False,
+        }
         logger.info(r)
         return r
 
