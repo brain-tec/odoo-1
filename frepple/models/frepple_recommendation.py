@@ -151,7 +151,7 @@ class FreppleRecommendation(models.Model):
                         .with_user(self.env.user)
                         .create(po_args)
                     )
-                    po.origin = "frePPLe recommendation"
+                    po.origin = "frePPLe"
 
                     pos[rec.res_partner_id.id] = po
 
@@ -203,7 +203,7 @@ class FreppleRecommendation(models.Model):
                     "product_uom_id": rec.product_id.uom_id.id,
                     # "picking_type_id": picking.id,
                     "qty_producing": 0.00,
-                    "origin": "frePPLe recommendation",
+                    "origin": "frePPLe",
                 }
                 mo = self.env["mrp.production"].with_user(self.env.user).create(mo_args)
 
