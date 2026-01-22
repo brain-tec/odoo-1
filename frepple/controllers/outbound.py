@@ -1288,9 +1288,9 @@ class exporter(object):
                                 if v["date_end"] and v["date_end"] < self.currentdate:
                                     continue
                                 itemsupplier = {
-                                    "leadtime": "P%dD" % v["delay"],
+                                    "leadtime": (v["delay"] or 0) * 86400,
                                     "priority": v["sequence"] or 1,
-                                    "batchwindow": "P%dD" % (v["batching_window"] or 0),
+                                    "batchwindow": (v["batching_window"] or 0) * 86400,
                                     "size_minimum": v["min_qty"],
                                     "cost": max(0, v["price"]),
                                     "supplier": {"name": k[0]},
@@ -1433,9 +1433,9 @@ class exporter(object):
                                         "size_multiple": "1",
                                         "category": "subcontractor",
                                         "subcategory": subcontractor["name"],
-                                        "duration": "P%dD"
-                                        % subcontractor.get("delay", 0),
-                                        "posttime": "P%dD" % self.po_lead,
+                                        "duration": subcontractor.get("delay", 0)
+                                        * 86400,
+                                        "posttime": self.po_lead * 86400,
                                         "type": "operation_fixed_time",
                                         "priority": subcontractor.get("priority", 1)
                                         + 50,
@@ -1661,7 +1661,7 @@ class exporter(object):
                                 operation_json = {
                                     "name": operation,
                                     "size_multiple": 1,
-                                    "posttime": "P%dD" % self.manufacturing_lead,
+                                    "posttime": self.manufacturing_lead * 86400,
                                     "priority": 100 + (i["sequence"] or 1),
                                     "category": i["type"] or "",
                                     "type": "operation_routing",
@@ -1959,7 +1959,11 @@ class exporter(object):
                 fields=[
                     "qty_delivered",
                     "state",
-                    "move_line_ids",
+                    "product_id",
+                    "product_uom_qty",
+                    "product_uom_id",
+                    "order_id",
+                    "move_ids",
                 ],
             )
 
@@ -2004,6 +2008,7 @@ class exporter(object):
                         "product_uom_qty",
                         "product_uom",
                         "state",
+                        "move_line_ids",
                     ],
                 )
             }

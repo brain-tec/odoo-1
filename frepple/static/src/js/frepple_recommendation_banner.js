@@ -15,6 +15,7 @@ export class FreppleRecommendationBanner extends Component {
     this.state = useState({
       message: "Loading...",
       isRunning: false, // track if a job is running
+      lastUpdate: null,
     });
 
     this.timer = null;
@@ -29,6 +30,12 @@ export class FreppleRecommendationBanner extends Component {
     });
   }
 
+  async refreshList() {
+    if (this.props.list) {
+      await this.props.list.load();
+    }
+  }
+
   async fetchData() {
     try {
       // session.user_context contains the same info as the user service
@@ -36,8 +43,21 @@ export class FreppleRecommendationBanner extends Component {
       const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
 
       const data = await this.orm.call("frepple.job", "get_status", [companyId]);
+
+      // Detect if the data actually changed based on the timestamp
+      const hasNewData =
+        this.state.lastUpdate &&
+        data.last_update_date &&
+        this.state.lastUpdate !== data.last_update_date;
+
       this.state.message = data.message;
       this.state.isRunning = data.is_running;
+      this.state.lastUpdate = data.last_update_date;
+
+      if (hasNewData) {
+        await this.refreshList();
+      }
+
     } catch (error) {
       this.state.message = error;
     }
@@ -54,12 +74,8 @@ export class FreppleRecommendationBanner extends Component {
       if (this.state.isRunning) {
         // Logic to cancel the job
         await this.orm.call("frepple.job", "action_cancel_all", [companyId]);
-        this.notification.add("Stopping process...", { type: "warning" });
       } else {
         await this.orm.call("frepple.job", "action_launch", [companyId]);
-        this.notification.add("Process started successfully!", {
-          type: "success",
-        });
       }
       // Refresh data immediately after click
       await this.fetchData();

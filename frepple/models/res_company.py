@@ -51,7 +51,7 @@ class ResCompany(models.Model):
         """
         Create an authorization header trusted by frePPLe
         """
-        user_company_webtoken = self.env.user.company_id.webtoken_key
+        user_company_webtoken = self.env.company.webtoken_key
         if not user_company_webtoken:
             raise exceptions.UserError("FrePPLe company web token not configured")
         encode_params = dict(
@@ -63,7 +63,7 @@ class ResCompany(models.Model):
         webtoken = encode_jwt(encode_params, user_company_webtoken)
         if not isinstance(webtoken, str):
             webtoken = webtoken.decode("ascii")
-        server = self.env.user.company_id.frepple_server
+        server = self.env.company.frepple_server
         if not server:
             raise exceptions.UserError("FrePPLe server URL not configured")
         url = "%s%s?webtoken=%s" % (server, _url, webtoken)
