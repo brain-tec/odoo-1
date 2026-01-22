@@ -133,7 +133,6 @@ class FreppleJob(models.Model):
             "is_running": len(running_job) > 0,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
         }
-        logger.info(r)
         return r
 
     @api.model
