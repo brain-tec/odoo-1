@@ -181,7 +181,7 @@ class FreppleJob(models.Model):
                 mode=1,
                 timezone=None,
                 singlecompany=False,
-                delta=0,
+                delta=999,
                 language=self.env.context.get("lang", "en_US"),
                 apps="",
             )
