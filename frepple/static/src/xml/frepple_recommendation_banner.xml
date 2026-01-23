@@ -3,8 +3,15 @@
     <t t-name="frepple.RecommendationBanner">
         <div class="alert alert-primary d-flex align-items-center justify-content-between p-2 mx-3 mt-2 mb-0">
             <div class="d-flex align-items-center">
-                <i class="fa fa-refresh fa-spin me-2 text-primary"/>
-                <strong>FrePPLe Live:</strong>
+                <t t-if="state.isRunning">
+                    <i class="fa fa-refresh fa-spin me-2 text-primary"/>
+                    <strong>Refresh in progress:</strong>
+                </t>
+
+                <t t-else="">
+                    <i class="fa fa-info-circle me-2 text-primary"/>
+                </t>
+
                 <span class="ms-1"><t t-esc="state.message"/></span>
             </div>
             <div class="d-flex align-items-center gap-2">

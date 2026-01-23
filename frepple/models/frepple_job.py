@@ -104,16 +104,27 @@ class FreppleJob(models.Model):
             limit=1,
         )
         if running_job:
-            raw_utc_time = running_job.started
-            # get the user time in the user time zone
-            local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
-            message = f"Job in progress for {self.env.company.name} since {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            # Calculate duration
+            now = fields.Datetime.now()
+            duration = now - running_job.started
+            seconds = int(duration.total_seconds())
+
+            if seconds < 60:
+                # Show seconds if under a minute
+                elapsed_str = f"{seconds} seconds ago"
+            else:
+                # Show minutes and seconds
+                minutes = seconds // 60
+                rem_seconds = seconds % 60
+                elapsed_str = f"{minutes}m {rem_seconds}s ago"
+
+            message = f"started {elapsed_str} for {self.env.company.name}"
         else:
             if last_job:
                 raw_utc_time = last_job[0].finished
                 # get the user time in the user time zone
                 local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
-                message = f"last refresh for {self.env.company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                message = f"Last refresh for {self.env.company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
@@ -122,7 +133,6 @@ class FreppleJob(models.Model):
             "is_running": len(running_job) > 0,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
         }
-        logger.info(r)
         return r
 
     @api.model
@@ -170,7 +180,7 @@ class FreppleJob(models.Model):
                 company=company.name,
                 mode=1,
                 timezone=None,
-                singlecompany=True,
+                singlecompany=False,
                 delta=0,
                 language=self.env.context.get("lang", "en_US"),
                 apps="",
