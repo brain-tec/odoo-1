@@ -413,11 +413,10 @@ class XMLController(odoo.http.Controller):
         # Build a simple text response:
         out = [
             "=== Proxy Debug ===",
-            f"X-Forwarded-Proto: {hdr.get('X-Forwarded-Proto')}",
-            f"X-Forwarded-For: {hdr.get('X-Forwarded-For')}",
-            f"Host: {hdr.get('Host')}",
             f"wsgi.url_scheme: {scheme}",
         ]
+        for header, value in request.httprequest.headers.items():
+            out.append(f"{header}: {value}")
         return "<br>".join(out)
 
     @odoo.http.route(
