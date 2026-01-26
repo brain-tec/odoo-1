@@ -403,6 +403,23 @@ class XMLController(odoo.http.Controller):
                     description=f"Error processing data posted by frePPLe:<br>{traceback.format_exc()}"
                 )
 
+    @odoo.http.route("/_debug/proxy", type="http", auth="none")
+    def show_proxy_headers(self):
+        from odoo.http import request
+
+        hdr = request.httprequest.headers
+        scheme = request.httprequest.environ.get("wsgi.url_scheme")
+
+        # Build a simple text response:
+        out = [
+            "=== Proxy Debug ===",
+            f"X-Forwarded-Proto: {hdr.get('X-Forwarded-Proto')}",
+            f"X-Forwarded-For: {hdr.get('X-Forwarded-For')}",
+            f"Host: {hdr.get('Host')}",
+            f"wsgi.url_scheme: {scheme}",
+        ]
+        return "<br>".join(out)
+
     @odoo.http.route(
         "/frepple/recommendations",
         type="http",
