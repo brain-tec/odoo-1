@@ -26,7 +26,6 @@ import gzip
 import json
 import logging
 from odoo import fields, models, api, release
-from odoo.http import request
 from odoo.exceptions import ValidationError
 import os
 from pathlib import Path
@@ -206,7 +205,9 @@ class FreppleJob(models.Model):
 
                 metadata = {
                     "email": self.env.user.email,
-                    "odoo_url": request.httprequest.host_url,
+                    "odoo_url": self.env["ir.config_parameter"]
+                    .sudo()
+                    .get_param("web.base.url"),
                     "company": company.name,
                     "version": release.version,
                     "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
