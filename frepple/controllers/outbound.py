@@ -2340,9 +2340,15 @@ class exporter(object):
                                 mto_so = mv.move_dest_ids.group_id.sale_id
                                 batch = mto_so[0].name if mto_so else None
                                 if not batch:
-                                    mto_mo = j._get_mrp_productions()
-                                    if mto_mo:
-                                        batch = mto_mo[0].display_name
+                                    # Follow multi-level MTO chain to the sale order
+                                    for mo in j._get_mrp_productions():
+                                        mto_so = (
+                                            mo.procurement_group_id.sale_id
+                                            + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                                        )
+                                        if mto_so:
+                                            batch = mto_so[0].name
+                                            break
                             else:
                                 batch = None
 
@@ -2460,9 +2466,15 @@ class exporter(object):
                                 mto_so = i.move_dest_ids.group_id.sale_id
                                 batch = mto_so[0].name if mto_so else None
                                 if not batch:
-                                    mto_mo = j._get_mrp_productions()
-                                    if mto_mo:
-                                        batch = mto_mo[0].display_name
+                                    # Follow multi-level MTO chain to the sale order
+                                    for mo in j._get_mrp_productions():
+                                        mto_so = (
+                                            mo.procurement_group_id.sale_id
+                                            + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                                        )
+                                        if mto_so:
+                                            batch = mto_so[0].name
+                                            break
                             else:
                                 batch = None
 
@@ -2612,8 +2624,20 @@ class exporter(object):
                         continue
 
                     # Get MTO link
-
-                    batch = i.sale_line_id.order_id.name if i.sale_line_id else ""
+                    mto_so = (
+                        i.procurement_group_id.sale_id
+                        + i.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                    )
+                    batch = mto_so[0].name if mto_so else None
+                    if not batch:
+                        for mo in i._get_sources():
+                            mto_so = (
+                                mo.procurement_group_id.sale_id
+                                + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                            )
+                            if mto_so:
+                                batch = mto_so[0].name
+                                break
 
                     # Create a record for the MO
                     operationplan = {
