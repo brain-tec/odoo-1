@@ -2459,55 +2459,6 @@ class exporter(object):
         """
         now = datetime.now()
 
-        # Retrieve reserved quantities from stock moves
-        if self.respect_reservations:
-            # a first call to get all confirmed MO IDs
-            confirmed_mos = [
-                i["name"]
-                for i in self.generator.getData(
-                    "mrp.production",
-                    # Option 1: import only the odoo status from "confirmed" onwards
-                    search=[("state", "in", ["progress", "confirmed"])],
-                    fields=["name"],
-                )
-            ]
-            # a second call to get the reserved quantities
-            moves = self.generator.getData(
-                "stock.move",
-                search=[
-                    ("state", "in", ["partially_available", "assigned"]),
-                    ("production_id", "=", False),
-                    ("workorder_id", "=", False),
-                    ("raw_material_production_id", "in", confirmed_mos),
-                ],
-                fields=["raw_material_production_id", "product_id", "move_line_ids"],
-            )
-            all_line_ids = []
-            for m in moves:
-                all_line_ids.extend(m["move_line_ids"])
-            reserved_quantity = {}
-            if all_line_ids:
-                line_qty_map = {
-                    l["id"]: l["quantity"]
-                    for l in self.generator.getData(
-                        "stock.move.line",
-                        search=[("id", "in", list(set(all_line_ids)))],
-                        fields=["quantity"],
-                    )
-                }
-                for m in moves:
-                    for line_id in m["move_line_ids"]:
-                        reserved_quantity[
-                            (m["raw_material_production_id"][1], m["product_id"][0])
-                        ] = reserved_quantity.get(
-                            (m["raw_material_production_id"][1], m["product_id"][0]), 0
-                        ) + line_qty_map.get(
-                            line_id, 0
-                        )
-            # Release temp variables
-            all_line_ids = None
-            moves = None
-
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
         for i in self.generator.getData(
@@ -2595,12 +2546,6 @@ class exporter(object):
                 ),
             )
 
-            # Collect move info
-            if i.move_raw_ids:
-                mv_list = i.move_raw_ids
-            else:
-                mv_list = []
-
             if not self.manage_work_orders or not getattr(i, "workorder_ids", None):
                 # There are no workorders on the manufacturing order (or we don't want to see them in frepple)
                 yield '<operation name=%s category=%s xsi:type="operation_fixed_time" priority="0"><location name=%s/><item name=%s/><flows>' % (
@@ -2611,26 +2556,17 @@ class exporter(object):
                 )
                 # dictionary needed as BOM in Odoo might have multiple lines with the same product
                 operation_materials = {}
-                for mv in mv_list:
+                for mv in i.move_raw_ids or []:
                     consumed_item = self.product_product.get(mv.product_id.id, None)
-                    if not consumed_item:
+                    if not consumed_item or mv.state in ("done", "cancelled"):
                         continue
-                    reserved = (
-                        max(
-                            reserved_quantity.get((i["name"], mv.product_id.id), 0),
-                            mv.product_qty,
-                        )
-                        if self.respect_reservations
-                        else 0
-                    )
-                    qty_flow = mv.product_qty - reserved
-                    # subtract the reserved quantity if product is twice in the BOM
+
+                    qty_flow = mv.product_qty
                     if self.respect_reservations:
-                        reserved_quantity[(i["name"], mv.product_id.id)] = max(
-                            0,
-                            reserved_quantity.get((i["name"], mv.product_id.id), 0)
-                            - reserved,
-                        )
+                        for line in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                            qty_flow -= line.product_uom_id._compute_quantity(
+                                line.quantity, mv.product_id.uom_id
+                            )
                     if qty_flow > 0:
                         operation_materials[consumed_item["name"]] = (
                             operation_materials.get(consumed_item["name"], 0)
@@ -2686,7 +2622,6 @@ class exporter(object):
                 )
                 # Define operations for each WO
                 idx = 10
-                first_wo = True
                 for wo in i.workorder_ids:
                     suboperation = wo.display_name
                     if self.has_length_limits and len(suboperation) > 300:
@@ -2714,38 +2649,18 @@ class exporter(object):
                     idx += 10
                     # dictionary needed as BOM in Odoo might have multiple lines with the same product
                     operation_materials = {}
-                    for mv in mv_list:
+                    for mv in wo.move_raw_ids or []:
                         item = self.product_product.get(mv.product_id.id, None)
-                        if not item:
+                        if not item or mv.state in ("done", "cancelled"):
                             continue
-
-                        # Skip moves of other WOs
-                        # When the odoo bill of material doesn't specify the operation
-                        # where a component is consumed, odoo consumes at the LAST
-                        # work order of the manufacturing order.
-                        # In frePPLe we want to consume them in the *FIRST* work order
-                        # instead. This is a much more correct & realistic representation
-                        # from a planning point of view.
-                        if mv.workorder_id and mv.operation_id:
-                            if mv.workorder_id.id != wo.id:
-                                continue
-                        elif not first_wo:
-                            continue
-
-                        qty_flow = max(
-                            0,
-                            mv.product_qty
-                            - (mv.quantity if self.respect_reservations else 0),
-                        )
-                        # subtract the reserved quantity if product is twice in the BOM
+                        qty_flow = mv.product_qty
                         if self.respect_reservations:
-                            reserved_quantity[(i["name"], mv["product_id"][0])] = max(
-                                0,
-                                reserved_quantity.get(
-                                    (i["name"], mv["product_id"][0]), 0
+                            for line in (
+                                mv.move_line_ids | mv.move_orig_ids.move_line_ids
+                            ):
+                                qty_flow -= line.product_uom_id._compute_quantity(
+                                    line.quantity, mv.product_id.uom_id
                                 )
-                                - mv["product_qty"],
-                            )
                         if qty_flow > 0:
                             operation_materials[item["name"]] = operation_materials.get(
                                 item["name"], 0
