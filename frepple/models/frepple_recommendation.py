@@ -207,6 +207,18 @@ class FreppleRecommendation(models.Model):
                 }
                 mo = self.env["mrp.production"].with_user(self.env.user).create(mo_args)
 
+                if (
+                    hasattr(mo, "workorder_ids")
+                    and mo.workorder_ids
+                    and rec.data.get("workorders")
+                ):
+                    index = 0
+                    for wo in mo.workorder_ids:
+                        wo.date_start = datetime.fromisoformat(
+                            rec.data.get("workorders")[index][1]
+                        )
+                        index += 1
+
                 # Mark recommendation for deletion
                 to_unlink |= rec
             elif rec.type == "reschedule":
