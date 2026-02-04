@@ -2004,17 +2004,23 @@ class exporter(object):
             )
         }
 
-        def getReservedQuantity(sm):
+        def getReservedAndDoneQuantity(sm, include_reservations):
             reserved_quantity = 0
-            for i in self.generator.getData(
+            for l in self.generator.getData(
                 "stock.move.line",
                 ids=sm["move_line_ids"],
-                search=[("state", "not in", ("done", "cancel"))],
-                fields=[
-                    "quantity_product_uom",
-                ],
+                search=[("state", "not in", ("cancel",))],
+                object=True,
             ):
-                reserved_quantity += i["quantity_product_uom"] or 0
+                # Done state is only picked up at final move.
+                # Assigned state is also picked up on related moves.
+                if (l.state == "done" and not l.move_id.move_dest_ids) or (
+                    l.state in ("assigned", "partially_available")
+                    and include_reservations
+                ):
+                    reserved_quantity += l.product_uom_id._compute_quantity(
+                        l.quantity, l.product_id.uom_id
+                    )
             return reserved_quantity
 
         # Generate the demand records
@@ -2088,10 +2094,8 @@ class exporter(object):
                                 sm["product_uom"],
                                 sm_product["template"],
                             )
-                            reserved_quantity = (
-                                getReservedQuantity(sm)
-                                if self.respect_reservations
-                                else 0
+                            reserved_quantity = getReservedAndDoneQuantity(
+                                sm, self.respect_reservations
                             )
                             due = self.formatDateTime(sm["date"] or j["date_order"])
 
@@ -2563,10 +2567,6 @@ class exporter(object):
                     default_uom = mv.product_id.uom_id
                     qty_flow = mv.product_uom._compute_quantity(
                         mv.product_uom_qty, default_uom
-                    )
-                    logger.error(
-                        "MO view %s %s %s %s"
-                        % (i.name, mv.product_id.name, mv.product_uom_qty, qty_flow)
                     )
                     for l in mv.move_line_ids:
                         if l.state == "done":
