@@ -2560,13 +2560,25 @@ class exporter(object):
                     consumed_item = self.product_product.get(mv.product_id.id, None)
                     if not consumed_item or mv.state in ("done", "cancelled"):
                         continue
-
-                    qty_flow = mv.product_qty
-                    if self.respect_reservations:
-                        for line in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                            qty_flow -= line.product_uom_id._compute_quantity(
-                                line.quantity, mv.product_id.uom_id
+                    default_uom = mv.product_id.uom_id
+                    qty_flow = mv.product_uom._compute_quantity(
+                        mv.product_uom_qty, default_uom
+                    )
+                    logger.error(
+                        "MO view %s %s %s %s"
+                        % (i.name, mv.product_id.name, mv.product_uom_qty, qty_flow)
+                    )
+                    for l in mv.move_line_ids:
+                        if l.state == "done":
+                            qty_flow -= l.product_uom_id._compute_quantity(
+                                l.quantity, default_uom
                             )
+                    if self.respect_reservations:
+                        for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                            if l.state == "assigned":
+                                qty_flow -= l.product_uom_id._compute_quantity(
+                                    l.quantity, default_uom
+                                )
                     if qty_flow > 0:
                         operation_materials[consumed_item["name"]] = (
                             operation_materials.get(consumed_item["name"], 0)
@@ -2653,14 +2665,21 @@ class exporter(object):
                         item = self.product_product.get(mv.product_id.id, None)
                         if not item or mv.state in ("done", "cancelled"):
                             continue
-                        qty_flow = mv.product_qty
-                        if self.respect_reservations:
-                            for line in (
-                                mv.move_line_ids | mv.move_orig_ids.move_line_ids
-                            ):
-                                qty_flow -= line.product_uom_id._compute_quantity(
-                                    line.quantity, mv.product_id.uom_id
+                        default_uom = mv.product_id.uom_id
+                        qty_flow = mv.product_uom._compute_quantity(
+                            mv.product_uom_qty, default_uom
+                        )
+                        for l in mv.move_line_ids:
+                            if l.state == "done":
+                                qty_flow -= l.product_uom_id._compute_quantity(
+                                    l.quantity, default_uom
                                 )
+                        if self.respect_reservations:
+                            for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                                if l.state == "assigned":
+                                    qty_flow -= l.product_uom_id._compute_quantity(
+                                        l.quantity, default_uom
+                                    )
                         if qty_flow > 0:
                             operation_materials[item["name"]] = operation_materials.get(
                                 item["name"], 0
