@@ -2336,7 +2336,29 @@ class exporter(object):
                         continue
                     start = self.formatDateTime(start if start < end else end)
                     end = self.formatDateTime(end)
+
+                    # Compute the quantity that we still need to receive and that isn't reserved yet.
                     qty = mv.product_qty
+                    for l in mv.move_line_ids:
+                        # Done status is only captured at the end move.
+                        # Reservations are also checked on related moves.
+                        if (
+                            l.state == "done"
+                            and not l.move_id.move_dest_ids
+                            and not batch
+                        ):
+                            qty -= l.product_uom_id._compute_quantity(
+                                l.quantity, l.product_id.uom_id
+                            )
+                        elif (
+                            self.respect_reservations
+                            and l.state in ("assigned", "partially_available")
+                            and l.move_id.location_id.usage != "supplier"
+                        ):
+                            qty -= l.product_uom_id._compute_quantity(
+                                l.quantity, l.product_id.uom_id
+                            )
+
                     supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
                         # supplier is archived :-(
