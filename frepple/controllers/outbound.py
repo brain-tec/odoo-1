@@ -2004,17 +2004,23 @@ class exporter(object):
             )
         }
 
-        def getReservedQuantity(sm):
+        def getReservedAndDoneQuantity(sm, include_reservations):
             reserved_quantity = 0
-            for i in self.generator.getData(
+            for l in self.generator.getData(
                 "stock.move.line",
                 ids=sm["move_line_ids"],
-                search=[("state", "not in", ("done", "cancel"))],
-                fields=[
-                    "quantity_product_uom",
-                ],
+                search=[("state", "not in", ("cancel",))],
+                object=True,
             ):
-                reserved_quantity += i["quantity_product_uom"] or 0
+                # Done state is only picked up at final move.
+                # Assigned state is also picked up on related moves.
+                if (l.state == "done" and not l.move_id.move_dest_ids) or (
+                    l.state in ("assigned", "partially_available")
+                    and include_reservations
+                ):
+                    reserved_quantity += l.product_uom_id._compute_quantity(
+                        l.quantity, l.product_id.uom_id
+                    )
             return reserved_quantity
 
         # Generate the demand records
@@ -2088,10 +2094,8 @@ class exporter(object):
                                 sm["product_uom"],
                                 sm_product["template"],
                             )
-                            reserved_quantity = (
-                                getReservedQuantity(sm)
-                                if self.respect_reservations
-                                else 0
+                            reserved_quantity = getReservedAndDoneQuantity(
+                                sm, self.respect_reservations
                             )
                             due = self.formatDateTime(sm["date"] or j["date_order"])
 
@@ -2248,7 +2252,15 @@ class exporter(object):
                         "not in",
                         # Comment out on of the following alternative approaches:
                         # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
-                        ("draft", "sent", "bid", "to approve", "confirmed", "cancel"),
+                        (
+                            "draft",
+                            "sent",
+                            "bid",
+                            "to approve",
+                            "confirmed",
+                            "cancel",
+                            "done",
+                        ),
                         # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                         # ("bid", "confirmed", "cancel"),
                     ),
@@ -2332,7 +2344,29 @@ class exporter(object):
                         continue
                     start = self.formatDateTime(start if start < end else end)
                     end = self.formatDateTime(end)
+
+                    # Compute the quantity that we still need to receive and that isn't reserved yet.
                     qty = mv.product_qty
+                    for l in mv.move_line_ids:
+                        # Done status is only captured at the end move.
+                        # Reservations are also checked on related moves.
+                        if (
+                            l.state == "done"
+                            and not l.move_id.move_dest_ids
+                            and not batch
+                        ):
+                            qty -= l.product_uom_id._compute_quantity(
+                                l.quantity, l.product_id.uom_id
+                            )
+                        elif (
+                            self.respect_reservations
+                            and l.state in ("assigned", "partially_available")
+                            and l.move_id.location_id.usage != "supplier"
+                        ):
+                            qty -= l.product_uom_id._compute_quantity(
+                                l.quantity, l.product_id.uom_id
+                            )
+
                     supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
                         # supplier is archived :-(
@@ -2560,13 +2594,21 @@ class exporter(object):
                     consumed_item = self.product_product.get(mv.product_id.id, None)
                     if not consumed_item or mv.state in ("done", "cancelled"):
                         continue
-
-                    qty_flow = mv.product_qty
-                    if self.respect_reservations:
-                        for line in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                            qty_flow -= line.product_uom_id._compute_quantity(
-                                line.quantity, mv.product_id.uom_id
+                    default_uom = mv.product_id.uom_id
+                    qty_flow = mv.product_uom._compute_quantity(
+                        mv.product_uom_qty, default_uom
+                    )
+                    for l in mv.move_line_ids:
+                        if l.state == "done":
+                            qty_flow -= l.product_uom_id._compute_quantity(
+                                l.quantity, default_uom
                             )
+                    if self.respect_reservations:
+                        for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                            if l.state == "assigned":
+                                qty_flow -= l.product_uom_id._compute_quantity(
+                                    l.quantity, default_uom
+                                )
                     if qty_flow > 0:
                         operation_materials[consumed_item["name"]] = (
                             operation_materials.get(consumed_item["name"], 0)
@@ -2653,14 +2695,21 @@ class exporter(object):
                         item = self.product_product.get(mv.product_id.id, None)
                         if not item or mv.state in ("done", "cancelled"):
                             continue
-                        qty_flow = mv.product_qty
-                        if self.respect_reservations:
-                            for line in (
-                                mv.move_line_ids | mv.move_orig_ids.move_line_ids
-                            ):
-                                qty_flow -= line.product_uom_id._compute_quantity(
-                                    line.quantity, mv.product_id.uom_id
+                        default_uom = mv.product_id.uom_id
+                        qty_flow = mv.product_uom._compute_quantity(
+                            mv.product_uom_qty, default_uom
+                        )
+                        for l in mv.move_line_ids:
+                            if l.state == "done":
+                                qty_flow -= l.product_uom_id._compute_quantity(
+                                    l.quantity, default_uom
                                 )
+                        if self.respect_reservations:
+                            for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                                if l.state == "assigned":
+                                    qty_flow -= l.product_uom_id._compute_quantity(
+                                        l.quantity, default_uom
+                                    )
                         if qty_flow > 0:
                             operation_materials[item["name"]] = operation_materials.get(
                                 item["name"], 0
