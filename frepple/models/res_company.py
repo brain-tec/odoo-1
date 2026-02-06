@@ -46,6 +46,12 @@ class ResCompany(models.Model):
         help="When checked frepple respects the reservations. When unchecked frepple can reallocate material.",
     )
 
+    def getWebtoken_key(self):
+        return self.env.company.webtoken_key
+
+    def getFrepple_server(self):
+        return self.env.company.frepple_server
+
     @api.model
     def getFreppleURL(self, navbar=True, _url="/", branding=False):
         """

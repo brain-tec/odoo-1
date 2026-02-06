@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 import gzip
 import json
 import logging
+import markupsafe
 from odoo import fields, models, api, release
 from odoo.exceptions import ValidationError
 import os
@@ -85,6 +86,30 @@ class FreppleJob(models.Model):
 
     @api.model
     def get_status(self, company_id):
+        # Check if settings are configured
+
+        config_ok = True
+        current_company = self.env.company
+        webtoken_key = current_company.getWebtoken_key()
+        frepple_server = current_company.getFrepple_server()
+
+        if not webtoken_key or not frepple_server:
+            config_ok = False
+
+
+        if not config_ok:
+            url = "/odoo/settings#frepple"
+            message = markupsafe.Markup(
+                f'You must first set the <a href="{url}" class="fw-bold">frepple settings</a> '
+                'properly before you can generate recommendations'
+            )
+            return {
+                "message": message,
+                "is_running": False,
+                "last_update_date": False,
+                "settings_missing": True
+            }
+
         last_job = self.env["frepple.job"].search(
             [
                 ("company_id.id", "=", company_id),
@@ -129,7 +154,7 @@ class FreppleJob(models.Model):
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
         r = {
-            "message": message,
+            "message": markupsafe.Markup(message) if hasattr(markupsafe, 'Markup') else message,
             "is_running": len(running_job) > 0,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
         }
