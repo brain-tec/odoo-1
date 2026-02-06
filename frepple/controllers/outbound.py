@@ -2240,6 +2240,25 @@ class exporter(object):
         'PO' -> operationplan.ordertype
         'confirmed' -> operationplan.status
         """
+
+        def getRemainingQuantity(sm, target_uom):
+            if sm.state == "cancel":
+                return 0.0
+            po_specific_dest_moves = sm.move_dest_ids.filtered(
+                lambda m: not m.raw_material_production_id and not m.sale_line_id
+            )
+            if po_specific_dest_moves:
+                # A chain of destination moves within the PO that needs to be recursed
+                return sum(
+                    getRemainingQuantity(m, target_uom) for m in po_specific_dest_moves
+                )
+            elif sm.state == "done":
+                # End of a chain, and the material is already booked in stock
+                return 0
+            else:
+                # Remaining open quantity
+                return sm.product_uom._compute_quantity(sm.product_uom_qty, target_uom)
+
         self.subcontracting_mo_po_mapping = {}
         po_line = {
             i["id"]: i
@@ -2345,27 +2364,8 @@ class exporter(object):
                     start = self.formatDateTime(start if start < end else end)
                     end = self.formatDateTime(end)
 
-                    # Compute the quantity that we still need to receive and that isn't reserved yet.
-                    qty = mv.product_qty
-                    for l in mv.move_line_ids:
-                        # Done status is only captured at the end move.
-                        # Reservations are also checked on related moves.
-                        if (
-                            l.state == "done"
-                            and not l.move_id.move_dest_ids
-                            and not batch
-                        ):
-                            qty -= l.product_uom_id._compute_quantity(
-                                l.quantity, l.product_id.uom_id
-                            )
-                        elif (
-                            self.respect_reservations
-                            and l.state in ("assigned", "partially_available")
-                            and l.move_id.location_id.usage != "supplier"
-                        ):
-                            qty -= l.product_uom_id._compute_quantity(
-                                l.quantity, l.product_id.uom_id
-                            )
+                    # Compute the quantity that we still need to receive
+                    qty = getRemainingQuantity(mv, mv.product_id.uom_id)
 
                     supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
