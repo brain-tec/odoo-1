@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
+import { markup } from "@odoo/owl";
 
 export class FreppleRecommendationBanner extends Component {
   static template = "frepple.RecommendationBanner";
@@ -16,6 +17,7 @@ export class FreppleRecommendationBanner extends Component {
       message: "Loading...",
       isRunning: false, // track if a job is running
       lastUpdate: null,
+      settingsMissing: false,
     });
 
     this.timer = null;
@@ -50,9 +52,10 @@ export class FreppleRecommendationBanner extends Component {
         data.last_update_date &&
         this.state.lastUpdate !== data.last_update_date;
 
-      this.state.message = data.message;
+      this.state.message = markup(data.message);
       this.state.isRunning = data.is_running;
       this.state.lastUpdate = data.last_update_date;
+      this.state.settingsMissing = !!data.settings_missing;
 
       if (hasNewData) {
         await this.refreshList();
@@ -68,6 +71,12 @@ export class FreppleRecommendationBanner extends Component {
   }
 
   async onButtonClick() {
+
+    // Safety check: prevent execution if settings are missing
+    if (this.state.settingsMissing) {
+        return;
+    }
+
     const userContext = this.env.services.user?.context || session.user_context || {};
     const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
     try {

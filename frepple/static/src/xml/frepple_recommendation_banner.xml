@@ -12,11 +12,14 @@
                     <i class="fa fa-info-circle me-2 text-primary"/>
                 </t>
 
-                <span class="ms-1"><t t-esc="state.message"/></span>
+                <span class="ms-1"><t t-out="state.message"/></span>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button t-attf-class="btn btn-sm #{state.isRunning ? 'btn-danger' : 'btn-primary'}"
-                        t-on-click="onButtonClick">
+                <button
+                    t-on-click="onButtonClick"
+                    t-att-disabled="state.settingsMissing"
+                    t-attf-class="btn btn-sm {{ state.settingsMissing ? 'btn-secondary' : (state.isRunning ? 'btn-danger' : 'btn-primary') }}">
+
                     <i t-attf-class="fa me-1 #{state.isRunning ? 'fa-times' : 'fa-bolt'}"/>
 
                     <t t-if="state.isRunning">

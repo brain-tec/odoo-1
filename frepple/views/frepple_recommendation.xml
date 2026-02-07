@@ -26,6 +26,13 @@
     </record>
 
     <record id="frepple_recommendation_action_manufacturing" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Click on the "Generate recommendations" button and get your first recommendations!
+            </p>
+            <p>
+                Recommendations are proposed actions by frePPLe.<br/> You can review each recommendation and approve it.<br/> </p>
+        </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
@@ -37,6 +44,13 @@
         </field>
     </record>
     <record id="frepple_recommendation_action_purchase" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Click on the "Generate recommendations" button and get your first recommendations!
+            </p>
+            <p>
+                Recommendations are proposed actions by frePPLe.<br/> You can review each recommendation and approve it.<br/> </p>
+        </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
@@ -48,6 +62,13 @@
         </field>
     </record>
     <record id="frepple_recommendation_action_sales" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Click on the "Generate recommendations" button and get your first recommendations!
+            </p>
+            <p>
+                Recommendations are proposed actions by frePPLe.<br/> You can review each recommendation and approve it.<br/> </p>
+        </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
