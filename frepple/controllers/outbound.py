@@ -2341,9 +2341,9 @@ class exporter(object):
                                 if mto_so:
                                     batch = mto_so[0].name
                                     break
-                        if not batch:
-                            # A PO for a MTO product was created without a sales order link.
-                            batch = j.name
+                            if not batch:
+                                # A PO for a MTO product was created without a sales order link.
+                                batch = j.name
                     else:
                         batch = None
 
