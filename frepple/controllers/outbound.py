@@ -2288,9 +2288,7 @@ class exporter(object):
                         # ("bid", "confirmed", "cancel"),
                     ),
                     ("order_id.state", "=", False),
-                    "|",
-                    ("order_id.receipt_status", "!=", "full"),
-                    ("order_id.receipt_status", "=", False),
+                    # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
                 ],
                 object=True,
             )
