@@ -796,7 +796,6 @@ class exporter(object):
                 break
             offset += pagesize
             for i in recs:
-
                 # We don't kow that parent (archived ?) so continue
                 if i["parent_id"] and i["parent_id"][0] not in self.map_customers:
                     continue
@@ -1046,7 +1045,11 @@ class exporter(object):
                 self.route_mto = k
         for i in self.generator.getData(
             "product.template",
-            search=[("type", "not in", ("service", "combo"))],
+            search=[
+                "&",
+                ("type", "not in", ("service", "combo")),
+                ("is_storable", "=", True),
+            ],
             fields=[
                 "sale_ok",
                 "purchase_ok",
@@ -2627,9 +2630,10 @@ class exporter(object):
                                     l.quantity, default_uom
                                 )
                     if qty_flow > 0:
-                        operation_materials[consumed_item["name"]] = (
-                            operation_materials.get(consumed_item["name"], 0)
-                            + (-qty_flow / qty)
+                        operation_materials[
+                            consumed_item["name"]
+                        ] = operation_materials.get(consumed_item["name"], 0) + (
+                            -qty_flow / qty
                         )
                 for key in operation_materials:
                     yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
