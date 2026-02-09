@@ -2276,9 +2276,9 @@ class exporter(object):
                             "sent",
                             "bid",
                             "to approve",
-                            "confirmed",
+                            # "confirmed",  # Not a standard state any longer in odoo 18
                             "cancel",
-                            "done",
+                            # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
                         ),
                         # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                         # ("bid", "confirmed", "cancel"),
