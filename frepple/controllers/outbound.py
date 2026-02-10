@@ -2249,7 +2249,9 @@ class exporter(object):
             if sm.state == "cancel":
                 return 0.0
             po_specific_dest_moves = sm.move_dest_ids.filtered(
-                lambda m: not m.raw_material_production_id and not m.sale_line_id
+                lambda m: not m.raw_material_production_id
+                and not m.sale_line_id
+                and m.id != sm.id
             )
             if po_specific_dest_moves:
                 # A chain of destination moves within the PO that needs to be recursed
@@ -2633,10 +2635,9 @@ class exporter(object):
                                     l.quantity, default_uom
                                 )
                     if qty_flow > 0:
-                        operation_materials[
-                            consumed_item["name"]
-                        ] = operation_materials.get(consumed_item["name"], 0) + (
-                            -qty_flow / qty
+                        operation_materials[consumed_item["name"]] = (
+                            operation_materials.get(consumed_item["name"], 0)
+                            + (-qty_flow / qty)
                         )
                 for key in operation_materials:
                     yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
