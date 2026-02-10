@@ -796,7 +796,6 @@ class exporter(object):
                 break
             offset += pagesize
             for i in recs:
-
                 # We don't kow that parent (archived ?) so continue
                 if i["parent_id"] and i["parent_id"][0] not in self.map_customers:
                     continue
@@ -1046,7 +1045,11 @@ class exporter(object):
                 self.route_mto = k
         for i in self.generator.getData(
             "product.template",
-            search=[("type", "not in", ("service", "combo"))],
+            search=[
+                "&",
+                ("type", "not in", ("service", "combo")),
+                ("is_storable", "=", True),
+            ],
             fields=[
                 "sale_ok",
                 "purchase_ok",
@@ -1987,7 +1990,8 @@ class exporter(object):
                         "state",
                         "in",
                         ["waiting", "partially_available", "assigned", "confirmed"],
-                    )
+                    ),
+                    ("sale_line_id", "!=", False),
                 ],
                 fields=[
                     "id",
@@ -2276,17 +2280,15 @@ class exporter(object):
                             "sent",
                             "bid",
                             "to approve",
-                            "confirmed",
+                            # "confirmed",  # Not a standard state any longer in odoo 18
                             "cancel",
-                            "done",
+                            # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
                         ),
                         # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                         # ("bid", "confirmed", "cancel"),
                     ),
                     ("order_id.state", "=", False),
-                    "|",
-                    ("order_id.receipt_status", "!=", "full"),
-                    ("order_id.receipt_status", "=", False),
+                    # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
                 ],
                 object=True,
             )
@@ -2341,6 +2343,9 @@ class exporter(object):
                                 if mto_so:
                                     batch = mto_so[0].name
                                     break
+                            if not batch:
+                                # A PO for a MTO product was created without a sales order link.
+                                batch = j.name
                     else:
                         batch = None
 
@@ -2463,6 +2468,9 @@ class exporter(object):
                                 if mto_so:
                                     batch = mto_so[0].name
                                     break
+                            if not batch:
+                                # A PO for a MTO product was created without a sales order link.
+                                batch = j.name
                     else:
                         batch = None
 
@@ -2559,6 +2567,16 @@ class exporter(object):
                     if mto_so:
                         batch = mto_so[0].name
                         break
+            try:
+                if (
+                    not batch
+                    and self.route_mto
+                    in self.product_product[i.product_id.id]["template"]["route_ids"]
+                ):
+                    # A MO for a MTO product was created without a sales order link.
+                    batch = i.name
+            except Exception:
+                pass
 
             # Create a record for the MO
             yield '<operationplan type="MO" reference=%s %s%s="%s" quantity="%s" status="%s">\n' % (
@@ -2610,9 +2628,10 @@ class exporter(object):
                                     l.quantity, default_uom
                                 )
                     if qty_flow > 0:
-                        operation_materials[consumed_item["name"]] = (
-                            operation_materials.get(consumed_item["name"], 0)
-                            + (-qty_flow / qty)
+                        operation_materials[
+                            consumed_item["name"]
+                        ] = operation_materials.get(consumed_item["name"], 0) + (
+                            -qty_flow / qty
                         )
                 for key in operation_materials:
                     yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
