@@ -2304,7 +2304,12 @@ class exporter(object):
                         not mv.product_id
                         or not mv.purchase_line_id
                         or not mv.location_dest_id
-                        or mv.state in ("draft", "cancel")
+                        or mv.state
+                        in (
+                            "draft",
+                            "cancel",
+                            # Do NOT exclude "done" moves, because they can be open moves chained to it
+                        )
                     ):
                         continue
                     j = mv.purchase_line_id.order_id
