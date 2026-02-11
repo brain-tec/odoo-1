@@ -1958,6 +1958,9 @@ class exporter(object):
                 "product_uom",
                 "order_id",
                 "move_ids",
+                "is_rental",
+                "rental_return_date",
+                "rental_pickup_date",
             ],
         )
 
@@ -2076,8 +2079,62 @@ class exporter(object):
                     i["product_uom"],
                     product["template"],
                 )
-            elif state == "sale":
-                if i["move_ids"] and any(
+            elif state == "sale" or i.get("is_rental", False):
+                if i.get("is_rental", False):
+                    if state != "sale":
+                        # We only consider open rentals, not the history of rental orders
+                        continue
+                    qty = i["product_uom_qty"]
+                    if qty <= 0:
+                        continue
+                    qty = self.convert_qty_uom(
+                        i["product_uom_qty"],
+                        i["product_uom"],
+                        product["template"],
+                    )
+                    status = "open"
+                    # We plan rentals with a maxlateness of 0. If the pickup date isn't feasible we consider
+                    # the sales order lost. 
+                    yield (
+                        '<demand name=%s category="rental" maxlateness="P0D" batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                        '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                        "</demand>\n"
+                    ) % (
+                        quoteattr(name),
+                        quoteattr(batch),
+                        qty,
+                        i.get("rental_start_date", due),
+                        priority,
+                        qty if j["picking_policy"] == "one" and qty > 0 else 0.0,
+                        status,
+                        quoteattr(product["name"]),
+                        quoteattr(customer),
+                        quoteattr(location),
+                        quoteattr(i["order_id"][1]),
+                        (
+                            "alltogether"
+                            if j["picking_policy"] == "one"
+                            else "independent"
+                        ),
+                    )
+                    if i.get("rental_pickup_date", False):
+                        yield (
+                            "</demands><operationplans>\n"
+                            '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">'
+                            "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n"
+                            "</operationplans><demands>\n"
+                        ) % (
+                            quoteattr(f"Return {name}"),
+                            "batch=%s " % quoteattr(batch) if batch else "",
+                            i["rental_pickup_date"],
+                            i["rental_pickup_date"],
+                            qty,
+                            quoteattr(product["name"]),
+                            quoteattr(location),
+                            quoteattr("rental return"),
+                        )
+                    continue
+                elif i["move_ids"] and any(
                     [mv_id in stock_moves_dict for mv_id in i["move_ids"]]
                 ):
                     for mv_id in i["move_ids"]:
@@ -2249,7 +2306,9 @@ class exporter(object):
             if sm.state == "cancel":
                 return 0.0
             po_specific_dest_moves = sm.move_dest_ids.filtered(
-                lambda m: not m.raw_material_production_id and not m.sale_line_id
+                lambda m: not m.raw_material_production_id
+                and not m.sale_line_id
+                and m.id != sm.id
             )
             if po_specific_dest_moves:
                 # A chain of destination moves within the PO that needs to be recursed
@@ -2304,7 +2363,12 @@ class exporter(object):
                         not mv.product_id
                         or not mv.purchase_line_id
                         or not mv.location_dest_id
-                        or mv.state in ("draft", "cancel", "done")
+                        or mv.state
+                        in (
+                            "draft",
+                            "cancel",
+                            # Do NOT exclude "done" moves, because they can be open moves chained to it
+                        )
                     ):
                         continue
                     j = mv.purchase_line_id.order_id
@@ -2628,10 +2692,9 @@ class exporter(object):
                                     l.quantity, default_uom
                                 )
                     if qty_flow > 0:
-                        operation_materials[
-                            consumed_item["name"]
-                        ] = operation_materials.get(consumed_item["name"], 0) + (
-                            -qty_flow / qty
+                        operation_materials[consumed_item["name"]] = (
+                            operation_materials.get(consumed_item["name"], 0)
+                            + (-qty_flow / qty)
                         )
                 for key in operation_materials:
                     yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
