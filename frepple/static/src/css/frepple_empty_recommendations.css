@@ -1,0 +1,12 @@
+/* This only affects the smiling face when it's inside your specific action */
+.frepple_empty_state .o_view_nocontent_smiling_face::before {
+    content: "" !important;
+    background: url('/frepple/static/src/img/frepple-odoo-512-512.png') no-repeat center !important;
+    background-size: contain !important;
+    display: block !important;
+    width: 250px !important;
+    height: 250px !important;
+    margin: 0 auto 20px !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+}

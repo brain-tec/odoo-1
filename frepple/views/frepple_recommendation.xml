@@ -27,13 +27,15 @@
 
     <record id="frepple_recommendation_action_manufacturing" model="ir.actions.act_window">
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Missing recommendations means missed deadlines.
-            </p>
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Missing recommendations means missed deadlines.
+                </p>
             <p class="text-muted">
                 Generate your recommendations now to identify exactly what needs to be purchased,
                 manufactured, or rescheduled to keep your delivery promises.
-            </p>
+                </p>
+            </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
@@ -47,13 +49,15 @@
     </record>
     <record id="frepple_recommendation_action_purchase" model="ir.actions.act_window">
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Missing recommendations means missed deadlines.
-            </p>
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Missing recommendations means missed deadlines.
+                </p>
             <p class="text-muted">
                 Generate your recommendations now to identify exactly what needs to be purchased,
                 manufactured, or rescheduled to keep your delivery promises.
-            </p>
+                </p>
+            </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
@@ -67,13 +71,15 @@
     </record>
     <record id="frepple_recommendation_action_sales" model="ir.actions.act_window">
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Missing recommendations means missed deadlines.
-            </p>
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Missing recommendations means missed deadlines.
+                </p>
             <p class="text-muted">
                 Generate your recommendations now to identify exactly what needs to be purchased,
                 manufactured, or rescheduled to keep your delivery promises.
-            </p>
+                </p>
+            </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>

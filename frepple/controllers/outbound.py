@@ -2013,17 +2013,23 @@ class exporter(object):
                 )
             }
 
-            def getReservedQuantity(sm):
+            def getReservedAndDoneQuantity(sm, include_reservations):
                 reserved_quantity = 0
-                for i in self.generator.getData(
+                for l in self.generator.getData(
                     "stock.move.line",
                     ids=sm["move_line_ids"],
-                    search=[("state", "not in", ("done", "cancel"))],
-                    fields=[
-                        "quantity_product_uom",
-                    ],
+                    search=[("state", "not in", ("cancel",))],
+                    object=True,
                 ):
-                    reserved_quantity += i["quantity_product_uom"] or 0
+                    # Done state is only picked up at final move.
+                    # Assigned state is also picked up on related moves.
+                    if (l.state == "done" and not l.move_id.move_dest_ids) or (
+                        l.state in ("assigned", "partially_available")
+                        and include_reservations
+                    ):
+                        reserved_quantity += l.product_uom_id._compute_quantity(
+                            l.quantity, l.product_id.uom_id
+                        )
                 return reserved_quantity
 
             # Generate the demand records
@@ -2102,10 +2108,10 @@ class exporter(object):
                                         sm["product_uom"],
                                         sm_product["template"],
                                     )
-                                    reserved_quantity = (
-                                        getReservedQuantity(sm)
-                                        if self.respect_reservations
-                                        else 0
+                                    reserved_quantity = reserved_quantity = (
+                                        getReservedAndDoneQuantity(
+                                            sm, self.respect_reservations
+                                        )
                                     )
                                     due = self.formatDateTime(
                                         sm["date"] or j["date_order"]
@@ -2268,6 +2274,27 @@ class exporter(object):
         'PO' -> operationplan.ordertype
         'confirmed' -> operationplan.status
         """
+
+        def getRemainingQuantity(sm, target_uom):
+            if sm.state == "cancel":
+                return 0.0
+            po_specific_dest_moves = sm.move_dest_ids.filtered(
+                lambda m: not m.raw_material_production_id
+                and not m.sale_line_id
+                and m.id != sm.id
+            )
+            if po_specific_dest_moves:
+                # A chain of destination moves within the PO that needs to be recursed
+                return sum(
+                    getRemainingQuantity(m, target_uom) for m in po_specific_dest_moves
+                )
+            elif sm.state == "done":
+                # End of a chain, and the material is already booked in stock
+                return 0
+            else:
+                # Remaining open quantity
+                return sm.product_uom._compute_quantity(sm.product_uom_qty, target_uom)
+
         try:
             self.subcontracting_mo_po_mapping = {}
             po_line = {
@@ -2286,16 +2313,14 @@ class exporter(object):
                                 "sent",
                                 "bid",
                                 "to approve",
-                                "confirmed",
                                 "cancel",
+                                # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
                             ),
                             # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                             # ("bid", "confirmed", "cancel"),
                         ),
                         ("order_id.state", "=", False),
-                        "|",
-                        ("order_id.receipt_status", "!=", "full"),
-                        ("order_id.receipt_status", "=", False),
+                        # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
                     ],
                     object=True,
                 )
@@ -2310,7 +2335,12 @@ class exporter(object):
                                 not mv.product_id
                                 or not mv.purchase_line_id
                                 or not mv.location_dest_id
-                                or mv.state in ("draft", "cancel", "done")
+                                or mv.state
+                                in (
+                                    "draft",
+                                    "cancel",
+                                    # Do NOT exclude "done" moves, because they can be open moves chained to it
+                                )
                             ):
                                 continue
                             j = mv.purchase_line_id.order_id
@@ -2349,6 +2379,9 @@ class exporter(object):
                                         if mto_so:
                                             batch = mto_so[0].name
                                             break
+                                    if not batch:
+                                        # A PO for a MTO product was created without a sales order link.
+                                        batch = j.name
                             else:
                                 batch = None
 
@@ -2373,7 +2406,10 @@ class exporter(object):
                                 continue
                             start = self.formatDateTime(start if start < end else end)
                             end = self.formatDateTime(end)
-                            qty = mv.product_qty
+
+                            # Compute the quantity that we still need to receive
+                            qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+
                             supplier = self.map_suppliers.get(j.partner_id.id)
                             if not supplier:
                                 # supplier is archived :-(
@@ -2475,6 +2511,9 @@ class exporter(object):
                                         if mto_so:
                                             batch = mto_so[0].name
                                             break
+                                    if not batch:
+                                        # A PO for a MTO product was created without a sales order link.
+                                        batch = j.name
                             else:
                                 batch = None
 
@@ -2512,64 +2551,6 @@ class exporter(object):
         """
         try:
             now = datetime.now()
-
-            # Retrieve reserved quantities from stock moves
-            if self.respect_reservations:
-                # a first call to get all confirmed MO IDs
-                confirmed_mos = [
-                    i["name"]
-                    for i in self.generator.getData(
-                        "mrp.production",
-                        # Option 1: import only the odoo status from "confirmed" onwards
-                        search=[("state", "in", ["progress", "confirmed"])],
-                        fields=["name"],
-                    )
-                ]
-                # a second call to get the reserved quantities
-                reserved_quantity = {}
-                moves = self.generator.getData(
-                    "stock.move",
-                    search=[
-                        ("state", "in", ["partially_available", "assigned"]),
-                        ("production_id", "=", False),
-                        ("workorder_id", "=", False),
-                        ("raw_material_production_id", "in", confirmed_mos),
-                    ],
-                    fields=[
-                        "raw_material_production_id",
-                        "product_id",
-                        "move_line_ids",
-                    ],
-                )
-                all_line_ids = []
-                for m in moves:
-                    all_line_ids.extend(m["move_line_ids"])
-                reserved_quantity = {}
-                if all_line_ids:
-                    line_qty_map = {
-                        l["id"]: l["quantity"]
-                        for l in self.generator.getData(
-                            "stock.move.line",
-                            search=[("id", "in", list(set(all_line_ids)))],
-                            fields=["quantity"],
-                        )
-                    }
-                    for m in moves:
-                        for line_id in m["move_line_ids"]:
-                            reserved_quantity[
-                                (m["raw_material_production_id"][1], m["product_id"][0])
-                            ] = reserved_quantity.get(
-                                (
-                                    m["raw_material_production_id"][1],
-                                    m["product_id"][0],
-                                ),
-                                0,
-                            ) + line_qty_map.get(
-                                line_id, 0
-                            )
-                # Release temp variables
-                all_line_ids = None
-                moves = None
 
             for i in self.generator.getData(
                 "mrp.production",
@@ -2638,6 +2619,18 @@ class exporter(object):
                             if mto_so:
                                 batch = mto_so[0].name
                                 break
+                        try:
+                            if (
+                                not batch
+                                and self.route_mto
+                                in self.product_product[i.product_id.id]["template"][
+                                    "route_ids"
+                                ]
+                            ):
+                                # A MO for a MTO product was created without a sales order link.
+                                batch = i.name
+                        except Exception:
+                            pass
 
                     # Create a record for the MO
                     operationplan = {
@@ -2685,42 +2678,39 @@ class exporter(object):
                         operationplan["operation"] = operation_json
                         # dictionary needed as BOM in Odoo might have multiple lines with the same product
                         operation_materials = {}
-                        for mv in mv_list:
+                        for mv in i.move_raw_ids or []:
                             consumed_item = self.product_product.get(
                                 mv.product_id.id, None
                             )
-                            if not consumed_item:
+                            if not consumed_item or mv.state in ("done", "cancelled"):
                                 continue
-                            reserved = (
-                                max(
-                                    reserved_quantity.get(
-                                        (i["name"], mv.product_id.id), 0
-                                    ),
-                                    mv.product_qty,
-                                )
-                                if self.respect_reservations
-                                else 0
+                            default_uom = mv.product_id.uom_id
+                            qty_flow = mv.product_uom._compute_quantity(
+                                mv.product_uom_qty, default_uom
                             )
-                            qty_flow = mv.product_qty - reserved
-                            # subtract the reserved quantity if product is twice in the BOM
-                            if self.respect_reservations:
-                                reserved_quantity[(i["name"], mv.product_id.id)] = max(
-                                    0,
-                                    reserved_quantity.get(
-                                        (i["name"], mv.product_id.id), 0
+                            for l in mv.move_line_ids:
+                                if l.state == "done":
+                                    qty_flow -= l.product_uom_id._compute_quantity(
+                                        l.quantity, default_uom
                                     )
-                                    - reserved,
-                                )
+                            if self.respect_reservations:
+                                for l in (
+                                    mv.move_line_ids | mv.move_orig_ids.move_line_ids
+                                ):
+                                    if l.state == "assigned":
+                                        qty_flow -= l.product_uom_id._compute_quantity(
+                                            l.quantity, default_uom
+                                        )
                             if qty_flow > 0:
                                 operation_materials[consumed_item["name"]] = (
                                     operation_materials.get(consumed_item["name"], 0)
                                     + (-qty_flow / qty)
                                 )
-                        for key in operation_materials:
+                        for key, val in operation_materials.items():
                             operation_json["flows"].append(
                                 {
                                     "type": "flow_start",
-                                    "quantity": operation_materials[key],
+                                    "quantity": val,
                                     "item": {"name": key},
                                 }
                             )
