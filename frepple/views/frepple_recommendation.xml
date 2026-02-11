@@ -29,12 +29,22 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Missing recommendations means missed deadlines.
+                    Don't wait to generate your first recommendations.
                 </p>
-            <p class="text-muted">
-                Generate your recommendations now to identify exactly what needs to be purchased,
-                manufactured, or rescheduled to keep your delivery promises.
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tells you where your supply chain requires actions.<br/>
                 </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
             </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
@@ -51,12 +61,22 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Missing recommendations means missed deadlines.
+                    Don't wait to generate your first recommendations.
                 </p>
-            <p class="text-muted">
-                Generate your recommendations now to identify exactly what needs to be purchased,
-                manufactured, or rescheduled to keep your delivery promises.
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tells you where your supply chain requires actions.<br/>
                 </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
             </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
@@ -73,12 +93,22 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Missing recommendations means missed deadlines.
+                    Don't wait to generate your first recommendations.
                 </p>
-            <p class="text-muted">
-                Generate your recommendations now to identify exactly what needs to be purchased,
-                manufactured, or rescheduled to keep your delivery promises.
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tells you where your supply chain requires actions.<br/>
                 </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
             </div>
         </field>
         <field name="name">FrePPLe recommendations</field>
