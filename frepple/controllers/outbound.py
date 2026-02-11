@@ -2469,7 +2469,7 @@ class exporter(object):
                             break
                     if not supplier:
                         continue
-                    if qty >= 0:
+                    if qty > 0:
                         yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
                             quoteattr(po_line_reference),
                             "batch=%s " % quoteattr(batch) if batch else "",
@@ -2482,7 +2482,7 @@ class exporter(object):
                         )
             else:
                 # METHOD 2: Create purchasing operations from purchase order lines
-                if not i["product_id"] or i["state"] == "cancel":
+                if not i["product_id"] or i["state"] in ("cancel", "done"):
                     continue
                 item = self.product_product.get(i.product_id.id, None)
                 j = i.order_id
