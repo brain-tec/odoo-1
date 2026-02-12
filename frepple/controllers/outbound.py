@@ -2275,18 +2275,29 @@ class exporter(object):
         'confirmed' -> operationplan.status
         """
 
-        def getRemainingQuantity(sm, target_uom):
+        def getRemainingQuantity(sm, target_uom, move_chain=None):
             if sm.state == "cancel":
                 return 0.0
             po_specific_dest_moves = sm.move_dest_ids.filtered(
                 lambda m: not m.raw_material_production_id
                 and not m.sale_line_id
-                and m.id != sm.id
+                and not m.origin_returned_move_id
+                and not m.returned_move_ids
+                # Generic protection against infinite recursion in move cycles
+                and (
+                    (move_chain and m.id not in move_chain)
+                    or (not move_chain and m.id != sm.id)
+                )
             )
             if po_specific_dest_moves:
                 # A chain of destination moves within the PO that needs to be recursed
+                if move_chain:
+                    move_chain_copy = move_chain + [sm.id]
+                else:
+                    move_chain_copy = [sm.id]
                 return sum(
-                    getRemainingQuantity(m, target_uom) for m in po_specific_dest_moves
+                    getRemainingQuantity(m, target_uom, move_chain_copy)
+                    for m in po_specific_dest_moves
                 )
             elif sm.state == "done":
                 # End of a chain, and the material is already booked in stock
@@ -2432,7 +2443,7 @@ class exporter(object):
                                     break
                             if not supplier:
                                 continue
-                            if qty >= 0:
+                            if qty > 0:
                                 poline = {
                                     "ordertype": "PO",
                                     "reference": po_line_reference,
@@ -2450,7 +2461,7 @@ class exporter(object):
 
                     else:
                         # METHOD 2: Create purchasing operations from purchase order lines
-                        if not i["product_id"] or i["state"] == "cancel":
+                        if not i["product_id"] or i["state"] in ("cancel", "done"):
                             continue
                         item = self.product_product.get(i.product_id.id, None)
                         j = i.order_id
