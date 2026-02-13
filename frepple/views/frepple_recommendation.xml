@@ -29,11 +29,11 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
-                    Recommendations tells you where your supply chain requires actions.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
                 </p>
                 <div class="text-muted text-start d-inline-block">
                     Recommendations will identify:
@@ -61,11 +61,11 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
-                    Recommendations tells you where your supply chain requires actions.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
                 </p>
                 <div class="text-muted text-start d-inline-block">
                     Recommendations will identify:
@@ -93,11 +93,11 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
-                    Recommendations tells you where your supply chain requires actions.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
                 </p>
                 <div class="text-muted text-start d-inline-block">
                     Recommendations will identify:
