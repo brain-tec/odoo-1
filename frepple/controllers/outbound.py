@@ -45,7 +45,9 @@ class Odoo_generator:
             context=t,
         )
 
-    def callMethod(self, model, id, method, args=[]):
+    def callMethod(self, model, id, method, args=None):
+        if args is None:
+            args = []
         for obj in self.env[model].browse(id):
             return getattr(obj, method)(*args)
         return None

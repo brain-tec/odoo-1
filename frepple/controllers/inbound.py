@@ -108,7 +108,7 @@ class importer(object):
                 purchase_requisition_line = self.env[
                     "purchase.requisition.line"
                 ].with_user(self.actual_user)
-            except:
+            except Exception:
                 hasRequisition = False
         else:
             product_product = self.env["product.product"]
@@ -130,7 +130,7 @@ class importer(object):
             try:
                 purchase_requisition = self.env["purchase.requisition"]
                 purchase_requisition_line = self.env["purchase.requisition.line"]
-            except:
+            except Exception:
                 hasRequisition = False
         if self.mode == 1:
             # Cancel previous draft purchase quotations
