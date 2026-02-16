@@ -172,9 +172,11 @@ class XMLController(odoo.http.Controller):
                 raise Exception("Odoo token authentication failed")
         else:
             raise Exception("Unknown authentication method")
-        if language:
-            # If not set we use the default language of the user
-            req.session.context["lang"] = language
+        if not language:
+            user = req.env["res.users"].browse(uid)
+            language = user.lang or "en_US"
+        req.session.context["lang"] = language
+        req.update_context(lang=language)
         return uid
 
     @odoo.http.route(
