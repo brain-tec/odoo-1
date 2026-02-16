@@ -2691,7 +2691,9 @@ class exporter(object):
                         operationplan["operation"] = operation_json
                         # dictionary needed as BOM in Odoo might have multiple lines with the same product
                         operation_materials = {}
-                        for mv in i.move_raw_ids or []:
+                        for mv in (
+                            i.move_raw_ids if type != "subcontractor" else None
+                        ) or []:
                             consumed_item = self.product_product.get(
                                 mv.product_id.id, None
                             )
