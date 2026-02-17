@@ -48,6 +48,14 @@
     sequence="10"
     groups="frepple_user"/>
 
+    <menuitem
+    id="menu_frepple_recommendations_manufacturing"
+    name="Recommendations"
+    parent="menu_frepple_root_manufacturing"
+    action="frepple_recommendation_action_manufacturing"
+    sequence="20"
+    groups="frepple_user"/>
+
 
     <!-- frePPLe UI in purchasing menu. -->
 
@@ -64,6 +72,14 @@
     parent="menu_frepple_root_purchase"
     action="action_frepple_web"
     sequence="10"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_recommendations_purchase"
+    name="Recommendations"
+    parent="menu_frepple_root_purchase"
+    action="frepple_recommendation_action_purchase"
+    sequence="20"
     groups="frepple_user"/>
 
 
@@ -83,6 +99,14 @@
     parent="menu_frepple_root_sales"
     action="action_frepple_web"
     sequence="10"
+    groups="frepple_user"/>
+
+    <menuitem
+    id="menu_frepple_recommendations_sales"
+    name="Recommendations"
+    parent="menu_frepple_root_sales"
+    action="frepple_recommendation_action_sales"
+    sequence="20"
     groups="frepple_user"/>
 
   </data>
