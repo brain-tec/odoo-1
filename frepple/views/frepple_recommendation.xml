@@ -50,7 +50,7 @@
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">
             {
                 "search_default_type_manufacturing": 1
@@ -82,7 +82,7 @@
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">
             {
                 "search_default_type_purchase": 1
@@ -114,7 +114,7 @@
         <field name="name">FrePPLe recommendations</field>
         <field name="res_model">frepple.recommendation</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">
             {
                 "search_default_type_sales": 1
@@ -126,7 +126,7 @@
         <field name="name">FrePPLe Recommendations List</field>
         <field name="model">frepple.recommendation</field>
         <field name="arch" type="xml">
-            <tree create="false" delete="false" editable="bottom" js_class="frepple_recommendation_list">
+            <list create="false" delete="false" editable="bottom" js_class="frepple_recommendation_list">
                 <button name="action_approve"
                     string="Create Quote"
                     type="object"
@@ -160,7 +160,7 @@
                 <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
                 <field name="sale_order_line_id" optional="hide" readonly="1" widget="many2one"/>
                 <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -168,7 +168,7 @@
         <field name="name">Approve Recommendations</field>
         <field name="model_id" ref="model_frepple_recommendation"/>
         <field name="binding_model_id" ref="model_frepple_recommendation"/>
-        <field name="binding_view_types">tree</field>
+        <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">
             records.action_approve()
