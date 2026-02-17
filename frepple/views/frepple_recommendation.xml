@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="frepple_recommendation_search" model="ir.ui.view">
+        <field name="name">frepple.recommendation.search</field>
+        <field name="model">frepple.recommendation</field>
+        <field name="arch" type="xml">
+                <search>
+                    <field name="product_id" string="product"/>
+                    <field name="res_partner_id" string="vendor"/>
+                    <field name="sale_order_id" string="sales order"/>
+                    <field name="mrp_production_id" string="manufacturing order"/>
+
+                    <separator/>
+
+                    <filter name="type_sales"
+                            string="Sales recommendations"
+                            domain="[('type','=','latedelivery')]"/>
+                    <filter name="type_purchase"
+                            string="Purchase recommendations"
+                            domain="[('type','=','purchase')]"/>
+                    <filter name="type_manufacturing"
+                            string="Manufacturing recommendations"
+                            domain="[('type','in',('produce','reschedule'))]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="frepple_recommendation_action_manufacturing" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                </p>
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
+                </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
+            </div>
+        </field>
+        <field name="name">FrePPLe recommendations</field>
+        <field name="res_model">frepple.recommendation</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">
+            {
+                "search_default_type_manufacturing": 1
+            }
+        </field>
+    </record>
+    <record id="frepple_recommendation_action_purchase" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                </p>
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
+                </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
+            </div>
+        </field>
+        <field name="name">FrePPLe recommendations</field>
+        <field name="res_model">frepple.recommendation</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">
+            {
+                "search_default_type_purchase": 1
+            }
+        </field>
+    </record>
+    <record id="frepple_recommendation_action_sales" model="ir.actions.act_window">
+        <field name="help" type="html">
+            <div class="frepple_empty_state">
+                <p class="o_view_nocontent_smiling_face">
+                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                </p>
+                <p class="text-muted text-start">
+                    FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
+                    Recommendations tell where the supply chain requires actions.<br/>
+                </p>
+                <div class="text-muted text-start d-inline-block">
+                    Recommendations will identify:
+                    <ul style="display: inline-block; text-align: left;">
+                        <li>Manufacturing orders scheduled in the past</li>
+                        <li>Manufacturing orders scheduled when a material is not available</li>
+                        <li>Manufacturing orders scheduled when the work center is busy</li>
+                        <li>Purchase or manufacturing orders that have to be created</li>
+                        <li>Sales orders delivered late</li>
+                    </ul>
+                </div>
+            </div>
+        </field>
+        <field name="name">FrePPLe recommendations</field>
+        <field name="res_model">frepple.recommendation</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">
+            {
+                "search_default_type_sales": 1
+            }
+        </field>
+    </record>
+
+    <record id="frepple_recommendation_view_tree" model="ir.ui.view">
+        <field name="name">FrePPLe Recommendations List</field>
+        <field name="model">frepple.recommendation</field>
+        <field name="arch" type="xml">
+            <tree create="false" delete="false" editable="bottom" js_class="frepple_recommendation_list">
+                <button name="action_approve"
+                    string="Create Quote"
+                    type="object"
+                    class="btn-primary"
+                    invisible="type != 'purchase'"/>
+
+                <button name="action_approve"
+                        string="Reschedule MO"
+                        type="object"
+                        class="btn-primary"
+                        invisible="type != 'reschedule'"/>
+
+                <button name="action_approve"
+                        string="Create MO"
+                        type="object"
+                        class="btn-primary"
+                        invisible="type != 'produce'"/>
+
+                <field name="recommendation" optional="show" readonly="1" widget="html_hover"/>
+                <field name="type" readonly="1"/>
+                <field name="product_id" readonly="1" widget="many2one"/>
+                <field name="quantity" />
+                    <button name="action_open_forecast"
+                type="object"
+                icon="fa-area-chart"
+                title="Forecast"
+                invisible="not product_id"/>
+                <field name="startdate" optional="show"/>
+                <field name="enddate" optional="show"/>
+                <field name="res_partner_id" optional="show"/>
+                <field name="sale_order_id" optional="show" readonly="1" widget="many2one"/>
+                <field name="sale_order_line_id" optional="hide" readonly="1" widget="many2one"/>
+                <field name="mrp_production_id" optional="show" readonly="1" widget="many2one"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_server_bulk_approve" model="ir.actions.server">
+        <field name="name">Approve Recommendations</field>
+        <field name="model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_view_types">tree</field>
+        <field name="state">code</field>
+        <field name="code">
+            records.action_approve()
+        </field>
+    </record>
+</odoo>
