@@ -12,6 +12,7 @@
     "data": [
         "security/frepple_security.xml",
         "security/ir.model.access.csv",
+        "views/frepple_recommendation.xml",
         "views/frepple_data.xml",
         "views/res_config_settings_views.xml",
         "views/mrp_bom.xml",
@@ -34,6 +35,10 @@
         "web.assets_backend": [
             "frepple/static/src/js/frepple.js",
             "frepple/static/src/css/my_small_button.scss",
+            "frepple/static/src/js/html_tooltip_widget.js",
+            "frepple/static/src/js/frepple_recommendation_banner.js",
+            "frepple/static/src/xml/frepple_recommendation_banner.xml",
+            "frepple/static/src/css/frepple_empty_recommendations.css",
         ],
     },
     "price": 0,

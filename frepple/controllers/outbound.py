@@ -147,8 +147,8 @@ class exporter(object):
             "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
             and "freppledb.shelflife" in apps
         )
-        self.has_length_limits = self.version[0] < 9 or (
-            self.version[0] == 9 and self.version[1] < 11
+        self.has_length_limits = int(self.version[0]) < 9 or (
+            int(self.version[0]) == 9 and int(self.version[1]) < 11
         )
 
         # The mode argument defines different types of runs:
@@ -3092,8 +3092,7 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute(
-                """
+            self.generator.env.cr.execute("""
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3112,8 +3111,7 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """
-            )
+                """)
             data = self.generator.env.cr.fetchall()
         else:
             data = [
