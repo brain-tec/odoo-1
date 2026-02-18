@@ -425,7 +425,6 @@ class XMLController(odoo.http.Controller):
         csrf=False,
     )
     def receiveRecommendations(self, **kwargs):
-        logger.info("TOTOTOTO PROUT")
         try:
             req = odoo.http.request
 
