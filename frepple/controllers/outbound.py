@@ -2565,6 +2565,23 @@ class exporter(object):
         try:
             now = datetime.now()
 
+            def getBatch(mo, mo_chain=None):
+                mto_so = (
+                    mo.procurement_group_id.sale_id
+                    + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                )
+                batch = mto_so[0].name if mto_so else None
+                if batch:
+                    return batch
+                for related_mo in i._get_sources():
+                    if not mo_chain:
+                        batch = getBatch(related_mo, [mo.id])
+                    elif related_mo.id not in mo_chain:
+                        batch = getBatch(related_mo, mo_chain + [mo.id])
+                    if batch:
+                        return batch
+                return None
+
             for i in self.generator.getData(
                 "mrp.production",
                 # Option 1: import only the odoo status from "confirmed" onwards
@@ -2618,32 +2635,18 @@ class exporter(object):
                         continue
 
                     # Get MTO link
-                    mto_so = (
-                        i.procurement_group_id.sale_id
-                        + i.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                    )
-                    batch = mto_so[0].name if mto_so else None
-                    if not batch:
-                        for mo in i._get_sources():
-                            mto_so = (
-                                mo.procurement_group_id.sale_id
-                                + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                            )
-                            if mto_so:
-                                batch = mto_so[0].name
-                                break
-                        try:
-                            if (
-                                not batch
-                                and self.route_mto
-                                in self.product_product[i.product_id.id]["template"][
-                                    "route_ids"
-                                ]
-                            ):
-                                # A MO for a MTO product was created without a sales order link.
-                                batch = i.name
-                        except Exception:
-                            pass
+                    if (
+                        self.route_mto
+                        in self.product_templates[
+                            self.product_product[i.product_id.id]["template"]
+                        ]["route_ids"]
+                    ):
+                        batch = getBatch(i)
+                        if not batch:
+                            # A MO for a MTO product was created without a sales order link.
+                            batch = i.name
+                    else:
+                        batch = None
 
                     # Create a record for the MO
                     operationplan = {
