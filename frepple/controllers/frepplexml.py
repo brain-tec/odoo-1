@@ -23,6 +23,7 @@
 #
 
 import base64
+from datetime import datetime
 import hashlib
 import hmac
 import importlib.util
@@ -401,3 +402,146 @@ class XMLController(odoo.http.Controller):
                         else e
                     )
                 )
+
+    @odoo.http.route(
+        "/frepple/recommendations",
+        type="http",
+        auth="none",
+        methods=["POST"],
+        csrf=False,
+    )
+    def receiveRecommendations(self, **kwargs):
+        logger.info("TOTOTOTO PROUT")
+        try:
+            req = odoo.http.request
+
+            # Authentication
+            method, token = odoo.http.request.httprequest.headers.get(
+                "authorization", ""
+            ).split(" ", 1)
+            if method.lower() == "bearer":
+                # Authentication with a bearer token of a one-off anonymous run
+                job_model = http.request.env["frepple.job"].sudo()
+                job = job_model.findJob(token)
+                if not job:
+                    return http.Response("Invalid token in authentication", status=500)
+            elif method.lower() == "basic":
+                # Basic authentication when running from frepple user interface
+                job = None
+                auth = base64.b64decode(token).decode("utf-8")
+                self.user, password = auth.split(":", 1)
+                database = odoo.http.db_list(force=True)[0]  # Not ok in multidb setups
+                req.session.db = database
+                if not self.user or not password or not database:
+                    raise Exception("Missing user or password")
+                # Authenticate with an API key
+                uid = req.env["res.users.apikeys"]._check_credentials(
+                    scope="rpc", key=password
+                )
+                if uid:
+                    req.update_env(user=uid)
+                else:
+                    # Authenticate with a password
+                    uid = req.session.authenticate(
+                        database,
+                        self.user,
+                        password,
+                    )
+
+                    if not uid:
+                        return http.Response(
+                            "Odoo basic authentication failed", status=500
+                        )
+            else:
+                return http.Response(
+                    "Missing or unsupported authentication", status=500
+                )
+
+            # Retrieve the recommendations file in the POST request
+            jsonfile = kwargs.get("recommendations.json")
+            data = json.loads(jsonfile.read().decode("utf-8"))
+
+            # Pick up the company
+            if job:
+                company_id = job.company_id.id
+            else:
+                company_name = data.get("company", None)
+                if not company_name:
+                    return Response(
+                        "Missing company name argument. Multi-database recommendations aren't supported.",
+                        500,
+                    )
+                company_model = http.request.env["res.company"].sudo()
+                for i in company_model.search([("name", "=", company_name)], limit=1):
+                    company_id = i.id
+                if not company_id:
+                    return Response("Invalid company name argument", 401)
+
+            # Empty the existing recommendations for the company of the job
+            recs = (
+                req.env["frepple.recommendation"]
+                .sudo()
+                .search([("company_id", "=", company_id)])
+            )
+            recs.unlink()
+
+            # Generate recommendations
+            if data.get("recommendations", None):
+                for i in data.get("recommendations"):
+                    i["company_id"] = company_id
+                    if "startdate" in i:
+                        try:
+                            i["startdate"] = datetime.fromisoformat(i["startdate"])
+                        except Exception:
+                            del i["startdate"]
+                    if "enddate" in i:
+                        try:
+                            i["enddate"] = datetime.fromisoformat(i["enddate"])
+                        except Exception:
+                            del i["enddate"]
+                    if "mrp_production_id" in i:
+                        try:
+                            i["mrp_production_id"] = (
+                                self.env["mrp.production"]
+                                .sudo()
+                                .search(
+                                    [("name", "=", i["mrp_production_id"])], limit=1
+                                )
+                                .id
+                            )
+                        except Exception:
+                            # MO no longer exists. Skip this recommendation
+                            continue
+
+                req.env["frepple.recommendation"].sudo().with_context(
+                    frepple_import=True
+                ).create(data.get("recommendations"))
+
+                if job:
+                    # Mark the job as done
+                    job.write({"status": "Done", "finished": datetime.now()})
+                else:
+                    # recommendations are coming from frepple, new job to be created
+                    req.env["frepple.job"].sudo().create(
+                        {
+                            "status": "Done",
+                            "started": datetime.now(),
+                            "finished": datetime.now(),
+                        }
+                    )
+
+        except Exception as e:
+            traceback.print_exc()
+            # 1. Format the trace outside the f-string
+            trace_lines = traceback.format_exc().splitlines()
+            formatted_trace = "\n".join(["       " + line for line in trace_lines])
+
+            # 2. Use the variable in the f-string
+            log_message = f"Stack trace:\n {formatted_trace}"
+            return http.Response(
+                "Error receiving frepple recommendations:\n\n" f"Exception: {e}\n",
+                log_message,
+                status=500,
+                headers=[("Content-Type", "text/plain")],
+            )
+        return http.Response("Successfully processed recommentations.", status=200)
