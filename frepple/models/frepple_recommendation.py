@@ -176,8 +176,27 @@ class FreppleRecommendation(models.Model):
                                 "order_id": po.id,
                                 "product_id": product.id,
                                 "product_qty": rec.quantity,
-                                "product_uom_id": product.uom_id.id,
+                                "product_uom": product.uom_id.id,
                             }
+                        )
+                    )
+
+                    # We need the supplierinfo record
+                    supplier = (
+                        self.env["product.supplierinfo"]
+                        .with_user(self.env.user)
+                        .search(
+                            [
+                                ("partner_id", "=", po.partner_id.id),
+                                (
+                                    "product_tmpl_id",
+                                    "=",
+                                    product.product_tmpl_id.id,
+                                ),
+                                ("min_qty", "<=", rec.quantity),
+                            ],
+                            limit=1,
+                            order="min_qty desc",
                         )
                     )
 
@@ -186,9 +205,10 @@ class FreppleRecommendation(models.Model):
                         rec.quantity,
                         product.uom_id,
                         self.company_id,
-                        po.partner_id,
+                        supplier,
                         po,
                     )
+
                     vals["date_planned"] = rec.enddate
                     po_line.write(vals)
                     po_lines[(rec.res_partner_id.id, product.id)] = po_line
@@ -219,9 +239,21 @@ class FreppleRecommendation(models.Model):
                 ):
                     index = 0
                     for wo in mo.workorder_ids:
-                        wo.date_start = datetime.fromisoformat(
-                            rec.data.get("workorders")[index][1]
-                        )
+                        try:
+                            wo.date_start = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][1]
+                            )
+                            wo.date_finished = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][2]
+                            )
+                        except:
+                            wo.date_finished = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][2]
+                            )
+                            wo.date_start = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][1]
+                            )
+
                         index += 1
 
                 # Mark recommendation for deletion
@@ -234,9 +266,20 @@ class FreppleRecommendation(models.Model):
                 ):
                     index = 0
                     for wo in rec.mrp_production_id.workorder_ids:
-                        wo.date_start = datetime.fromisoformat(
-                            rec.data.get("workorders")[index][1]
-                        )
+                        try:
+                            wo.date_start = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][1]
+                            )
+                            wo.date_finished = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][2]
+                            )
+                        except:
+                            wo.date_finished = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][2]
+                            )
+                            wo.date_start = datetime.fromisoformat(
+                                rec.data.get("workorders")[index][1]
+                            )
                         index += 1
                 else:
                     self.mrp_production_id.date_start = rec.startdate
