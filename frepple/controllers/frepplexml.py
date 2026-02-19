@@ -457,8 +457,11 @@ class XMLController(odoo.http.Controller):
                     # Authenticate with a password
                     uid = req.session.authenticate(
                         database,
-                        self.user,
-                        password,
+                        {
+                            "login": self.user,
+                            "password": password,
+                            "type": "password",
+                        },
                     )
 
                     if not uid:
