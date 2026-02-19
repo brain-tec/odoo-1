@@ -2579,12 +2579,12 @@ class exporter(object):
         def getBatch(mo, mo_chain=None):
             mto_so = (
                 mo.procurement_group_id.sale_id
-                + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                | mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
             )
             batch = mto_so[0].name if mto_so else None
             if batch:
                 return batch
-            for related_mo in i._get_sources():
+            for related_mo in mo._get_sources():
                 if not mo_chain:
                     batch = getBatch(related_mo, [mo.id])
                 elif related_mo.id not in mo_chain:
