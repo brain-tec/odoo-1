@@ -411,7 +411,6 @@ class XMLController(odoo.http.Controller):
         csrf=False,
     )
     def receiveRecommendations(self, **kwargs):
-        logger.info("TOTOTOTO PROUT")
         try:
             req = odoo.http.request
 
@@ -499,10 +498,10 @@ class XMLController(odoo.http.Controller):
                             i["enddate"] = datetime.fromisoformat(i["enddate"])
                         except Exception:
                             del i["enddate"]
-                    if "mrp_production_id" in i:
+                    if i.get("mrp_production_id"):
                         try:
                             i["mrp_production_id"] = (
-                                self.env["mrp.production"]
+                                req.env["mrp.production"]
                                 .sudo()
                                 .search(
                                     [("name", "=", i["mrp_production_id"])], limit=1
