@@ -136,7 +136,13 @@ class importer(object):
         if self.mode == 1:
             # Cancel previous draft purchase quotations
             m = self.env["purchase.order"]
-            recs = m.search([("state", "=", "draft"), ("origin", "=like", "frePPLe%")])
+            recs = m.search(
+                [
+                    ("state", "=", "draft"),
+                    ("origin", "=like", "frePPLe%"),
+                    ("company_id", "=", self.company.id),
+                ]
+            )
             recs.write({"state": "cancel"})
             recs.unlink()
             msg.append("Removed %s old draft purchase orders" % len(recs))
@@ -148,6 +154,7 @@ class importer(object):
                     ("state", "=", "draft"),
                     ("state", "=", "cancel"),
                     ("origin", "=like", "frePPLe%"),
+                    ("company_id", "=", self.company.id),
                 ]
             )
             recs.write({"state": "cancel"})
@@ -808,9 +815,7 @@ class importer(object):
                                             wo.date_finished = rec["end"]
                                             if not create:
                                                 wo.write(
-                                                    {
-                                                        "date_finished": wo.date_finished
-                                                    }
+                                                    {"date_finished": wo.date_finished}
                                                 )
                                         if not startUpdated and "start" in rec:
                                             wo.date_start = rec["start"]
