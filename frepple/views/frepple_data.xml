@@ -23,6 +23,19 @@
       </field>
     </record>
 
+
+    <!-- Needed when upgrading your module from the old frepple menu
+    to the new one. -->
+    <data>
+      <delete model="ir.ui.menu" search="[('id', '=', ref('frepple.menu_frepple_web', False))]"/>
+      <delete model="ir.ui.menu" search="[('id', '=', ref('frepple.menu_frepple_web_procurement', False))]"/>
+      <delete model="ir.ui.menu" search="[('id', '=', ref('frepple.menu_frepple_planeditor', False))]"/>
+      <delete model="ir.ui.menu" search="[('id', '=', ref('frepple.menu_frepple_forecast_editor', False))]"/>
+      <delete model="ir.ui.menu" search="[('id', '=', ref('frepple.menu_frepple_inventoryplanning', False))]"/>
+      <delete model="ir.actions.client" search="[('id', '=', ref('frepple.action_frepple_web', False))]"/>
+    </data>
+    <!-- end of migration -->
+
     <record id="action_frepple_web" model="ir.actions.server">
       <field name="name">Frepple</field>
       <field name="model_id" ref="base.model_res_company"/>
