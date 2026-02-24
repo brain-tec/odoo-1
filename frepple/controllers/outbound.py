@@ -1235,16 +1235,50 @@ class exporter(object):
                                 # Skip uninterested suppliers (eg archived ones)
                                 continue
                             if sup.get("is_subcontractor", False):
-                                if not hasattr(tmpl, "subcontractors"):
+                                new_subcontractor = True
+                                if "subcontractors" not in tmpl:
                                     tmpl["subcontractors"] = []
-                                tmpl["subcontractors"].append(
-                                    {
-                                        "name": name,
-                                        "delay": sup["delay"],
-                                        "priority": sup["sequence"] or 1,
-                                        "size_minimum": sup["min_qty"],
-                                    }
-                                )
+                                else:
+                                    for s in tmpl["subcontractors"]:
+                                        if (
+                                            s["name"] == name
+                                            and s["date_start"] == sup["date_start"]
+                                        ):
+                                            # Already found a record for this subcontractor
+                                            if (
+                                                sup["delay"]
+                                                and sup["delay"] < s["delay"]
+                                            ):
+                                                s["delay"] = sup["delay"]
+                                            if (
+                                                sup["sequence"]
+                                                and sup["sequence"] < s["priority"]
+                                            ):
+                                                s["priority"] = sup["sequence"]
+                                            if sup["min_qty"] and (
+                                                not s["size_minimum"]
+                                                or sup["min_qty"] < s["size_minimum"]
+                                            ):
+                                                s["size_minimum"] = sup["min_qty"]
+                                            if sup["date_end"] and (
+                                                not s["date_end"]
+                                                or sup["date_end"] > s["date_end"]
+                                            ):
+                                                s["date_end"] = sup["date_end"]
+                                            new_subcontractor = False
+                                            break
+                                if new_subcontractor:
+                                    # New subcontractor
+                                    tmpl["subcontractors"].append(
+                                        {
+                                            "name": name,
+                                            "delay": sup["delay"],
+                                            "priority": sup["sequence"] or -1,
+                                            "size_minimum": sup["min_qty"],
+                                            "date_start": sup["date_start"],
+                                            "date_end": sup["date_end"],
+                                        }
+                                    )
                             elif (name, sup["date_start"]) in suppliers:
                                 # If there are multiple records with the same supplier & start date
                                 # we pass a single record to frepple with lowest-lead-time,
@@ -1278,7 +1312,7 @@ class exporter(object):
                             else:
                                 suppliers[(name, sup["date_start"])] = {
                                     "delay": sup["delay"],
-                                    "sequence": sup["sequence"] or 1,
+                                    "sequence": sup["sequence"] or -1,
                                     "batching_window": sup["batching_window"] or 0,
                                     "min_qty": sup["min_qty"],
                                     "price": max(0, sup["price"]),
@@ -1291,7 +1325,7 @@ class exporter(object):
                                     continue
                                 itemsupplier = {
                                     "leadtime": (v["delay"] or 0) * 86400,
-                                    "priority": v["sequence"] or 1,
+                                    "priority": v["sequence"] or -1,
                                     "batchwindow": (v["batching_window"] or 0) * 86400,
                                     "size_minimum": v["min_qty"],
                                     "cost": max(0, v["price"]),
@@ -1414,10 +1448,15 @@ class exporter(object):
                         for subcontractor in subcontractors:
                             # Build operation. The operation can either be a summary operation or a detailed
                             # routing.
-                            operation = "%s %d @ %s %d" % (
+                            operation = "%s %d @ %s%s %d" % (
                                 product_buf["code"] or product_buf["name"],
                                 product_id,
                                 subcontractor.get("name", location),
+                                (
+                                    (" from %s" % subcontractor["date_start"])
+                                    if subcontractor.get("date_start", None)
+                                    else ""
+                                ),
                                 i["id"],
                             )
                             if (
@@ -1449,6 +1488,12 @@ class exporter(object):
                                     }
                                     if i["code"]:
                                         operation_json["description"] = i["code"]
+                                    if subcontractor.get("date_start", None):
+                                         operation_json["effective_start"] = ("%sT00:00:00" %
+                                         subcontractor["date_start"].strftime("%Y-%m-%d"))
+                                    if subcontractor.get("date_end", None):
+                                         operation_json["effective_end"] = ("%sT00:00:00" %
+                                         subcontractor["date_end"].strftime("%Y-%m-%d"))
                                 else:
                                     duration = (i["produce_delay"] or 0) + (
                                         i["days_to_prepare_mo"] or 0
