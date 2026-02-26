@@ -2629,9 +2629,9 @@ class exporter(object):
                 mo.procurement_group_id.sale_id
                 | mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
             )
-            batch = mto_so[0].name if mto_so else None
-            if batch:
-                return batch
+            if mto_so:
+                # This MO is linked to a sales order
+                return mto_so[0].name
             for related_mo in mo._get_sources():
                 if not mo_chain:
                     batch = getBatch(related_mo, [mo.id])
@@ -2639,7 +2639,12 @@ class exporter(object):
                     batch = getBatch(related_mo, mo_chain + [mo.id])
                 if batch:
                     return batch
-            return None
+            if mo_chain:
+                # The MTO chain ends at a (manually created) MO.
+                return mo.name
+            else:
+                # No sales order found, and not source MO either.
+                return None
 
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
