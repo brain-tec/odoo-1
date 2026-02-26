@@ -172,7 +172,7 @@ class importer(object):
                             ("date_end", "=", False),
                             ("date_end", ">=", datetime.now()),
                             ("requisition_type", "=", "blanket_order"),
-                            ("state", "=", "ongoing"),
+                            ("state", "=", "confirmed"),
                         ]
                     )
                 ]
@@ -448,11 +448,11 @@ class importer(object):
                                             datetime.now(),
                                         ),
                                         (
-                                            "requisition_id.type_id.name",
+                                            "requisition_id.requisition_type",
                                             "=",
-                                            "Blanket Order",
+                                            "blanket_order",
                                         ),
-                                        ("requisition_id.state", "=", "ongoing"),
+                                        ("requisition_id.state", "=", "confirmed"),
                                         ("product_id.id", "=", int(item_id)),
                                         (
                                             "requisition_id.vendor_id.id",
