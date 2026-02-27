@@ -2436,12 +2436,8 @@ class exporter(object):
                                 if not batch:
                                     # Follow multi-level MTO chain to the sale order
                                     for mo in j._get_mrp_productions():
-                                        mto_so = (
-                                            mo.procurement_group_id.sale_id
-                                            + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                                        )
-                                        if mto_so:
-                                            batch = mto_so[0].name
+                                        batch = self.getBatch(mo)
+                                        if batch:
                                             break
                                     if not batch:
                                         # A PO for a MTO product was created without a sales order link.
@@ -2569,8 +2565,8 @@ class exporter(object):
                                     # Follow multi-level MTO chain to the sale order
                                     for mo in j._get_mrp_productions():
                                         mto_so = (
-                                            mo.procurement_group_id.sale_id
-                                            + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+                                            mo.production_group_id.sale_id
+                                            + mo.production_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
                                         )
                                         if mto_so:
                                             batch = mto_so[0].name
@@ -2600,6 +2596,28 @@ class exporter(object):
         except Exception as e:
             yield from self.flagException("exporting purchase orders", e)
 
+    def getBatch(self, mo, mo_chain=None):
+        mto_so = (
+            mo.move_dest_ids.sale_line_id.order_id
+            | mo.production_group_id.production_ids.move_dest_ids.sale_line_id.order_id
+        )
+        if mto_so:
+            # This MO is linked to a sales order
+            return mto_so[0].name
+        for related_mo in mo._get_sources():
+            if not mo_chain:
+                batch = self.getBatch(related_mo, [mo.id])
+            elif related_mo.id not in mo_chain:
+                batch = self.getBatch(related_mo, mo_chain + [mo.id])
+            if batch:
+                return batch
+        if mo_chain:
+            # The MTO chain ends at a (manually created) MO.
+            return mo.name
+        else:
+            # No sales order found, and not source MO either.
+            return None
+
     def export_manufacturingorders(self):
         """
         Extracting work in progress to frePPLe, using the mrp.production model.
@@ -2615,23 +2633,6 @@ class exporter(object):
         """
         try:
             now = datetime.now()
-
-            def getBatch(mo, mo_chain=None):
-                mto_so = (
-                    mo.procurement_group_id.sale_id
-                    + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                )
-                batch = mto_so[0].name if mto_so else None
-                if batch:
-                    return batch
-                for related_mo in i._get_sources():
-                    if not mo_chain:
-                        batch = getBatch(related_mo, [mo.id])
-                    elif related_mo.id not in mo_chain:
-                        batch = getBatch(related_mo, mo_chain + [mo.id])
-                    if batch:
-                        return batch
-                return None
 
             for i in self.generator.getData(
                 "mrp.production",
@@ -2703,7 +2704,7 @@ class exporter(object):
                             self.product_product[i.product_id.id]["template"]
                         ]["route_ids"]
                     ):
-                        batch = getBatch(i)
+                        batch = self.getBatch(i)
                         if not batch:
                             # A MO for a MTO product was created without a sales order link.
                             batch = i.name
@@ -2888,40 +2889,37 @@ class exporter(object):
                             operation_materials = {}
                             for mv in mv_list:
                                 item = self.product_product.get(mv.product_id.id, None)
-                                if not item:
+                                if not item or mv.state in ("done", "cancelled"):
                                     continue
-
-                                # Skip moves of other WOs
-                                # When the odoo bill of material doesn't specify the operation
-                                # where a component is consumed, odoo consumes at the LAST
-                                # work order of the manufacturing order.
-                                # In frePPLe we want to consume them in the *FIRST* work order
-                                # instead. This is a much more correct & realistic representation
-                                # from a planning point of view.
-                                if mv.workorder_id and mv.operation_id:
-                                    if mv.workorder_id.id != wo.id:
-                                        continue
-                                elif not first_wo:
-                                    continue
-
-                                qty_flow = max(0, mv.product_qty - mv.quantity)
-                                # subtract the reserved quantity if product is twice in the BOM
-                                reserved_quantity[(i["name"], mv["product_id"][0])] = (
-                                    max(
-                                        0,
-                                        reserved_quantity.get(
-                                            (i["name"], mv["product_id"][0]), 0
-                                        )
-                                        - mv["product_qty"],
-                                    )
+                                default_uom = mv.product_id.uom_id
+                                qty_flow = mv.product_uom._compute_quantity(
+                                    mv.product_uom_qty, default_uom
                                 )
+                                for l in mv.move_line_ids:
+                                    if l.state == "done":
+                                        qty_flow -= l.product_uom_id._compute_quantity(
+                                            l.quantity, default_uom
+                                        )
+                                for l in (
+                                    mv.move_line_ids | mv.move_orig_ids.move_line_ids
+                                ):
+                                    if l.state == "assigned":
+                                        qty_flow -= l.product_uom_id._compute_quantity(
+                                            l.quantity, default_uom
+                                        )
                                 if qty_flow > 0:
-                                    suboperation_json["operation"]["flows"].append(
-                                        {
-                                            "quantity": -qty_flow / qty,
-                                            "item": {"name": item["name"]},
-                                        }
+                                    operation_materials[item["name"]] = (
+                                        operation_materials.get(item["name"], 0)
+                                        + (-qty_flow / qty)
                                     )
+                            for key, val in operation_materials.items():
+                                suboperation_json["operation"]["flows"].append(
+                                    {
+                                        "type": "flow_start",
+                                        "quantity": val,
+                                        "item": {"name": key},
+                                    }
+                                )
                             if (
                                 wo.operation_id
                                 and wo.workcenter_id
@@ -3388,6 +3386,53 @@ class exporter(object):
                     yield json.dumps(
                         {
                             "name": "%s @ %s" % (key[0], key[1]),
+                            "onhand": val,
+                            "item": {"name": key[0]},
+                            "location": {"name": key[1]},
+                        }
+                    ) + ",\n"
+                except Exception as e:
+                    yield from self.flagException(
+                        f"exporting on hand inventory for {key} {val}", e
+                    )
+
+            # Extract MTO chained inventory.
+            # These stock moves have not been consumed by the downstream consumer yet.
+            inventory = {}
+            for mv in self.generator.getData(
+                "stock.move",
+                search=[
+                    # It came from an MO
+                    ("production_id", "!=", False),
+                    # The production is finished
+                    ("state", "=", "done"),
+                    # It has not been consumed by a next level yet
+                    "!",
+                    ("move_dest_ids.raw_material_production_id.state", "=", "done"),
+                    # Explicit MTO flag or has a destination (chained/MTO)
+                    "|",
+                    ("move_dest_ids", "!=", False),
+                    ("procure_method", "=", "make_to_order"),
+                ],
+                object=True,
+            ):
+                item = self.product_product.get(mv.product_id.id, None)
+                location = self.map_locations.get(mv.location_dest_id.id, None)
+                if not item or not location:
+                    continue
+                batch = self.getBatch(mv.production_id)
+                qty = mv.product_uom._compute_quantity(
+                    mv.quantity, mv.product_id.uom_id
+                )
+                if batch and qty > 0:
+                    inventory[(item["name"], location, batch)] = (
+                        inventory.get((item["name"], location, batch), 0) + qty
+                    )
+            for key, val in inventory.items():
+                try:
+                    yield json.dumps(
+                        {
+                            "name": "%s @ %s @ %s" % (key[0], key[2], key[1]),
                             "onhand": val,
                             "item": {"name": key[0]},
                             "location": {"name": key[1]},
