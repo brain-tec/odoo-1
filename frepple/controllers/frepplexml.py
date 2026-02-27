@@ -261,6 +261,20 @@ class XMLController(odoo.http.Controller):
                 headers=[("WWW-Authenticate", 'Basic realm="odoo"')],
             )
 
+        # Authorization: Check if the user is allowed to access the frepple interface
+        current_user = req.env["res.users"].browse(uid)
+        companies_to_check = [company] if company else req.env["res.company"].search([])
+        for comp in companies_to_check:
+            if (
+                comp.frepple_interface_user
+                and comp.frepple_interface_user.id != current_user.id
+            ):
+                logger.warning(
+                    "Unauthorized access attempt by user %s to /frepple/xml"
+                    % current_user.login
+                )
+                return Response("Unauthorized", 401)
+
         # Validate company name
         if company_name and req.env:
             for i in req.env["res.company"].search(
@@ -498,20 +512,92 @@ class XMLController(odoo.http.Controller):
                             i["enddate"] = datetime.fromisoformat(i["enddate"])
                         except Exception:
                             del i["enddate"]
-                    if i.get("mrp_production_id"):
-                        try:
-                            i["mrp_production_id"] = (
-                                req.env["mrp.production"]
-                                .sudo()
-                                .search(
-                                    [("name", "=", i["mrp_production_id"])], limit=1
-                                )
-                                .id
-                            )
-                        except Exception:
-                            # MO no longer exists. Skip this recommendation
-                            continue
 
+                    # Convert old separate fields to new polymorphic related_data_id field
+                    related_data_id = None
+                    skip_recommendation = False
+
+                    if i.get("res_partner_id"):
+                        try:
+                            partner_ref = i["res_partner_id"]
+                            # Check if it's an ID (int) or a name (string)
+                            if isinstance(partner_ref, int):
+                                partner = (
+                                    req.env["res.partner"].sudo().browse(partner_ref)
+                                )
+                            else:
+                                partner = (
+                                    req.env["res.partner"]
+                                    .sudo()
+                                    .search([("name", "=", partner_ref)], limit=1)
+                                )
+                            if partner:
+                                related_data_id = f"res.partner,{partner.id}"
+                            i.pop("res_partner_id", None)
+                        except Exception:
+                            i.pop("res_partner_id", None)
+
+                    elif i.get("sale_order_line_id"):
+                        try:
+                            sol_ref = i["sale_order_line_id"]
+                            # Check if it's an ID (int) or a name (string)
+                            if isinstance(sol_ref, int):
+                                sol = req.env["sale.order.line"].sudo().browse(sol_ref)
+                            else:
+                                sol = (
+                                    req.env["sale.order.line"]
+                                    .sudo()
+                                    .search([("name", "=", sol_ref)], limit=1)
+                                )
+                            if sol:
+                                related_data_id = f"sale.order.line,{sol.id}"
+                            i.pop("sale_order_line_id", None)
+                        except Exception:
+                            i.pop("sale_order_line_id", None)
+
+                    elif i.get("mrp_production_id"):
+                        try:
+                            mo_ref = i["mrp_production_id"]
+                            # Check if it's an ID (int) or a name (string)
+                            if isinstance(mo_ref, int):
+                                mo = req.env["mrp.production"].sudo().browse(mo_ref)
+                            else:
+                                mo = (
+                                    req.env["mrp.production"]
+                                    .sudo()
+                                    .search([("name", "=", mo_ref)], limit=1)
+                                )
+                            if mo:
+                                related_data_id = f"mrp.production,{mo.id}"
+                            else:
+                                # MO no longer exists. Skip this recommendation
+                                logger.warning(
+                                    f"Manufacturing order {i.get('mrp_production_id')} not found"
+                                )
+                                skip_recommendation = True
+                            i.pop("mrp_production_id", None)
+                        except Exception as e:
+                            # Failed to resolve MO
+                            logger.warning(
+                                f"Failed to resolve mrp_production_id {i.get('mrp_production_id')}: {e}"
+                            )
+                            skip_recommendation = True
+                            i.pop("mrp_production_id", None)
+
+                    # Skip this recommendation if required
+                    if skip_recommendation:
+                        continue
+
+                    # make sure we don't have old field names
+                    # happens of i["mrp_production_id"] = None
+                    i.pop("mrp_production_id", None)
+                    i.pop("sales_order_line_id", None)
+                    i.pop("res_parnter_id", None)
+
+                    # Set the polymorphic related_data_id field if found
+                    if related_data_id:
+                        i["related_data_id"] = related_data_id
+                logger.info(data.get("recommendations"))
                 req.env["frepple.recommendation"].sudo().with_context(
                     frepple_import=True
                 ).create(data.get("recommendations"))
