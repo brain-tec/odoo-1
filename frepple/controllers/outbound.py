@@ -1489,11 +1489,19 @@ class exporter(object):
                                     if i["code"]:
                                         operation_json["description"] = i["code"]
                                     if subcontractor.get("date_start", None):
-                                         operation_json["effective_start"] = ("%sT00:00:00" %
-                                         subcontractor["date_start"].strftime("%Y-%m-%d"))
+                                        operation_json["effective_start"] = (
+                                            "%sT00:00:00"
+                                            % subcontractor["date_start"].strftime(
+                                                "%Y-%m-%d"
+                                            )
+                                        )
                                     if subcontractor.get("date_end", None):
-                                         operation_json["effective_end"] = ("%sT00:00:00" %
-                                         subcontractor["date_end"].strftime("%Y-%m-%d"))
+                                        operation_json["effective_end"] = (
+                                            "%sT00:00:00"
+                                            % subcontractor["date_end"].strftime(
+                                                "%Y-%m-%d"
+                                            )
+                                        )
                                 else:
                                     duration = (i["produce_delay"] or 0) + (
                                         i["days_to_prepare_mo"] or 0
@@ -2009,6 +2017,7 @@ class exporter(object):
                     "product_id",
                     "product_uom_qty",
                     "product_uom_id",
+                    "commitment_date",
                     "order_id",
                     "move_ids",
                 ],
@@ -2105,7 +2114,9 @@ class exporter(object):
                         # Not interested in this sales order...
                         continue
                     due = self.formatDateTime(
-                        j.get("commitment_date", False) or j["date_order"]
+                        i.get("commitment_date", False)
+                        or j.get("commitment_date", False)
+                        or j["date_order"]
                     )
                     priority = (
                         1  # We give all customer orders the same default priority
@@ -2161,7 +2172,10 @@ class exporter(object):
                                         )
                                     )
                                     due = self.formatDateTime(
-                                        sm["date"] or j["date_order"]
+                                        sm["date"]
+                                        or i.get("commitment_date", False)
+                                        or j.get("commitment_date", False)
+                                        or j["date_order"]
                                     )
                                     demand = {
                                         "name": sol_name,
