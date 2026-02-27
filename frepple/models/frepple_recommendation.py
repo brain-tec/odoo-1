@@ -82,30 +82,19 @@ class FreppleRecommendation(models.Model):
 
     recommendation = fields.Html(string="Recommendation")
 
-    res_partner_id = fields.Many2one(
-        "res.partner",
-        string="Vendor",
+    related_data_id = fields.Reference(
+        selection="_get_related_data_selection",
+        string="Related Data",
         ondelete="cascade",
     )
 
-    sale_order_line_id = fields.Many2one(
-        "sale.order.line",
-        string="Sales Order Line",
-        ondelete="cascade",
-    )
-
-    sale_order_id = fields.Many2one(
-        related="sale_order_line_id.order_id",
-        string="Sales Order",
-        readonly=True,
-        store=True,
-    )
-
-    mrp_production_id = fields.Many2one(
-        "mrp.production",
-        string="Manufacturing Order",
-        ondelete="cascade",
-    )
+    @api.model
+    def _get_related_data_selection(self):
+        return [
+            ("res.partner", "Vendor"),
+            ("sale.order.line", "Sales Order Line"),
+            ("mrp.production", "Manufacturing Order"),
+        ]
 
     # Make sure the user cannot create a recommendation.
     # backend should create recommendations like this:
@@ -139,17 +128,21 @@ class FreppleRecommendation(models.Model):
         po_lines = {}
 
         for rec in self:
-            if rec.type == "purchase":
+            if rec.type == "purchase" and rec.related_data_id:
+                # Extract vendor from the polymorphic Reference field
+                if rec.related_data_id._name != "res.partner":
+                    continue
+                vendor = rec.related_data_id
 
                 # 1. Check if a PO already exists for that supplier
-                if rec.res_partner_id.id in pos:
-                    po = pos[rec.res_partner_id.id]
+                if vendor.id in pos:
+                    po = pos[vendor.id]
 
                 # 2 Else create a PO
                 else:
                     po_args = {
                         "company_id": self.env.company.id,
-                        "partner_id": rec.res_partner_id.id,
+                        "partner_id": vendor.id,
                     }
                     po = (
                         self.env["purchase.order"]
@@ -158,13 +151,13 @@ class FreppleRecommendation(models.Model):
                     )
                     po.origin = "frePPLe"
 
-                    pos[rec.res_partner_id.id] = po
+                    pos[vendor.id] = po
 
                 # 2. check if a Purchase Order Line already exists for that product
                 product = rec.product_id
 
-                if (rec.res_partner_id.id, product.id) in po_lines:
-                    po_line = po_lines[(rec.res_partner_id.id, product.id)]
+                if (vendor.id, product.id) in po_lines:
+                    po_line = po_lines[(vendor.id, product.id)]
                     po_line.date_planned = min(po_line.date_planned, rec.enddate)
                     po_line.product_qty += rec.quantity
                 else:
@@ -211,7 +204,7 @@ class FreppleRecommendation(models.Model):
 
                     vals["date_planned"] = rec.enddate
                     po_line.write(vals)
-                    po_lines[(rec.res_partner_id.id, product.id)] = po_line
+                    po_lines[(vendor.id, product.id)] = po_line
 
                 # Mark recommendation for deletion
                 to_unlink |= rec
@@ -258,14 +251,19 @@ class FreppleRecommendation(models.Model):
 
                 # Mark recommendation for deletion
                 to_unlink |= rec
-            elif rec.type == "reschedule":
+            elif rec.type == "reschedule" and rec.related_data_id:
+                # For reschedule, related_data_id should be mrp.production
+                if rec.related_data_id._name != "mrp.production":
+                    continue
+                mo = rec.related_data_id
+
                 if (
-                    hasattr(rec.mrp_production_id, "workorder_ids")
-                    and rec.mrp_production_id.workorder_ids
+                    hasattr(mo, "workorder_ids")
+                    and mo.workorder_ids
                     and rec.data.get("workorders")
                 ):
                     index = 0
-                    for wo in rec.mrp_production_id.workorder_ids:
+                    for wo in mo.workorder_ids:
                         try:
                             wo.date_start = datetime.fromisoformat(
                                 rec.data.get("workorders")[index][1]
@@ -282,7 +280,7 @@ class FreppleRecommendation(models.Model):
                             )
                         index += 1
                 else:
-                    self.mrp_production_id.date_start = rec.startdate
+                    mo.date_start = rec.startdate
                 to_unlink |= rec
 
         # unlink ALL approved recommendations at once
@@ -331,6 +329,20 @@ class FreppleRecommendation(models.Model):
             other_lines = "<br/>".join(lines[1:])
             return f"{first_line}<br/><small class='text-muted'>{other_lines}</small>"
         return first_line
+
+    def action_open_related_data(self):
+        """Open the related record in a new form window."""
+        self.ensure_one()
+        if not self.related_data_id:
+            return False
+
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self.related_data_id._name,
+            "res_id": self.related_data_id.id,
+            "view_mode": "form",
+            "target": "current",
+        }
 
     def action_open_forecast(self):
         self.ensure_one()
