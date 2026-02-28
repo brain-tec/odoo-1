@@ -2003,6 +2003,7 @@ class exporter(object):
                 "state",
                 "product_id",
                 "product_uom_qty",
+                "commitment_date",
                 "product_uom",
                 "order_id",
                 "move_ids",
@@ -2106,7 +2107,7 @@ class exporter(object):
                 # Not interested in this sales order...
                 continue
             due = self.formatDateTime(
-                j.get("commitment_date", False) or j["date_order"]
+                i.get("commitment_date", False) or j.get("commitment_date", False) or j["date_order"]
             )
             priority = 1  # We give all customer orders the same default priority
 
@@ -2206,7 +2207,12 @@ class exporter(object):
                             reserved_quantity = getReservedAndDoneQuantity(
                                 sm, self.respect_reservations
                             )
-                            due = self.formatDateTime(sm["date"] or j["date_order"])
+                            due = self.formatDateTime(
+                                sm["date"]
+                                or i.get("commitment_date", False)
+                                or j.get("commitment_date", False)
+                                or j["date_order"]
+                            )
 
                             yield (
                                 '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
@@ -2459,12 +2465,8 @@ class exporter(object):
                         if not batch:
                             # Follow multi-level MTO chain to the sale order
                             for mo in j._get_mrp_productions():
-                                mto_so = (
-                                    mo.procurement_group_id.sale_id
-                                    + mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                                )
-                                if mto_so:
-                                    batch = mto_so[0].name
+                                batch = self.getBatch(mo)
+                                if batch:
                                     break
                             if not batch:
                                 # A PO for a MTO product was created without a sales order link.
@@ -2609,6 +2611,28 @@ class exporter(object):
                     )
         yield "</operationplans>\n"
 
+    def getBatch(self, mo, mo_chain=None):
+        mto_so = (
+            mo.procurement_group_id.sale_id
+            | mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
+        )
+        if mto_so:
+            # This MO is linked to a sales order
+            return mto_so[0].name
+        for related_mo in mo._get_sources():
+            if not mo_chain:
+                batch = self.getBatch(related_mo, [mo.id])
+            elif related_mo.id not in mo_chain:
+                batch = self.getBatch(related_mo, mo_chain + [mo.id])
+            if batch:
+                return batch
+        if mo_chain:
+            # The MTO chain ends at a (manually created) MO.
+            return mo.name
+        else:
+            # No sales order found, and not source MO either.
+            return None
+
     def export_manufacturingorders(self):
         """
         Extracting work in progress to frePPLe, using the mrp.production model.
@@ -2623,28 +2647,6 @@ class exporter(object):
         '1' -> operationplan.status = "confirmed"
         """
         now = datetime.now()
-
-        def getBatch(mo, mo_chain=None):
-            mto_so = (
-                mo.procurement_group_id.sale_id
-                | mo.procurement_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-            )
-            if mto_so:
-                # This MO is linked to a sales order
-                return mto_so[0].name
-            for related_mo in mo._get_sources():
-                if not mo_chain:
-                    batch = getBatch(related_mo, [mo.id])
-                elif related_mo.id not in mo_chain:
-                    batch = getBatch(related_mo, mo_chain + [mo.id])
-                if batch:
-                    return batch
-            if mo_chain:
-                # The MTO chain ends at a (manually created) MO.
-                return mo.name
-            else:
-                # No sales order found, and not source MO either.
-                return None
 
         yield "<!-- manufacturing orders in progress -->\n"
         yield "<operationplans>\n"
@@ -2704,7 +2706,7 @@ class exporter(object):
                     self.product_product[i.product_id.id]["template"]
                 ]["route_ids"]
             ):
-                batch = getBatch(i)
+                batch = self.getBatch(i)
                 if not batch:
                     # A MO for a MTO product was created without a sales order link.
                     batch = i.name
@@ -2756,7 +2758,15 @@ class exporter(object):
                             )
                     if self.respect_reservations:
                         for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                            if l.state == "assigned":
+                            if (
+                                # Normal reservation case
+                                mv.procure_method != "make_to_order"
+                                and l.state == "assigned"
+                            ) or (
+                                # Special case for multi-level MTO chains
+                                mv.procure_method == "make_to_order"
+                                and mv.state == "waiting"
+                            ):
                                 qty_flow -= l.product_uom_id._compute_quantity(
                                     l.quantity, default_uom
                                 )
@@ -2857,7 +2867,21 @@ class exporter(object):
                                 )
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                                if l.state == "assigned":
+                                if (
+                                    # Normal reservation case
+                                    mv.procure_method != "make_to_order"
+                                    and l.state == "assigned"
+                                ) or (
+                                    # Special case for multi-level MTO chains
+                                    mv.procure_method == "make_to_order"
+                                    and mv.state
+                                    not in (
+                                        "waiting",
+                                        "waiting availability",
+                                        "available",
+                                        "partially_available",
+                                    )
+                                ):
                                     qty_flow -= l.product_uom_id._compute_quantity(
                                         l.quantity, default_uom
                                     )
@@ -3150,7 +3174,8 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute("""
+            self.generator.env.cr.execute(
+                """
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3169,7 +3194,8 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """)
+                """
+            )
             data = self.generator.env.cr.fetchall()
         else:
             data = [
@@ -3290,4 +3316,44 @@ class exporter(object):
                 quoteattr(key[0]),
                 quoteattr(key[1]),
             )
+
+        # Extract MTO chained inventory.
+        # These stock moves have not been consumed by the downstream consumer yet.
+        inventory = {}
+        for mv in self.generator.getData(
+            "stock.move",
+            search=[
+                # It came from an MO
+                ("production_id", "!=", False),
+                # The production is finished
+                ("state", "=", "done"),
+                # It has not been consumed by a next level yet
+                "!",
+                ("move_dest_ids.raw_material_production_id.state", "=", "done"),
+                # Explicit MTO flag or has a destination (chained/MTO)
+                "|",
+                ("move_dest_ids", "!=", False),
+                ("procure_method", "=", "make_to_order"),
+            ],
+            object=True,
+        ):
+            item = self.product_product.get(mv.product_id.id, None)
+            location = self.map_locations.get(mv.location_dest_id.id, None)
+            if not item or not location:
+                continue
+            batch = self.getBatch(mv.production_id)
+            qty = mv.product_uom._compute_quantity(mv.quantity, mv.product_id.uom_id)
+            if batch and qty > 0:
+                inventory[(item["name"], location, batch)] = (
+                    inventory.get((item["name"], location, batch), 0) + qty
+                )
+        for key, val in inventory.items():
+            yield '<buffer name=%s batch=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
+                quoteattr(f"{key[0]} @ {key[2]} @ {key[1]}"),
+                quoteattr(key[2]),
+                val,
+                quoteattr(key[0]),
+                quoteattr(key[1]),
+            )
+
         yield "</buffers>\n"
