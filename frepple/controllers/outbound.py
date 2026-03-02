@@ -2685,11 +2685,26 @@ class exporter(object):
                         enddate = self.formatDateTime(i.date_finished)
                     except Exception:
                         enddate = None
-                    qty = self.convert_qty_uom(
-                        i.qty_producing if i.qty_producing else i.product_qty,
-                        i.product_uom_id.id,
-                        self.product_product[i.product_id.id]["template"],
-                    )
+
+                    if i.product_id.tracking in ["serial", "lot"]:
+                        # Tracking by lot or unique serial number requires that we track
+                        # the production intent.
+                        qty = sum(
+                            move.product_uom_id._compute_quantity(
+                                move.product_qty, i.product_id.uom_id
+                            )
+                            for move in i.procurement_group_id.mrp_production_ids.filtered(
+                                lambda m: m.product_id == i.product_id
+                                and m.state not in ["done", "cancel"]
+                            )
+                        )
+                    else:
+                        # No serialization on the product
+                        qty = self.convert_qty_uom(
+                            i.qty_producing if i.qty_producing else i.product_qty,
+                            i.product_uom_id.id,
+                            self.product_product[i.product_id.id]["template"],
+                        )
                     if not qty:
                         continue
 
