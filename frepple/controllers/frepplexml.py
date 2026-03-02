@@ -320,7 +320,6 @@ class XMLController(odoo.http.Controller):
                     == "true",
                     version=version,
                     delta=float(kwargs.get("delta", 999)),
-                    language=language,
                     apps=apps,
                 )
 

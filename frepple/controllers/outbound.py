@@ -117,7 +117,6 @@ class exporter(object):
         singlecompany=False,
         version="0.0.0.unknown",
         delta=999,
-        language="en_US",
         apps="",
     ):
         self.database = database
@@ -143,7 +142,6 @@ class exporter(object):
         self.timeformat = "%Y-%m-%dT%H:%M:%S"
         self.singlecompany = singlecompany
         self.delta = delta
-        self.language = language
         self.has_expiry = (
             "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
             and "freppledb.shelflife" in apps
@@ -1087,6 +1085,7 @@ class exporter(object):
             # needs to be unique
             use_short_names = True
 
+            language = self.generator.env.context.get("lang")
             self.generator.env.cr.execute(
                 """
                 select count(*) from
@@ -1103,7 +1102,7 @@ class exporter(object):
                 having count(*) > 1
                 ) t
                 """,
-                (self.language, self.language),
+                (language, language),
             )
             for i in self.generator.env.cr.fetchall():
                 if i[0] > 0:
