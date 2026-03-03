@@ -2107,7 +2107,9 @@ class exporter(object):
                 # Not interested in this sales order...
                 continue
             due = self.formatDateTime(
-                i.get("commitment_date", False) or j.get("commitment_date", False) or j["date_order"]
+                i.get("commitment_date", False)
+                or j.get("commitment_date", False)
+                or j["date_order"]
             )
             priority = 1  # We give all customer orders the same default priority
 
@@ -2691,11 +2693,25 @@ class exporter(object):
                 enddate = self.formatDateTime(i.date_finished)
             except Exception:
                 enddate = None
-            qty = self.convert_qty_uom(
-                i.qty_producing if i.qty_producing else i.product_qty,
-                i.product_uom_id.id,
-                self.product_product[i.product_id.id]["template"],
-            )
+            if i.product_id.tracking in ["serial", "lot"]:
+                # Tracking by lot or unique serial number requires that we track
+                # the production intent.
+                qty = sum(
+                    move.product_uom_id._compute_quantity(
+                        move.product_qty, i.product_id.uom_id
+                    )
+                    for move in i.procurement_group_id.mrp_production_ids.filtered(
+                        lambda m: m.product_id == i.product_id
+                        and m.state not in ["done", "cancel"]
+                    )
+                )
+            else:
+                # No serialization on the product
+                qty = self.convert_qty_uom(
+                    i.qty_producing if i.qty_producing else i.product_qty,
+                    i.product_uom_id.id,
+                    self.product_product[i.product_id.id]["template"],
+                )
             if not qty:
                 continue
 
@@ -2825,6 +2841,7 @@ class exporter(object):
                 )
                 # Define operations for each WO
                 idx = 10
+                first_wo = True
                 for wo in i.workorder_ids:
                     suboperation = wo.display_name
                     if self.has_length_limits and len(suboperation) > 300:
@@ -2852,7 +2869,11 @@ class exporter(object):
                     idx += 10
                     # dictionary needed as BOM in Odoo might have multiple lines with the same product
                     operation_materials = {}
-                    for mv in wo.move_raw_ids or []:
+                    for mv in i.move_raw_ids or []:
+                        if (mv.operation_id and mv.operation_id != wo.operation_id) or (
+                            first_wo and not mv.operation_id
+                        ):
+                            continue
                         item = self.product_product.get(mv.product_id.id, None)
                         if not item or mv.state in ("done", "cancelled"):
                             continue
