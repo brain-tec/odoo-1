@@ -96,18 +96,17 @@ class FreppleJob(models.Model):
         if not webtoken_key or not frepple_server:
             config_ok = False
 
-
         if not config_ok:
             url = "/odoo/settings#frepple"
             message = markupsafe.Markup(
                 f'You must first set the <a href="{url}" class="fw-bold">frepple settings</a> '
-                'properly before you can generate recommendations'
+                "properly before you can generate recommendations"
             )
             return {
                 "message": message,
                 "is_running": False,
                 "last_update_date": False,
-                "settings_missing": True
+                "settings_missing": True,
             }
 
         last_job = self.env["frepple.job"].search(
@@ -154,7 +153,9 @@ class FreppleJob(models.Model):
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
         r = {
-            "message": markupsafe.Markup(message) if hasattr(markupsafe, 'Markup') else message,
+            "message": (
+                markupsafe.Markup(message) if hasattr(markupsafe, "Markup") else message
+            ),
             "is_running": len(running_job) > 0,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
         }
@@ -207,7 +208,6 @@ class FreppleJob(models.Model):
                 timezone=None,
                 singlecompany=False,
                 delta=999,
-                language=self.env.context.get("lang", "en_US"),
                 apps="",
             )
 
