@@ -49,3 +49,9 @@ class ResConfigSettings(models.TransientModel):
     respect_reservations = fields.Boolean(
         related="company_id.respect_reservations", readonly=False
     )
+    frepple_interface_user = fields.Many2one(
+        "res.users",
+        "frePPLe interface user",
+        related="company_id.frepple_interface_user",
+        readonly=False,
+    )
