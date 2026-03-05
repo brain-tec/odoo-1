@@ -2863,7 +2863,6 @@ class exporter(object):
                         operation_json["suboperations"] = []
                         # Define operations for each WO
                         idx = 10
-                        first_wo = True
                         for wo in i.workorder_ids:
                             suboperation = wo.display_name
 
@@ -2896,45 +2895,52 @@ class exporter(object):
                             idx += 10
                             # dictionary needed as BOM in Odoo might have multiple lines with the same product
                             operation_materials = {}
-                            for mv in mv_list:
+                            for mv in i.move_raw_ids or []:
+                                if (mv.operation_id and mv.operation_id != wo.operation_id) or (
+                                        not mv.operation_id and wo.id != i.workorder_ids[-1].id
+                                    ):
+                                    continue
                                 item = self.product_product.get(mv.product_id.id, None)
-                                if not item:
+                                if not item or mv.state in ("done", "cancelled"):
                                     continue
-
-                                # Skip moves of other WOs
-                                # When the odoo bill of material doesn't specify the operation
-                                # where a component is consumed, odoo consumes at the LAST
-                                # work order of the manufacturing order.
-                                # In frePPLe we want to consume them in the *FIRST* work order
-                                # instead. This is a much more correct & realistic representation
-                                # from a planning point of view.
-                                if mv.workorder_id and mv.operation_id:
-                                    if mv.workorder_id.id != wo.id:
-                                        continue
-                                elif not first_wo:
-                                    continue
-
-                                qty_flow = max(
-                                    0,
-                                    mv.product_qty
-                                    - (mv.quantity if self.respect_reservations else 0),
-                                )
-                                # subtract the reserved quantity if product is twice in the BOM
-                                if self.respect_reservations:
-                                    reserved_quantity[
-                                        (i["name"], mv["product_id"][0])
-                                    ] = max(
-                                        0,
-                                        reserved_quantity.get(
-                                            (i["name"], mv["product_id"][0]), 0
-                                        )
-                                        - mv["product_qty"],
+                                default_uom = mv.product_id.uom_id
+                                qty_flow = mv.product_uom._compute_quantity(
+                                        mv.product_uom_qty, default_uom
                                     )
+                                for l in mv.move_line_ids:
+                                    if l.state == "done":
+                                        qty_flow -= l.product_uom_id._compute_quantity(
+                                                l.quantity, default_uom
+                                            )
+                                if self.respect_reservations:
+                                    for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                                        if (
+                                                # Normal reservation case
+                                                mv.procure_method != "make_to_order"
+                                                and l.state == "assigned"
+                                            ) or (
+                                                # Special case for multi-level MTO chains
+                                                mv.procure_method == "make_to_order"
+                                                and mv.state
+                                                not in (
+                                                    "waiting",
+                                                    "waiting availability",
+                                                    "available",
+                                                    "partially_available",
+                                                )
+                                            ):
+                                            qty_flow -= l.product_uom_id._compute_quantity(
+                                                    l.quantity, default_uom
+                                                )
                                 if qty_flow > 0:
-                                    suboperation_json["operation"]["flows"].append(
+                                    operation_materials[item["name"]] = operation_materials.get(
+                                            item["name"], 0
+                                        ) + (-qty_flow / qty)                               
+                            for key, val in operation_materials.items():
+                                suboperation_json["operation"]["flows"].append(
                                         {
-                                            "quantity": -qty_flow / qty,
-                                            "item": {"name": item["name"]},
+                                            "quantity": val,
+                                            "item": {"name": key},
                                         }
                                     )
                             if (
@@ -3009,8 +3015,6 @@ class exporter(object):
                                                 "loads"
                                             ].append(load_tmp)
                                             break
-                            first_wo = False
-
                         yield json.dumps(operationplan) + ",\n"
 
                         # Create operationplans for each WO, starting with the last one
