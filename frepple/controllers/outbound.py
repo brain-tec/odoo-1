@@ -2854,7 +2854,6 @@ class exporter(object):
                         operation_json["suboperations"] = []
                         # Define operations for each WO
                         idx = 10
-                        first_wo = True
                         for wo in i.workorder_ids:
                             suboperation = wo.display_name
 
@@ -2887,7 +2886,15 @@ class exporter(object):
                             idx += 10
                             # dictionary needed as BOM in Odoo might have multiple lines with the same product
                             operation_materials = {}
-                            for mv in mv_list:
+                            for mv in i.move_raw_ids or []:
+                                if (
+                                    mv.operation_id
+                                    and mv.operation_id != wo.operation_id
+                                ) or (
+                                    not mv.operation_id
+                                    and wo.id != i.workorder_ids[-1].id
+                                ):
+                                    continue
                                 item = self.product_product.get(mv.product_id.id, None)
                                 if not item or mv.state in ("done", "cancelled"):
                                     continue
@@ -2903,7 +2910,21 @@ class exporter(object):
                                 for l in (
                                     mv.move_line_ids | mv.move_orig_ids.move_line_ids
                                 ):
-                                    if l.state == "assigned":
+                                    if (
+                                        # Normal reservation case
+                                        mv.procure_method != "make_to_order"
+                                        and l.state == "assigned"
+                                    ) or (
+                                        # Special case for multi-level MTO chains
+                                        mv.procure_method == "make_to_order"
+                                        and mv.state
+                                        not in (
+                                            "waiting",
+                                            "waiting availability",
+                                            "available",
+                                            "partially_available",
+                                        )
+                                    ):
                                         qty_flow -= l.product_uom_id._compute_quantity(
                                             l.quantity, default_uom
                                         )
@@ -2912,6 +2933,13 @@ class exporter(object):
                                         operation_materials.get(item["name"], 0)
                                         + (-qty_flow / qty)
                                     )
+                            for key, val in operation_materials.items():
+                                suboperation_json["operation"]["flows"].append(
+                                    {
+                                        "quantity": val,
+                                        "item": {"name": key},
+                                    }
+                                )
                             for key, val in operation_materials.items():
                                 suboperation_json["operation"]["flows"].append(
                                     {
@@ -2992,8 +3020,6 @@ class exporter(object):
                                                 "loads"
                                             ].append(load_tmp)
                                             break
-                            first_wo = False
-
                         yield json.dumps(operationplan) + ",\n"
 
                         # Create operationplans for each WO, starting with the last one
