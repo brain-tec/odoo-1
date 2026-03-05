@@ -49,6 +49,9 @@ class ResCompany(models.Model):
         default=True,
         help="When checked frepple respects the reservations. When unchecked frepple can reallocate material.",
     )
+    frepple_interface_user = fields.Many2one(
+        "res.users", "frePPLe interface user", ondelete="set null"
+    )
 
     def getWebtoken_key(self):
         return self.env.company.webtoken_key
