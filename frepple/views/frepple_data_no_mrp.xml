@@ -20,7 +20,6 @@
             <group>
 	          <field name="webtoken_key"/>
 	          <field name="frepple_server"/>
-              <field name="respect_reservations"/>
 	        </group>
           </page>
         </xpath>

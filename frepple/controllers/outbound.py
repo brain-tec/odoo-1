@@ -345,7 +345,6 @@ class exporter(object):
                     "days_to_purchase",
                     "calendar",
                     "manufacturing_warehouse",
-                    "respect_reservations",
                 ],
             ):
                 self.company_id = i["id"]
@@ -354,7 +353,6 @@ class exporter(object):
                 )  # TODO NOT USED RIGHT NOW - add parameter in frepple for this
                 self.po_lead = i["days_to_purchase"]
                 self.manufacturing_lead = 0
-                self.respect_reservations = i["respect_reservations"]
                 try:
                     self.calendar = (
                         i["calendar"]
@@ -2068,7 +2066,7 @@ class exporter(object):
                 )
             }
 
-            def getReservedAndDoneQuantity(sm, include_reservations):
+            def getReservedAndDoneQuantity(sm):
                 reserved_quantity = 0
                 for l in self.generator.getData(
                     "stock.move.line",
@@ -2080,7 +2078,6 @@ class exporter(object):
                     # Assigned state is also picked up on related moves.
                     if (l.state == "done" and not l.move_id.move_dest_ids) or (
                         l.state in ("assigned", "partially_available")
-                        and include_reservations
                     ):
                         reserved_quantity += l.product_uom_id._compute_quantity(
                             l.quantity, l.product_id.uom_id
@@ -2165,11 +2162,7 @@ class exporter(object):
                                         sm["product_uom"],
                                         sm_product["template"],
                                     )
-                                    reserved_quantity = reserved_quantity = (
-                                        getReservedAndDoneQuantity(
-                                            sm, self.respect_reservations
-                                        )
-                                    )
+                                    reserved_quantity = getReservedAndDoneQuantity(sm)
                                     due = self.formatDateTime(
                                         sm["date"]
                                         or i.get("commitment_date", False)
@@ -2780,14 +2773,11 @@ class exporter(object):
                                     qty_flow -= l.product_uom_id._compute_quantity(
                                         l.quantity, default_uom
                                     )
-                            if self.respect_reservations:
-                                for l in (
-                                    mv.move_line_ids | mv.move_orig_ids.move_line_ids
-                                ):
-                                    if l.state == "assigned":
-                                        qty_flow -= l.product_uom_id._compute_quantity(
-                                            l.quantity, default_uom
-                                        )
+                            for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
+                                if l.state == "assigned":
+                                    qty_flow -= l.product_uom_id._compute_quantity(
+                                        l.quantity, default_uom
+                                    )
                             if qty_flow > 0:
                                 operation_materials[consumed_item["name"]] = (
                                     operation_materials.get(consumed_item["name"], 0)
@@ -2914,22 +2904,17 @@ class exporter(object):
                                 elif not first_wo:
                                     continue
 
-                                qty_flow = max(
-                                    0,
-                                    mv.product_qty
-                                    - (mv.quantity if self.respect_reservations else 0),
-                                )
+                                qty_flow = max(0, mv.product_qty - mv.quantity)
                                 # subtract the reserved quantity if product is twice in the BOM
-                                if self.respect_reservations:
-                                    reserved_quantity[
-                                        (i["name"], mv["product_id"][0])
-                                    ] = max(
+                                reserved_quantity[(i["name"], mv["product_id"][0])] = (
+                                    max(
                                         0,
                                         reserved_quantity.get(
                                             (i["name"], mv["product_id"][0]), 0
                                         )
                                         - mv["product_qty"],
                                     )
+                                )
                                 if qty_flow > 0:
                                     suboperation_json["operation"]["flows"].append(
                                         {
@@ -3321,7 +3306,7 @@ class exporter(object):
                         0,
                         inventory.get((item["name"], location, lotname), 0)
                         + i[2]
-                        - (i[3] if self.respect_reservations else 0),
+                        - i[3],
                     )
                     if i[5]:
                         expirationdate[(item["name"], location, lotname)] = i[5]
@@ -3396,9 +3381,7 @@ class exporter(object):
                 location = self.map_locations.get(i[1], None)
                 if item and location:
                     inventory[(item["name"], location)] = (
-                        inventory.get((item["name"], location), 0)
-                        + i[2]
-                        - (i[3] if self.respect_reservations else 0)
+                        inventory.get((item["name"], location), 0) + i[2] - i[3]
                     )
             for key, val in inventory.items():
                 try:
