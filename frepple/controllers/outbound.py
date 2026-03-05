@@ -117,7 +117,6 @@ class exporter(object):
         singlecompany=False,
         version="0.0.0.unknown",
         delta=999,
-        language="en_US",
         apps="",
     ):
         self.database = database
@@ -143,7 +142,6 @@ class exporter(object):
         self.timeformat = "%Y-%m-%dT%H:%M:%S"
         self.singlecompany = singlecompany
         self.delta = delta
-        self.language = language
         self.has_expiry = (
             "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
             and "freppledb.shelflife" in apps
@@ -1087,6 +1085,7 @@ class exporter(object):
             # needs to be unique
             use_short_names = True
 
+            language = self.generator.env.context.get("lang")
             self.generator.env.cr.execute(
                 """
                 select count(*) from
@@ -1103,7 +1102,7 @@ class exporter(object):
                 having count(*) > 1
                 ) t
                 """,
-                (self.language, self.language),
+                (language, language),
             )
             for i in self.generator.env.cr.fetchall():
                 if i[0] > 0:
@@ -2689,14 +2688,10 @@ class exporter(object):
                     if i.product_id.tracking in ["serial", "lot"]:
                         # Tracking by lot or unique serial number requires that we track
                         # the production intent.
-                        qty = sum(
-                            move.product_uom_id._compute_quantity(
-                                move.product_qty, i.product_id.uom_id
-                            )
-                            for move in i.procurement_group_id.mrp_production_ids.filtered(
-                                lambda m: m.product_id == i.product_id
-                                and m.state not in ["done", "cancel"]
-                            )
+                        qty = self.convert_qty_uom(
+                            i.product_qty,
+                            i.product_uom_id.id,
+                            self.product_product[i.product_id.id]["template"],
                         )
                     else:
                         # No serialization on the product
