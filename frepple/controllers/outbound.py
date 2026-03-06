@@ -2837,7 +2837,6 @@ class exporter(object):
                 )
                 # Define operations for each WO
                 idx = 10
-                first_wo = True
                 for wo in i.workorder_ids:
                     suboperation = wo.display_name
                     if self.has_length_limits and len(suboperation) > 300:
@@ -2867,7 +2866,7 @@ class exporter(object):
                     operation_materials = {}
                     for mv in i.move_raw_ids or []:
                         if (mv.operation_id and mv.operation_id != wo.operation_id) or (
-                            first_wo and not mv.operation_id
+                            not mv.operation_id and wo.id != i.workorder_ids[-1].id
                         ):
                             continue
                         item = self.product_product.get(mv.product_id.id, None)
@@ -2969,7 +2968,6 @@ class exporter(object):
                                         ),
                                     )
                                     break
-                    first_wo = False
                     yield "</operation></suboperation>"
                 yield "</suboperations></operation></operationplan>"
 
