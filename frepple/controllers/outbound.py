@@ -2866,7 +2866,11 @@ class exporter(object):
                     operation_materials = {}
                     for mv in i.move_raw_ids or []:
                         if (mv.operation_id and mv.operation_id != wo.operation_id) or (
-                            not mv.operation_id and wo.id != i.workorder_ids[-1].id
+                            (
+                                not mv.operation_id     # No operation was specified
+                                or mv.operation_id.id not in operation_ids   # Operation was specified on a non-existing work order
+                            )
+                            and wo.id != i.workorder_ids[-1].id
                         ):
                             continue
                         item = self.product_product.get(mv.product_id.id, None)
