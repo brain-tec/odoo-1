@@ -2854,6 +2854,9 @@ class exporter(object):
                         operation_json["suboperations"] = []
                         # Define operations for each WO
                         idx = 10
+                        operation_ids = {
+                            i.operation_id.id for i in i.workorder_ids if i.operation_id
+                        }
                         for wo in i.workorder_ids:
                             suboperation = wo.display_name
 
@@ -2891,7 +2894,11 @@ class exporter(object):
                                     mv.operation_id
                                     and mv.operation_id != wo.operation_id
                                 ) or (
-                                    not mv.operation_id
+                                    (
+                                        not mv.operation_id  # No operation was specified
+                                        or mv.operation_id.id
+                                        not in operation_ids  # Operation was specified on a non-existing work order
+                                    )
                                     and wo.id != i.workorder_ids[-1].id
                                 ):
                                     continue
