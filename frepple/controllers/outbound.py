@@ -2837,6 +2837,9 @@ class exporter(object):
                 )
                 # Define operations for each WO
                 idx = 10
+                operation_ids = {
+                    i.operation_id.id for i in i.workorder_ids if i.operation_id
+                }
                 for wo in i.workorder_ids:
                     suboperation = wo.display_name
                     if self.has_length_limits and len(suboperation) > 300:
