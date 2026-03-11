@@ -3,7 +3,7 @@ name: Trigger test odoo 19
 on:
   push:
     branches:
-      - "19.0"
+      - "19.0-dev"
   workflow_dispatch:
 
 jobs:
@@ -19,5 +19,5 @@ jobs:
           event_type: odoo_connector
           message: |
             {
-            "branch": "19.0"
+            "branch": "19.0-dev"
             }
