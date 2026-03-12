@@ -517,11 +517,35 @@ class XMLController(odoo.http.Controller):
                     related_data_id = None
                     skip_recommendation = False
 
-                    if i.get("res_partner_id"):
+                    if i.get("res_partner_id") or (
+                        i.get("type") == "purchase" and "res_partner_id" in i
+                    ):
                         try:
                             partner_ref = i["res_partner_id"]
                             # Check if it's an ID (int) or a name (string)
-                            if isinstance(partner_ref, int):
+                            if not partner_ref:
+                                # frePPLe didn't send an ID for this vendor
+                                product = (
+                                    req.env["product.product"]
+                                    .sudo()
+                                    .browse(i["product_id"])
+                                )
+                                partner = (
+                                    req.env["product.supplierinfo"]
+                                    .sudo()
+                                    .search(
+                                        [
+                                            (
+                                                "product_tmpl_id",
+                                                "=",
+                                                product.product_tmpl_id.id,
+                                            )
+                                        ],
+                                        limit=1,
+                                    )
+                                )
+
+                            elif isinstance(partner_ref, int):
                                 partner = (
                                     req.env["res.partner"].sudo().browse(partner_ref)
                                 )
