@@ -3,7 +3,7 @@ name: Trigger test odoo 17
 on:
   push:
     branches:
-      - "17.0"
+      - "17.0-dev"
 
 jobs:
   trigger:
@@ -18,5 +18,5 @@ jobs:
           event_type: odoo_connector
           message: |
             {
-            "branch": "17.0"
+            "branch": "17.0-dev"
             }
