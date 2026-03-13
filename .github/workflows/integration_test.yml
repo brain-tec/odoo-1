@@ -3,9 +3,9 @@ name: Trigger test odoo 18
 on:
   push:
     branches:
-      - "18.0"
+      - "18.0-dev"
   workflow_dispatch:
-  
+
 jobs:
   trigger:
     runs-on: ubuntu-24.04
@@ -19,5 +19,5 @@ jobs:
           event_type: odoo_connector
           message: |
             {
-            "branch": "18.0"
+            "branch": "18.0-dev"
             }
