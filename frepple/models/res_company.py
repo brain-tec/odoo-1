@@ -41,10 +41,6 @@ class ResCompany(models.Model):
     calendar = fields.Many2one("resource.calendar", "Calendar", ondelete="set null")
     webtoken_key = fields.Char("Webtoken key", size=128)
     frepple_server = fields.Char("frePPLe web server", size=128)
-    respect_reservations = fields.Boolean(
-        default=True,
-        help="When checked frepple respects the reservations. When unchecked frepple can reallocate material.",
-    )
     frepple_interface_user = fields.Many2one(
         "res.users", "frePPLe interface user", ondelete="set null"
     )

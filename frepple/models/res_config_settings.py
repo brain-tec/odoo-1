@@ -46,9 +46,6 @@ class ResConfigSettings(models.TransientModel):
     frepple_server = fields.Char(
         "frePPLe server", size=128, related="company_id.frepple_server", readonly=False
     )
-    respect_reservations = fields.Boolean(
-        related="company_id.respect_reservations", readonly=False
-    )
     frepple_interface_user = fields.Many2one(
         "res.users",
         "frePPLe interface user",
