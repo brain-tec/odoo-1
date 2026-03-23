@@ -246,6 +246,26 @@
                 <value eval="{'quantity': '0'}"/>
         </function>
 
+        <!-- MTO sales order. Confirm action creates MTO MO and MTO PO. -->
+        <record id="demo_sale_order_mto" model="sale.order">
+            <field name="partner_id" ref="base.res_partner_12"/>
+            <field name="partner_invoice_id" ref="base.res_partner_12"/>
+            <field name="partner_shipping_id" ref="base.res_partner_12"/>
+            <field name="user_id" ref="base.user_demo"/>
+            <field name="team_id" ref="sales_team.team_sales_department"/>
+            <field name="date_order" eval="(DateTime.today() + relativedelta(weeks=1)).strftime('%Y-%m-%d %H:%M')"/>
+        </record>
+
+        <record id="sale_order_line_mto_1" model="sale.order.line">
+            <field name="order_id" ref="demo_sale_order_mto"/>
+            <field name="product_id" ref="__export__.product_product_11_ebf9f123"/>
+            <field name="product_uom_qty">4.0</field>
+            <field name="product_uom" ref="uom.product_uom_unit"/>
+            <field name="price_unit">250.0</field>
+        </record>
+
+        <function model="sale.order" name="action_confirm" eval="[[ref('demo_sale_order_mto')]]"/>
+
         <!-- demand history -->
 
             <record id="sale_order_1" model="sale.order">
