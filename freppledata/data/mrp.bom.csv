@@ -9,4 +9,6 @@ __export__.mrp_bom_9_132490bc,0,chair,,Manufacture this product,My Company (San 
 __export__.mrp_bom_8_23412dda,0,DIY varnished chair,,Kit,My Company (San Francisco),__export__.mrp_bom_line_17_dd3283a9,4,1,,__export__.product_product_54_eb19f380,,,,,,,
 ,,,,,,__export__.mrp_bom_line_17_ec85ff0a,1,1,,__export__.product_product_57_9ea5498d,,,,,,,
 __export__.mrp_bom_6_2398cacd,0,custom chair,,Manufacture this product,My Company (San Francisco),__export__.mrp_bom_line_11_c980abd2,1,1,,__export__.product_product_54_eb19f380,,,,,,,
-,,,,,,__export__.mrp_bom_line_13_ff05ff0a,1,1,,__export__.product_product_57_9ea5498d,,,,,,,
+,,,,,,__export__.mrp_bom_line_13_ff05ff0a,4,1,,__export__.product_product_55_deac98ed,,,,,,,
+,,,,,,__export__.mrp_bom_line_13_fe35ff0a,1,1,,__export__.product_product_56_ea478d4f,,,,,,,
+__export__.mrp_bom_10_dddd82e22b,0,custom chair leg,,Manufacture this product,My Company (San Francisco),__export__.mrp_bom_line_21_d984495e0,1,1,,__export__.product_product_58_8eba4d11,__export__.mrp_routing_workcenter_11_ac949bac,cut wooden beam,100,priority,1,saw,2
