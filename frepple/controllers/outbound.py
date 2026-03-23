@@ -2171,6 +2171,7 @@ class exporter(object):
                                     )
                                     demand = {
                                         "name": sol_name,
+                                        "category": state,
                                         "batch": batch,
                                         "quantity": (
                                             qty - reserved_quantity
@@ -2242,6 +2243,7 @@ class exporter(object):
                         continue
                     demand = {
                         "name": name,
+                        "category": state,
                         "batch": batch,
                         "quantity": qty,
                         "due": due,
