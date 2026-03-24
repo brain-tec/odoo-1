@@ -16,10 +16,10 @@
 
         <!-- Unarchive MTO route -->
         <record id="stock.route_warehouse0_mto" model="stock.route">
-            <field name="active">True</field>
+            <field name="active" eval="1"/>
         </record>
         <record id="mrp_subcontracting.route_resupply_subcontractor_mto" model="stock.route">
-            <field name="active">True</field>
+            <field name="active" eval="1"/>
         </record>
     </data>
 </odoo>

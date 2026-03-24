@@ -25,5 +25,13 @@
             <field name="price">3</field>
             <field name="currency_id" ref="base.USD"/>
         </record>
+		<record id="product_supplierinfo_153" model="product.supplierinfo">
+            <field name="product_tmpl_id" ref="__export__.product_template_46_a99bf0d6"/>
+            <field name="partner_id" ref="base.res_partner_18"/>
+            <field name="delay">7</field>
+            <field name="min_qty">50</field>
+            <field name="price">3</field>
+            <field name="currency_id" ref="base.USD"/>
+        </record>
     </data>
 </odoo>
