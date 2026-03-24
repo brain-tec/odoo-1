@@ -2403,17 +2403,22 @@ class exporter(object):
                         "not in",
                         # Comment out on of the following alternative approaches:
                         # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
+                        # (
+                        #     "draft",
+                        #     "sent",
+                        #     "bid",
+                        #     "to approve",
+                        #     # "confirmed",  # Not a standard state any longer in odoo 18
+                        #     "cancel",
+                        #     # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
+                        # ),
+                        # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                         (
-                            "draft",
-                            "sent",
                             "bid",
-                            "to approve",
                             # "confirmed",  # Not a standard state any longer in odoo 18
                             "cancel",
-                            # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
+                            # "done",  # Do NOT exclude done purchase orders! They can still have pending moves to receive the material.
                         ),
-                        # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
-                        # ("bid", "confirmed", "cancel"),
                     ),
                     ("order_id.state", "=", False),
                     # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
