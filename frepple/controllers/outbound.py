@@ -2374,16 +2374,16 @@ class exporter(object):
                             "not in",
                             # Comment out one of the following alternative approaches:
                             # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
-                            (
-                                "draft",
-                                "sent",
-                                "bid",
-                                "to approve",
-                                "cancel",
-                                # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
-                            ),
+                            # (
+                            #     "draft",
+                            #     "sent",
+                            #     "bid",
+                            #     "to approve",
+                            #     "cancel",
+                            #     # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
+                            # ),
                             # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
-                            # ("bid", "confirmed", "cancel"),
+                            ("bid", "confirmed", "cancel"),
                         ),
                         ("order_id.state", "=", False),
                         # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
@@ -2411,7 +2411,11 @@ class exporter(object):
                                 continue
                             j = mv.purchase_line_id.order_id
                             po_line_reference = "%s - %s - %s - %s" % (
-                                j.name,
+                                (
+                                    j.name
+                                    if j.state not in ("draft", "sent", "to approve")
+                                    else f"{j.name} RFQ"
+                                ),
                                 mv.picking_id.name,
                                 mv.id,
                                 mv.purchase_line_id.id,
@@ -2581,7 +2585,11 @@ class exporter(object):
 
                             poline = {
                                 "ordertype": "PO",
-                                "reference": "%s - %s" % (j.name, i.id),
+                                "reference": (
+                                    f"{j.name} - {i.id}"
+                                    if j.state not in ("draft", "sent", "to approve")
+                                    else f"{j.name} RFQ - {i.id}"
+                                ),
                                 "start": start,
                                 "end": end,
                                 "quantity": qty,
