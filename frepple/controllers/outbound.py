@@ -2447,7 +2447,11 @@ class exporter(object):
                         continue
                     j = mv.purchase_line_id.order_id
                     po_line_reference = "%s - %s - %s - %s" % (
-                        j.name if j.state != "draft" else f"{j.name} RFQ",
+                        (
+                            j.name
+                            if j.state not in ("draft", "sent", "to approve")
+                            else f"{j.name} RFQ"
+                        ),
                         mv.picking_id.name,
                         mv.id,
                         mv.purchase_line_id.id,
@@ -2609,7 +2613,11 @@ class exporter(object):
                         batch = None
 
                     yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
-                        quoteattr(f"{j.name} - {i.id}" if j.state != "draft" else f"{j.name} RFQ - {i.id}"),
+                        quoteattr(
+                            f"{j.name} - {i.id}"
+                            if j.state not in ("draft", "sent", "to approve")
+                            else f"{j.name} RFQ - {i.id}"
+                        ),
                         "batch=%s " % quoteattr(batch) if batch else "",
                         start,
                         end,
