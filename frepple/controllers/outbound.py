@@ -2906,19 +2906,8 @@ class exporter(object):
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                                 if (
-                                    # Normal reservation case
                                     mv.procure_method != "make_to_order"
                                     and l.state == "assigned"
-                                ) or (
-                                    # Special case for multi-level MTO chains
-                                    mv.procure_method == "make_to_order"
-                                    and mv.state
-                                    not in (
-                                        "waiting",
-                                        "waiting availability",
-                                        "available",
-                                        "partially_available",
-                                    )
                                 ):
                                     qty_flow -= l.product_uom_id._compute_quantity(
                                         l.quantity, default_uom
@@ -3293,6 +3282,28 @@ class exporter(object):
     # export_stockorders will be called instead of export_onhand
     # when expiration dates is enabled in Odoo
 
+    def get_unconsumed_quantity(self, move):
+        """
+        Recursively calculates how much of the move's quantity is still
+        sitting in internal locations (unconsumed).
+        """
+        if move.state == "cancel":
+            return 0.0
+        if move.state == "done" and move.location_dest_id.usage != "internal":
+            return 0.0
+        if move.move_dest_ids:
+            total_unconsumed = 0.0
+            for dest_move in move.move_dest_ids:
+                if dest_move.state != "cancel":
+                    total_unconsumed += self.get_unconsumed_quantity(dest_move)
+            return total_unconsumed
+        if move.location_dest_id.usage == "internal":
+            return move.product_uom._compute_quantity(
+                move.quantity, move.product_id.uom_id
+            )
+        else:
+            return 0.0
+
     def export_onhand(self):
         """
         Extracting all on hand inventories to frePPLe.
@@ -3360,13 +3371,14 @@ class exporter(object):
         for mv in self.generator.getData(
             "stock.move",
             search=[
-                # It came from an MO
+                # It came from an PO/MO
+                "|",
                 ("production_id", "!=", False),
-                # The production is finished
+                ("purchase_line_id", "!=", False),
+                # The receipt/production is finished
                 ("state", "=", "done"),
-                # It has not been consumed by a next level yet
-                "!",
-                ("move_dest_ids.raw_material_production_id.state", "=", "done"),
+                # It has not been consumed by the next level yet
+                ("move_dest_ids.state", "not in", ["done", "cancel"]),
                 # Explicit MTO flag or has a destination (chained/MTO)
                 "|",
                 ("move_dest_ids", "!=", False),
@@ -3378,11 +3390,24 @@ class exporter(object):
             location = self.map_locations.get(mv.location_dest_id.id, None)
             if not item or not location:
                 continue
-            batch = self.getBatch(mv.production_id)
-            qty = mv.product_uom._compute_quantity(mv.quantity, mv.product_id.uom_id)
-            if batch and qty > 0:
+            unconsumed_quantity = self.get_unconsumed_quantity(mv)
+            if unconsumed_quantity <= 0:
+                continue
+            if mv.production_id:
+                batch = self.getBatch(mv.production_id)
+            elif mv.purchase_line_id:
+                mto_so = mv.move_dest_ids.group_id.sale_id
+                batch = mto_so[0].name if mto_so else None
+                if not batch:
+                    # Follow multi-level MTO chain to the sale order
+                    for mo in mv.purchase_line_id.order_id._get_mrp_productions():
+                        batch = self.getBatch(mo)
+                        if batch:
+                            break
+            if batch:
                 inventory[(item["name"], location, batch)] = (
-                    inventory.get((item["name"], location, batch), 0) + qty
+                    inventory.get((item["name"], location, batch), 0)
+                    + unconsumed_quantity
                 )
         for key, val in inventory.items():
             yield '<buffer name=%s batch=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
