@@ -2772,7 +2772,7 @@ class exporter(object):
                 operation_materials = {}
                 for mv in (i.move_raw_ids if type != "subcontractor" else None) or []:
                     consumed_item = self.product_product.get(mv.product_id.id, None)
-                    if not consumed_item or mv.state in ("done", "cancelled"):
+                    if not consumed_item or mv.state in ("done", "cancel"):
                         continue
                     default_uom = mv.product_id.uom_id
                     qty_flow = mv.product_uom._compute_quantity(
@@ -2892,7 +2892,7 @@ class exporter(object):
                             if wo.id != i.workorder_ids[-1].id:
                                 continue
                         item = self.product_product.get(mv.product_id.id, None)
-                        if not item or mv.state in ("done", "cancelled"):
+                        if not item or mv.state in ("done", "cancel"):
                             continue
                         default_uom = mv.product_id.uom_id
                         qty_flow = mv.product_uom._compute_quantity(
