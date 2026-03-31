@@ -2787,12 +2787,18 @@ class exporter(object):
                         for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                             if (
                                 # Normal reservation case
-                                mv.procure_method != "make_to_order"
+                                l.move_id.procure_method != "make_to_order"
                                 and l.state == "assigned"
                             ) or (
                                 # Special case for multi-level MTO chains
-                                mv.procure_method == "make_to_order"
-                                and mv.state == "waiting"
+                                l.move_id.procure_method == "make_to_order"
+                                and l.move_id.state
+                                not in (
+                                    "waiting",
+                                    "waiting availability",
+                                    "available",
+                                    "partially_available",
+                                )
                             ):
                                 qty_flow -= l.product_uom_id._compute_quantity(
                                     l.quantity, default_uom
@@ -2906,8 +2912,17 @@ class exporter(object):
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                                 if (
-                                    mv.procure_method != "make_to_order"
+                                    l.move_id.procure_method != "make_to_order"
                                     and l.state == "assigned"
+                                ) or (
+                                    l.move_id.procure_method == "make_to_order"
+                                    and l.move_id.state
+                                    not in (
+                                        "waiting",
+                                        "waiting availability",
+                                        "available",
+                                        "partially_available",
+                                    )
                                 ):
                                     qty_flow -= l.product_uom_id._compute_quantity(
                                         l.quantity, default_uom
