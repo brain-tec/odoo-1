@@ -15,21 +15,6 @@ logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    # This field is used to hide/display the quote button
-    # in the "Other info" tab of the sales order
-    _without_quote = fields.Boolean(
-        compute="_compute_without_quote", store=False, default=False
-    )
-
-    def _compute_without_quote(self):
-        groups = self.env["res.groups"].search([("name", "=", "frePPLe quoting user")])
-        if not groups:
-            enable_quoting_module = False
-        else:
-            enable_quoting_module = self.user_id.id in groups.user_ids.ids
-        for order in self:
-            order._without_quote = order.state != "draft" or not enable_quoting_module
-
     def use_product_short_names(self):
         # Check if we can use short names
         # To use short names, the internal reference (or the name when no internal reference is defined)
