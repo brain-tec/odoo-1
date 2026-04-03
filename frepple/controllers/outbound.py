@@ -1318,7 +1318,10 @@ class exporter(object):
                         if suppliers:
                             item["itemsuppliers"] = []
                             for k, v in suppliers.items():
-                                if v["date_end"] and v["date_end"] < self.currentdate:
+                                if (
+                                    v["date_end"]
+                                    and v["date_end"] < self.currentdate.date()
+                                ):
                                     continue
                                 itemsupplier = {
                                     "leadtime": (v["delay"] or 0) * 86400,
