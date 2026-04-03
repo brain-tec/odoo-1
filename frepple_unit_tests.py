@@ -237,7 +237,7 @@ class OdooTest(TransactionTestCase):
             ItemSupplier.objects.all()
             .filter(
                 item__name="wooden beam - 木头",
-                supplier__contains="Lumber Inc",
+                supplier__name__contains="Lumber Inc",
                 effective_start=datetime(2029, 1, 1),
             )
             .count(),
