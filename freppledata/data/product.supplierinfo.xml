@@ -25,7 +25,25 @@
             <field name="price">3</field>
             <field name="currency_id" ref="base.USD"/>
         </record>
-		<record id="product_supplierinfo_153" model="product.supplierinfo">
+        <record id="product_supplierinfo_153" model="product.supplierinfo">
+            <field name="product_tmpl_id" ref="product_template.wooden_beam"/>
+            <field name="partner_id" ref="base.res_partner_18"/>
+            <field name="delay">7</field>
+            <field name="min_qty">1</field>
+            <field name="price">9</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="date_start">2029-01-01</field>
+        </record>
+		<record id="product_supplierinfo_154" model="product.supplierinfo">
+            <field name="product_tmpl_id" ref="product_template.wooden_beam"/>
+            <field name="partner_id" ref="base.res_partner_18"/>
+            <field name="delay">7</field>
+            <field name="min_qty">50</field>
+            <field name="price">3</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="date_end">2020-01-01</field>
+        </record>
+		<record id="product_supplierinfo_155" model="product.supplierinfo">
             <field name="product_tmpl_id" ref="product_template.custom_cushion"/>
             <field name="partner_id" ref="base.res_partner_18"/>
             <field name="delay">7</field>
