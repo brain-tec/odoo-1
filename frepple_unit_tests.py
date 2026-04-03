@@ -41,6 +41,7 @@ from freppledb.input.models import (
     ManufacturingOrder,
     Demand,
     WorkOrder,
+    ItemSupplier,
 )
 
 # THE CODE IN THIS FILE IS NOT EXECUTED BY THE ODOO TEST SUITE.
@@ -192,7 +193,6 @@ class OdooTest(TransactionTestCase):
             item__name__in=frepple_items,
             status="confirmed",
         )
-        # Only P00015 in 17 & 18
         self.assertEqual(
             po_list.count(),
             5,
@@ -233,8 +233,23 @@ class OdooTest(TransactionTestCase):
             11,
             "difference in number of imported open demands",
         )
+        self.assertEqual(
+            ItemSupplier.objects.all()
+            .filter(
+                item__name="wooden beam - 木头",
+                supplier__contains="Lumber Inc",
+                effective_start=datetime(2029, 1, 1),
+            )
+            .count(),
+            1,
+            "Item supplier with future effective start date wasn't imported correctly",
+        )
+        self.assertEqual(
+            ItemSupplier.objects.all().filter(item_id="wooden beam - 木头").count(),
+            2,
+            "Item supplier with past effective end date should be ignored",
+        )
 
-        # Work order level integration is only available from odoo 15 onwards
         self.assertEqual(
             ManufacturingOrder.objects.all()
             .filter(status="approved", quantity=8)
