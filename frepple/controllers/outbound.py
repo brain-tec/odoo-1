@@ -1358,7 +1358,7 @@ class exporter(object):
                 if suppliers:
                     yield "<itemsuppliers>\n"
                     for k, v in suppliers.items():
-                        if v["date_end"] and v["date_end"] < self.currentdate:
+                        if v["date_end"] and v["date_end"] < self.currentdate.date():
                             continue
                         yield '<itemsupplier leadtime="P%dD" priority="%s" batchwindow="P%dD" size_minimum="%f" cost="%f"%s%s><supplier name=%s/></itemsupplier>\n' % (
                             v["delay"],
@@ -3123,7 +3123,8 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute("""
+            self.generator.env.cr.execute(
+                """
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3142,7 +3143,8 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """)
+                """
+            )
             data = self.generator.env.cr.fetchall()
         else:
             data = [
