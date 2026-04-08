@@ -1,0 +1,2 @@
+"name","id","date_end","company_id","date_start","user_id","state","vendor_id","line_ids/product_id/id","line_ids/product_qty","line_ids/price_unit"
+"BO00002",purchase_requisition.BO00002,"","My Company (San Francisco)","2026-01-01","Mitchell Admin","confirmed","Lumber Inc","product_product.cushion","100.0","5.0"

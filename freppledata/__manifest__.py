@@ -17,6 +17,7 @@
         "data/purchase.order.xml",
         "data/stock.warehouse.orderpoint.csv",
         "data/product.supplierinfo.xml",
+        "data/purchase.requisition.csv",
         "data/sale.order.xml",  # Last to assure the bom and suppliers are in place for MTO sales orders
     ],
     "autoinstall": False,
