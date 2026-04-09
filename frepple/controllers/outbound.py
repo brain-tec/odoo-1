@@ -2069,53 +2069,9 @@ class exporter(object):
         stock.warehouse.name -> demand->location
         (if sale.order.picking_policy = 'one' then same as demand.quantity else 1) -> demand.minshipment
         """
-        # Get all sales order lines
-        search = (
-            [("product_id", "!=", False)]
-            if self.delta >= 999
-            else [
-                ("product_id", "!=", False),
-                (
-                    "write_date",
-                    ">=",
-                    datetime.now() - timedelta(days=self.delta),
-                ),
-            ]
-        )
-        so_line = self.generator.getData(
-            "sale.order.line",
-            search=search,
-            fields=[
-                "qty_delivered",
-                "state",
-                "product_id",
-                "product_uom_qty",
-                "product_uom",
-                "order_id",
-                "move_ids",
-            ],
-        )
-
-        # Get all sales orders
-        so = {
-            i["id"]: i
-            for i in self.generator.getData(
-                "sale.order",
-                ids=[j["order_id"][0] for j in so_line],
-                fields=[
-                    "state",
-                    "partner_id",
-                    "commitment_date",
-                    "date_order",
-                    "picking_policy",
-                    "warehouse_id",
-                ],
-            )
-        }
 
         # Get all move ids
         # We only read the open ones
-
         stock_moves_dict = {
             i["id"]: i
             for i in self.generator.getData(
@@ -2155,6 +2111,241 @@ class exporter(object):
         yield "<!-- sales order lines -->\n"
         yield "<demands>\n"
 
+        # A first loop if parameter odoo.delta is less than 999.
+        # We want to pick the closed sales order lines with a write date in the last odoo.delta days
+        # A second loop will pick all the open sales orders over the entire horizon
+
+        if self.delta < 999:
+
+            # Get all sales order lines
+            search = [
+                ("product_id", "!=", False),
+                (
+                    "write_date",
+                    ">=",
+                    datetime.now() - timedelta(days=self.delta),
+                ),
+                ("order_id.state", "=", "sale"),
+            ]
+            so_line = self.generator.getData(
+                "sale.order.line",
+                search=search,
+                fields=[
+                    "qty_delivered",
+                    "state",
+                    "product_id",
+                    "product_uom_qty",
+                    "product_uom",
+                    "order_id",
+                    "move_ids",
+                ],
+            )
+
+            # Get all sales orders
+            so = {
+                i["id"]: i
+                for i in self.generator.getData(
+                    "sale.order",
+                    ids=[j["order_id"][0] for j in so_line],
+                    fields=[
+                        "state",
+                        "partner_id",
+                        "commitment_date",
+                        "date_order",
+                        "picking_policy",
+                        "warehouse_id",
+                    ],
+                )
+            }
+
+            for i in so_line:
+                name = "%s %d" % (i["order_id"][1], i["id"])
+                batch = i["order_id"][1]
+                product = (
+                    self.product_product.get(i["product_id"][0], None)
+                    if i["product_id"]
+                    else None
+                )
+                j = so[i["order_id"][0]]
+                location = (
+                    self.warehouses.get(j["warehouse_id"][0], None)
+                    if j["warehouse_id"]
+                    else None
+                )
+                customer = (
+                    self.map_customers.get(j["partner_id"][0], None)
+                    if j["partner_id"]
+                    else None
+                )
+
+                if not customer or not location or not product:
+                    # Not interested in this sales order...
+                    continue
+                due = self.formatDateTime(
+                    j.get("commitment_date", False) or j["date_order"]
+                )
+                priority = 1  # We give all customer orders the same default priority
+
+                # if no stock_move if that SO line is still open, we can consider the line closed
+                state = j.get("state", "sale")
+                if not any(
+                    x in stock_moves_dict
+                    and stock_moves_dict[x] not in ("cancel", "done")
+                    for x in i["move_ids"]
+                ):
+                    state = "done"
+                if state == "sale":
+                    if i["move_ids"] and any(
+                        [mv_id in stock_moves_dict for mv_id in i["move_ids"]]
+                    ):
+                        for mv_id in i["move_ids"]:
+                            sol_name = (
+                                "%s %s" % (name, mv_id)
+                                if len(i["move_ids"]) > 1
+                                else name
+                            )
+                            sm = stock_moves_dict.get(mv_id)
+                            if sm:
+                                sm_product = (
+                                    self.product_product.get(sm["product_id"][0], None)
+                                    if sm["product_id"]
+                                    else product
+                                )
+                                if not sm_product:
+                                    continue
+                                qty = self.convert_qty_uom(
+                                    sm["product_uom_qty"],
+                                    sm["product_uom"],
+                                    sm_product["template"],
+                                )
+                                reserved_quantity = (
+                                    getReservedQuantity(mv_id)
+                                    if self.respect_reservations
+                                    else 0
+                                )
+
+                                # This sales order is still open, we are not interested
+                                if qty - reserved_quantity > 0:
+                                    continue
+
+                                due = self.formatDateTime(sm["date"] or j["date_order"])
+
+                                yield (
+                                    '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                                    # Disable the next line in frepple < 6.25
+                                    '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                                    "</demand>\n"
+                                ) % (
+                                    quoteattr(sol_name),
+                                    quoteattr(batch),
+                                    (
+                                        qty - reserved_quantity
+                                        if qty - reserved_quantity > 0
+                                        else qty
+                                    ),
+                                    due,
+                                    priority,
+                                    (
+                                        qty - reserved_quantity
+                                        if j["picking_policy"] == "one"
+                                        and qty - reserved_quantity > 0
+                                        else 0.0
+                                    ),
+                                    "closed",
+                                    quoteattr(sm_product["name"]),
+                                    quoteattr(customer),
+                                    quoteattr(location),
+                                    # Disable the next 2 lines in frepple < 6.25
+                                    quoteattr(i["order_id"][1]),
+                                    (
+                                        "alltogether"
+                                        if j["picking_policy"] == "one"
+                                        else "independent"
+                                    ),
+                                )
+                        # We are done with this line, move to the next one
+                        continue
+                    else:
+                        qty = i["product_uom_qty"] - i["qty_delivered"]
+                        # Open sales order ? Not interested
+                        if qty > 0:
+                            continue
+                        status = "closed"
+                        qty = self.convert_qty_uom(
+                            i["product_uom_qty"],
+                            i["product_uom"],
+                            product["template"],
+                        )
+                elif state == "done":
+                    status = "closed"
+                    qty = self.convert_qty_uom(
+                        i["product_uom_qty"],
+                        i["product_uom"],
+                        product["template"],
+                    )
+                else:
+                    logger.warning("Unknown sales order state: %s." % (state,))
+                    continue
+
+                yield (
+                    '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                    # Disable the next line in frepple < 6.25
+                    '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                    "</demand>\n"
+                ) % (
+                    quoteattr(name),
+                    quoteattr(batch),
+                    qty,
+                    due,
+                    priority,
+                    qty if j["picking_policy"] == "one" and qty > 0 else 0.0,
+                    status,
+                    quoteattr(product["name"]),
+                    quoteattr(customer),
+                    quoteattr(location),
+                    # Disable the next lines in frepple < 6.25
+                    quoteattr(i["order_id"][1]),
+                    "alltogether" if j["picking_policy"] == "one" else "independent",
+                )
+
+        # Second loop to get all the sales orders
+        # Get all sales order lines.
+        # This loop will skip the closed sales orders if odoo.delta < 999
+        # as we assume they have been continuously pulled by the first loop
+
+        search = [
+            ("product_id", "!=", False),
+        ]
+        so_line = self.generator.getData(
+            "sale.order.line",
+            search=search,
+            fields=[
+                "qty_delivered",
+                "state",
+                "product_id",
+                "product_uom_qty",
+                "product_uom",
+                "order_id",
+                "move_ids",
+            ],
+        )
+
+        # Get all sales orders
+        so = {
+            i["id"]: i
+            for i in self.generator.getData(
+                "sale.order",
+                ids=[j["order_id"][0] for j in so_line],
+                fields=[
+                    "state",
+                    "partner_id",
+                    "commitment_date",
+                    "date_order",
+                    "picking_policy",
+                    "warehouse_id",
+                ],
+            )
+        }
         for i in so_line:
             name = "%s %d" % (i["order_id"][1], i["id"])
             batch = i["order_id"][1]
@@ -2192,6 +2383,8 @@ class exporter(object):
                 for x in i["move_ids"]
             ):
                 state = "done"
+                if self.delta < 999:
+                    continue
             if state in ("draft", "sent"):
                 # status = "inquiry"  # Inquiries don't reserve capacity and materials
                 status = "quote"  # Quotes do reserve capacity and materials
@@ -2227,6 +2420,10 @@ class exporter(object):
                                 if self.respect_reservations
                                 else 0
                             )
+
+                            # closed sales orders covered by the first pass
+                            if self.delta < 999 and qty - reserved_quantity <= 0:
+                                continue
                             due = self.formatDateTime(sm["date"] or j["date_order"])
 
                             yield (
@@ -2267,6 +2464,9 @@ class exporter(object):
                 else:
                     qty = i["product_uom_qty"] - i["qty_delivered"]
                     if qty <= 0:
+                        # closed sales orders covered by the first pass
+                        if self.delta < 999:
+                            continue
                         status = "closed"
                         qty = self.convert_qty_uom(
                             i["product_uom_qty"],
@@ -2281,6 +2481,8 @@ class exporter(object):
                             product["template"],
                         )
             elif state == "done":
+                if self.delta < 999:
+                    continue
                 status = "closed"
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
@@ -2318,6 +2520,7 @@ class exporter(object):
                 quoteattr(i["order_id"][1]),
                 "alltogether" if j["picking_policy"] == "one" else "independent",
             )
+
         yield "</demands>\n"
 
     def export_forecasts(self):
