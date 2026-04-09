@@ -304,7 +304,7 @@ class OdooTest(TransactionTestCase):
             "frepple.recommendation",
             [],
             {},
-            ["id", "type", "quantity", "product_id"],
+            ["id", "type", "quantity", "product_id", "startdate", "enddate"],
         ):
             if odoo_rec["type"] == "purchase":
                 count_purchase += 1
@@ -321,7 +321,7 @@ class OdooTest(TransactionTestCase):
             elif odoo_rec["type"] == "latedelivery":
                 count_late_delivery += 1
         self.assertGreaterEqual(
-            count_purchase, 5, "expected at least 5 purchase recommendations"
+            count_purchase, 4, "expected at least 4 purchase recommendations"
         )
         self.assertGreaterEqual(
             count_reschedule,
@@ -395,12 +395,38 @@ class OdooTest(TransactionTestCase):
                     produce_rec["product_id"][0],
                     "different product after approving the produce recommendation",
                 )
+                self.assertEqual(
+                    odoo_moline["date_start"],
+                    produce_rec["startdate"],
+                    "different start date after approving the produce recommendation",
+                )
+                self.assertEqual(
+                    odoo_moline["date_finished"],
+                    produce_rec["enddate"],
+                    "different end date after approving the produce recommendation",
+                )
                 cnt += 1
             self.assertEqual(
                 cnt,
                 1,
                 "unexpected number of manufacturing orders after approving the produce recommendation",
             )
+        if reschedule_rec:
+            for odoo_mo in self.odooRPC(
+                "mrp.production",
+                [("id", "=", reschedule_rec["id"])],
+                {"limit": 1, "order": "create_date desc"},
+            ):
+                self.assertEqual(
+                    odoo_mo["date_start"],
+                    reschedule_rec["startdate"],
+                    "different start date after approving the reschedule recommendation",
+                )
+                self.assertEqual(
+                    odoo_mo["date_finished"],
+                    reschedule_rec["enddate"],
+                    "different end date after approving the reschedule recommendation",
+                )
         # Make sure the records have been deleted from the recommendation
         self.assertEqual(
             count_produce
@@ -525,3 +551,50 @@ class OdooTest(TransactionTestCase):
             )
             cnt += 1
         self.assertEqual(cnt, 1, "expected to approve 1 purchase order")
+
+        # Test blanket order
+        # look for a blanket order in odoo
+        for odoo_prl in self.odooRPC(
+            "purchase.requisition.line",
+            [("product_qty", ">", 0)],
+            {"limit": 1, "order": "write_date desc"},
+        ):
+            product_name = odoo_prl["product_id"][1]
+            # product_id has a blanket order, we need to export a PO for that product
+            proposed_po = (
+                PurchaseOrder.objects.filter(item__name=product_name, status="proposed")
+                .order_by("startdate")
+                .first()
+            )
+            if proposed_po:
+                response = self.client.post(
+                    "/erp/upload/",
+                    json.dumps(
+                        [
+                            {
+                                "reference": proposed_po.reference,
+                                "type": "PO",
+                                "quantity": float(proposed_po.quantity),
+                                "enddate": datetime.strftime(
+                                    proposed_po.enddate, "%Y-%m-%dT%H:%M:%S"
+                                ),
+                            }
+                        ]
+                    ),
+                    content_type="application/json",
+                )
+                self.assertEqual(
+                    response.status_code,
+                    200,
+                    "couldn't upload the proposed purchase order",
+                )
+                for odoo_po in self.odooRPC(
+                    "purchase.order",
+                    [("origin", "=", "frePPLe"), ("state", "=", "draft")],
+                    {"limit": 1, "order": "write_date desc"},
+                ):
+                    self.assertEqual(
+                        odoo_po["requisition_id"][0],
+                        odoo_prl["requisition_id"][0],
+                        "different blanket order id",
+                    )
