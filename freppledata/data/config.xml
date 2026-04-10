@@ -14,12 +14,19 @@
             <value model="res.config.settings" search="[]"/>
         </function>
 
+        <!-- Activate multi-step picking, production and deliveries -->
+        <record id="stock.warehouse0" model="stock.warehouse">
+            <field name="delivery_steps">pick_pack_ship</field>
+            <field name="reception_steps">two_steps</field>
+            <field name="manufacture_steps">pbm_sam</field>
+        </record>
+
         <!-- Unarchive MTO route -->
         <record id="stock.route_warehouse0_mto" model="stock.route">
-            <field name="active">True</field>
+            <field name="active" eval="1"/>
         </record>
         <record id="mrp_subcontracting.route_resupply_subcontractor_mto" model="stock.route">
-            <field name="active">True</field>
+            <field name="active" eval="1"/>
         </record>
     </data>
 </odoo>
