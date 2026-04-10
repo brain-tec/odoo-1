@@ -2257,11 +2257,10 @@ class exporter(object):
                     except Exception as e:
                         yield from self.flagException(f"exporting sales order {i}", e)
 
-            # Second loop to get all the sales orders
-            # Get all sales order lines.
+            # Second loop to get all the open sales orders
             # This loop will skip the closed sales orders if odoo.delta < 999
             # as we assume they have been continuously pulled by the first loop
-            search = [("product_id", "!=", False)]
+            search = [("product_id", "!=", False), ("state", "!=", "cancel"),]
 
             so_line = self.generator.getData(
                 "sale.order.line",
