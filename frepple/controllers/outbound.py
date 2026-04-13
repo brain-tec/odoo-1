@@ -3172,13 +3172,6 @@ class exporter(object):
                             for key, val in operation_materials.items():
                                 suboperation_json["operation"]["flows"].append(
                                     {
-                                        "quantity": val,
-                                        "item": {"name": key},
-                                    }
-                                )
-                            for key, val in operation_materials.items():
-                                suboperation_json["operation"]["flows"].append(
-                                    {
                                         "type": "flow_start",
                                         "quantity": val,
                                         "item": {"name": key},
