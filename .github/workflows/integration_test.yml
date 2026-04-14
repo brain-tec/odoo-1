@@ -16,8 +16,5 @@ jobs:
           token: ${{ secrets.COMMUNITY_GITHUB_TOKEN }}
           repo: frepple
           owner: frePPLe
-          event_type: odoo_connector
-          message: |
-            {
-            "branch": "18.0-dev"
-            }
+          event_type: odoo_connector_18
+
