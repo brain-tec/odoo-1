@@ -3187,7 +3187,7 @@ class exporter(object):
                                             if not sec.duration
                                             or wo.operation_id.time_cycle == 0
                                             else sec.duration
-                                            / wo.operation_idtime_cycle
+                                            / wo.operation_id.time_cycle
                                         ),
                                         quoteattr(sec.search_mode),
                                         quoteattr(
