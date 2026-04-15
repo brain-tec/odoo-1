@@ -2922,7 +2922,7 @@ class exporter(object):
             if i.product_id.tracking in ["serial", "lot"]:
                 # Tracking by lot or unique serial number requires that we track
                 # the production intent.
-                self.convert_qty_uom(
+                qty = self.convert_qty_uom(
                     i.product_qty,
                     i.product_uom_id.id,
                     self.product_product[i.product_id.id]["template"],
@@ -3187,7 +3187,7 @@ class exporter(object):
                                             if not sec.duration
                                             or wo.operation_id.time_cycle == 0
                                             else sec.duration
-                                            / wo.operation_idtime_cycle
+                                            / wo.operation_id.time_cycle
                                         ),
                                         quoteattr(sec.search_mode),
                                         quoteattr(
@@ -3426,7 +3426,8 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute("""
+            self.generator.env.cr.execute(
+                """
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3445,7 +3446,8 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """)
+                """
+            )
             data = self.generator.env.cr.fetchall()
         else:
             data = [
