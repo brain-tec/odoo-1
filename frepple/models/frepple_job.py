@@ -251,7 +251,7 @@ class FreppleJob(models.Model):
                     f"{company.frepple_server.replace("localhost", "host.docker.internal")}/odoo/submit/",
                     headers={"Authorization": f"Bearer {str(webtoken)}"},
                     files={
-                        "datafile": ("odoo_data.json", f, "application/octet-stream"),
+                        "datafile": ("odoodata.json", f, "application/octet-stream"),
                         "metadata": (
                             "metadata.json",
                             json.dumps(metadata),
