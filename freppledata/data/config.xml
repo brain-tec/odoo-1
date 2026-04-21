@@ -28,5 +28,13 @@
         <record id="mrp_subcontracting.route_resupply_subcontractor_mto" model="stock.route">
             <field name="active" eval="1"/>
         </record>
+
+        <!-- Allow buy & manufacturing routes to be selected on the product -->
+        <record id="purchase_stock.route_warehouse0_buy" model="stock.route">
+            <field name="product_selectable" eval="True"/>
+        </record>
+        <record id="mrp.route_warehouse0_manufacture" model="stock.route">
+            <field name="product_selectable" eval="True"/>
+        </record>
     </data>
 </odoo>
