@@ -195,7 +195,7 @@ class OdooTest(TransactionTestCase):
         )
         self.assertEqual(
             po_list.count(),
-            5,
+            6,
             "difference in number of imported purchase orders",
         )
         po = po_list[0]
@@ -230,7 +230,7 @@ class OdooTest(TransactionTestCase):
             Demand.objects.all()
             .filter(item__name__in=frepple_items, status="open")
             .count(),
-            10,
+            11,
             "difference in number of imported open demands",
         )
         self.assertEqual(
