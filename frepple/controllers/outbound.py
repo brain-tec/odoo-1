@@ -2657,7 +2657,7 @@ class exporter(object):
                                 self.route_mto
                                 in self.product_templates[item["template"]]["route_ids"]
                             ):
-                                mto_so = mv.move_dest_ids.group_id.sale_id
+                                mto_so = i.sale_order_id
                                 batch = mto_so[0].name if mto_so else None
                                 if not batch:
                                     # Follow multi-level MTO chain to the sale order
@@ -2785,15 +2785,12 @@ class exporter(object):
                                 self.route_mto
                                 in self.product_templates[item["template"]]["route_ids"]
                             ):
-                                mto_so = i.move_dest_ids.group_id.sale_id
+                                mto_so = i.sale_order_id
                                 batch = mto_so[0].name if mto_so else None
                                 if not batch:
                                     # Follow multi-level MTO chain to the sale order
                                     for mo in j._get_mrp_productions():
-                                        mto_so = (
-                                            mo.production_group_id.sale_id
-                                            + mo.production_group_id.mrp_production_ids.move_dest_ids.group_id.sale_id
-                                        )
+                                        mto_so = mo.move_finished_ids.move_dest_ids.sale_line_id.order_id[:1]
                                         if mto_so:
                                             batch = mto_so[0].name
                                             break
