@@ -7,6 +7,10 @@ on:
   schedule:
       - cron: "0 0 * * 0"
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     if: github.repository == 'frePPLe/odoo' && (github.ref == 'refs/heads/18.0' || github.event_name == 'schedule')
