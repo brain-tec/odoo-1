@@ -3,7 +3,6 @@ import { ListController } from "@web/views/list/list_controller";
 import { registry } from "@web/core/registry";
 import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { session } from "@web/session";
 import { markup } from "@odoo/owl";
 import { FreppleLaunchDialog } from "./frepple_launch_dialog";
 
@@ -42,11 +41,17 @@ export class FreppleRecommendationBanner extends Component {
     }
   }
 
+  get currentCompanyId() {
+    const cids = (document.cookie.match(/(^|;\s*)cids=([^;]*)/) || [])[2];
+    if (cids) {
+      return parseInt(cids.split("-")[0], 10);
+    }
+    return this.companies.length ? this.companies[0].id : 1;
+  }
+
   async fetchData() {
     try {
-      // session.user_context contains the same info as the user service
-      const userContext = this.env.services.user?.context || session.user_context || {};
-      const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
+      const companyId = this.currentCompanyId;
 
       const data = await this.orm.call("frepple.job", "get_status", [companyId]);
 
@@ -81,8 +86,7 @@ export class FreppleRecommendationBanner extends Component {
         return;
     }
 
-    const userContext = this.env.services.user?.context || session.user_context || {};
-    const companyId = userContext.allowed_company_ids ? userContext.allowed_company_ids[0] : (session.company_id || 1);
+    const companyId = this.currentCompanyId;
     try {
       if (this.state.isRunning) {
         // Logic to cancel the job
