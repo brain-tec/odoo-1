@@ -17,7 +17,9 @@ export class FreppleLaunchDialog extends Component {
       capacity: true,
       mfgLeadTime: true,
       poLeadTime: true,
-      companyId: this.props.defaultCompanyId,
+      companyId: this.props.companies.length === 1
+        ? this.props.companies[0].id
+        : this.props.defaultCompanyId,
     });
   }
 
