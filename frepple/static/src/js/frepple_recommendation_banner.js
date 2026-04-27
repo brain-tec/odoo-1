@@ -5,6 +5,7 @@ import { Component, useState, onWillStart, onWillDestroy } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
 import { markup } from "@odoo/owl";
+import { FreppleLaunchDialog } from "./frepple_launch_dialog";
 
 export class FreppleRecommendationBanner extends Component {
   static template = "frepple.RecommendationBanner";
@@ -12,6 +13,7 @@ export class FreppleRecommendationBanner extends Component {
   setup() {
     this.orm = useService("orm");
     this.notification = useService("notification");
+    this.dialog = useService("dialog");
 
     this.state = useState({
       message: "Loading...",
@@ -20,9 +22,11 @@ export class FreppleRecommendationBanner extends Component {
       settingsMissing: false,
     });
 
+    this.companies = [];
     this.timer = null;
 
     onWillStart(async () => {
+      await this.loadCompanies();
       await this.fetchData();
       this.startTimer();
     });
@@ -83,13 +87,35 @@ export class FreppleRecommendationBanner extends Component {
       if (this.state.isRunning) {
         // Logic to cancel the job
         await this.orm.call("frepple.job", "action_cancel_all", [companyId]);
+        await this.fetchData();
       } else {
-        await this.orm.call("frepple.job", "action_launch", [companyId]);
+        this.dialog.add(FreppleLaunchDialog, {
+          companies: this.companies,
+          defaultCompanyId: companyId,
+          onConfirm: async (options) => {
+            try {
+              await this.orm.call("frepple.job", "action_launch", [options.companyId, {
+                capacity: options.capacity,
+                mfgLeadTime: options.mfgLeadTime,
+                poLeadTime: options.poLeadTime,
+              }]);
+              await this.fetchData();
+            } catch (error) {
+              this.notification.add("Action failed", { type: "danger" });
+            }
+          },
+        });
       }
-      // Refresh data immediately after click
-      await this.fetchData();
     } catch (error) {
       this.notification.add("Action failed", { type: "danger" });
+    }
+  }
+
+  async loadCompanies() {
+    try {
+      this.companies = await this.orm.call("frepple.job", "get_allowed_companies", []);
+    } catch {
+      this.companies = [];
     }
   }
 
