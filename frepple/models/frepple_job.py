@@ -85,6 +85,10 @@ class FreppleJob(models.Model):
             rec.started = fields.Datetime.now()
 
     @api.model
+    def get_allowed_companies(self):
+        return [{"id": c.id, "name": c.name} for c in self.env.companies]
+
+    @api.model
     def get_status(self, company_id):
         # Check if settings are configured
 
@@ -173,10 +177,9 @@ class FreppleJob(models.Model):
         jobs_to_cancel.write({"status": "cancelled"})
 
     @api.model
-    def action_launch(self, company_id):
-
-        if len(self.env.companies) > 1:
-            raise ValidationError(f"Please select one company only and try again.")
+    def action_launch(self, company_id, options=None):
+        if options is None:
+            options = {}
 
         filename = None
         try:
@@ -228,6 +231,13 @@ class FreppleJob(models.Model):
             # Submitting the file to frepple
             job.write({"status": "Submitting data"})
             with open(filename, "rb") as f:
+                constraint = []
+                if options.get("capacity", True):
+                    constraint.append("capa")
+                if options.get("mfgLeadTime", True):
+                    constraint.append("mfg_lt")
+                if options.get("poLeadTime", True):
+                    constraint.append("po_lt")
 
                 metadata = {
                     "email": self.env.user.email,
@@ -239,6 +249,7 @@ class FreppleJob(models.Model):
                     "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "token": token,
                     "database": self.env.cr.dbname,
+                    "constraint": ",".join(constraint),
                 }
 
                 webtoken = encode_jwt(
