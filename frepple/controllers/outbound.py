@@ -3051,17 +3051,6 @@ class exporter(object):
                 continue
             operation = i.name
             type = "MO"
-            if not location and i.picking_type_id:
-                operation_type = self.operation_types.get(i.picking_type_id.id, None)
-                if operation_type:
-                    location = operation_type["warehouse_id"]
-                    if not location:
-                        continue
-
-                        code = None
-                        if code:
-                            operation = code
-                            type = "subcontractor"
             item = self.product_product.get(i.product_id.id, None)
             if not item or not location:
                 continue
