@@ -103,9 +103,8 @@ export class FreppleRecommendationBanner extends Component {
                 mfgLeadTime: options.mfgLeadTime,
                 poLeadTime: options.poLeadTime,
               }]);
+            } finally {
               await this.fetchData();
-            } catch (error) {
-              this.notification.add("Action failed", { type: "danger" });
             }
           },
         });
