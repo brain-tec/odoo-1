@@ -23,6 +23,7 @@
 
 from datetime import datetime, timedelta
 import gzip
+import html
 import json
 import logging
 import markupsafe
@@ -30,6 +31,7 @@ from odoo import fields, models, api, release
 from odoo.exceptions import ValidationError
 import os
 from pathlib import Path
+import re
 import requests
 import secrets
 from tempfile import NamedTemporaryFile
@@ -95,6 +97,25 @@ class FreppleJob(models.Model):
             }
             for c in self.env.companies
         ]
+
+    @api.model
+    def get_last_constraints(self, company_id):
+        last_job = self.env["frepple.job"].search(
+            [
+                ("company_id.id", "=", company_id),
+                ("constraints", "!=", False),
+            ],
+            order="started desc",
+            limit=1,
+        )
+        if last_job and last_job.constraints:
+            enabled = last_job.constraints.split(",")
+            return {
+                "capacity": "capa" in enabled,
+                "mfgLeadTime": "mfg_lt" in enabled,
+                "poLeadTime": "po_lt" in enabled,
+            }
+        return None
 
     @api.model
     def get_status(self, company_id):
@@ -340,11 +361,13 @@ class FreppleJob(models.Model):
                     )
                     return
                 if response.status_code != 200:
+                    raw_status = response.content.decode("utf-8", errors="replace")
+                    plain_status = re.sub(r"<[^>]+>", "", raw_status)
+                    plain_status = html.unescape(plain_status).strip()
+                    plain_status = re.sub(r"\s+", " ", plain_status)
                     job.write(
                         {
-                            "status": response.content.decode(
-                                "utf-8", errors="replace"
-                            ),
+                            "status": plain_status[:500],
                             "finished": fields.Datetime.now(),
                         }
                     )
