@@ -102,7 +102,7 @@
                     'name': obj().env.ref('product_product.chair').partner_ref,
                     'price_unit': 44,
                     'product_qty': 1,
-                    'product_uom': ref('uom.product_uom_unit'),
+                    'product_uom_id': ref('uom.product_uom_unit'),
                     'date_planned': DateTime.today() + relativedelta(days=10)})
             ]"/>
         </record>
@@ -117,7 +117,7 @@
                     'name': obj().env.ref('product_product.chair').partner_ref,
                     'price_unit': 44,
                     'product_qty': 1,
-                    'product_uom': ref('uom.product_uom_unit'),
+                    'product_uom_id': ref('uom.product_uom_unit'),
                     'date_planned': DateTime.today() + relativedelta(days=20)})
             ]"/>
         </record>
