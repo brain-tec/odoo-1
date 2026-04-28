@@ -87,7 +87,14 @@ class FreppleJob(models.Model):
 
     @api.model
     def get_allowed_companies(self):
-        return [{"id": c.id, "name": c.name} for c in self.env.companies]
+        return [
+            {
+                "id": c.id,
+                "name": c.name,
+                "frepple_server": c.frepple_server or "",
+            }
+            for c in self.env.companies
+        ]
 
     @api.model
     def get_status(self, company_id):
@@ -335,7 +342,9 @@ class FreppleJob(models.Model):
                 if response.status_code != 200:
                     job.write(
                         {
-                            "status": f"Failure submitting: {response.content}",
+                            "status": response.content.decode(
+                                "utf-8", errors="replace"
+                            ),
                             "finished": fields.Datetime.now(),
                         }
                     )
