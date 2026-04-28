@@ -3,7 +3,14 @@
     <t t-name="frepple.LaunchDialog">
         <Dialog title="'Generate Recommendations'" size="'md'">
             <div class="p-3">
-                <h6 class="mb-3">Planning constraints</h6>
+                <t t-if="isAnonymousServer">
+                    <div class="alert alert-info mb-3" role="alert">
+                        <i class="fa fa-info-circle me-1"/>
+                        Your Odoo data will be sent to an anonymous server to generate a plan.
+                        <a href="https://frepple.com/anonymous_odoo_data/" target="_blank">More details</a>
+                    </div>
+                </t>
+                <h6 class="mb-3">Planning options</h6>
                 <div class="form-check mb-2">
                     <input type="checkbox" class="form-check-input" id="frepple_capacity"
                            t-att-checked="state.capacity"
