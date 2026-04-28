@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <function model="stock.quant" name="create">
+            <value eval="[{
+                'product_id': ref('product_product.cushion'),
+                'location_id': ref('stock.stock_location_stock'),
+                'quantity': 10.0,
+            }]"/>
+        </function>
+
+        <function model="stock.quant" name="create">
+            <value eval="[{
+                'product_id': ref('product_product.chair_leg'),
+                'location_id': ref('stock.stock_location_stock'),
+                'quantity': 10.0,
+            }]"/>
+        </function>
+    </data>
+</odoo>
