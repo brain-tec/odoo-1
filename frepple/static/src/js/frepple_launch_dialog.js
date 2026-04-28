@@ -13,14 +13,21 @@ export class FreppleLaunchDialog extends Component {
   };
 
   setup() {
+    const initialCompanyId = this.props.companies.length === 1
+      ? this.props.companies[0].id
+      : this.props.defaultCompanyId;
     this.state = useState({
       capacity: true,
       mfgLeadTime: true,
       poLeadTime: true,
-      companyId: this.props.companies.length === 1
-        ? this.props.companies[0].id
-        : this.props.defaultCompanyId,
+      companyId: initialCompanyId,
     });
+  }
+
+  get isAnonymousServer() {
+    const company = this.props.companies.find(c => c.id === this.state.companyId);
+    const server = (company && company.frepple_server || "").replace(/\/+$/, "").toLowerCase();
+    return server === "https://odoo.frepple.com";
   }
 
   onConfirm() {
