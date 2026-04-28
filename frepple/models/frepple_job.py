@@ -85,13 +85,17 @@ class FreppleJob(models.Model):
             rec.started = fields.Datetime.now()
 
     @api.model
+    def get_allowed_companies(self):
+        return [{"id": c.id, "name": c.name} for c in self.env.companies]
+
+    @api.model
     def get_status(self, company_id):
         # Check if settings are configured
+        company = self.env["res.company"].browse(company_id)
 
         config_ok = True
-        current_company = self.env.company
-        webtoken_key = current_company.getWebtoken_key()
-        frepple_server = current_company.getFrepple_server()
+        webtoken_key = company.getWebtoken_key()
+        frepple_server = company.getFrepple_server()
 
         if not webtoken_key or not frepple_server:
             config_ok = False
@@ -108,7 +112,6 @@ class FreppleJob(models.Model):
                 "last_update_date": False,
                 "settings_missing": True,
             }
-
         last_job = self.env["frepple.job"].search(
             [
                 ("company_id.id", "=", company_id),
@@ -127,6 +130,15 @@ class FreppleJob(models.Model):
             order="started desc",
             limit=1,
         )
+
+        # Make sure we don't have an old hanging job
+        if running_job:
+            running_job = (
+                running_job
+                if not last_job or running_job.started > last_job.started
+                else None
+            )
+
         if running_job:
             # Calculate duration
             now = fields.Datetime.now()
@@ -142,13 +154,13 @@ class FreppleJob(models.Model):
                 rem_seconds = seconds % 60
                 elapsed_str = f"{minutes}m {rem_seconds}s ago"
 
-            message = f"started {elapsed_str} for {self.env.company.name}"
+            message = f"started {elapsed_str} for {company.name}"
         else:
             if last_job:
                 raw_utc_time = last_job[0].finished
                 # get the user time in the user time zone
                 local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
-                message = f"Last refresh for {self.env.company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                message = f"Last refresh for {company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
@@ -156,7 +168,7 @@ class FreppleJob(models.Model):
             "message": (
                 markupsafe.Markup(message) if hasattr(markupsafe, "Markup") else message
             ),
-            "is_running": len(running_job) > 0,
+            "is_running": True if running_job else False,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
         }
         return r
@@ -173,10 +185,9 @@ class FreppleJob(models.Model):
         jobs_to_cancel.write({"status": "cancelled"})
 
     @api.model
-    def action_launch(self, company_id):
-
-        if len(self.env.companies) > 1:
-            raise ValidationError(f"Please select one company only and try again.")
+    def action_launch(self, company_id, options=None):
+        if options is None:
+            options = {}
 
         filename = None
         try:
@@ -227,6 +238,13 @@ class FreppleJob(models.Model):
             # Submitting the file to frepple
             job.write({"status": "Submitting data"})
             with open(filename, "rb") as f:
+                constraint = []
+                if options.get("capacity", True):
+                    constraint.append("capa")
+                if options.get("mfgLeadTime", True):
+                    constraint.append("mfg_lt")
+                if options.get("poLeadTime", True):
+                    constraint.append("po_lt")
 
                 metadata = {
                     "email": self.env.user.email,
@@ -238,6 +256,7 @@ class FreppleJob(models.Model):
                     "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "token": token,
                     "database": self.env.cr.dbname,
+                    "constraint": ",".join(constraint),
                 }
 
                 webtoken = encode_jwt(

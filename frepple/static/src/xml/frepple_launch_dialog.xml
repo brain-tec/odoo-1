@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="frepple.LaunchDialog">
+        <Dialog title="'Generate Recommendations'" size="'md'">
+            <div class="p-3">
+                <h6 class="mb-3">Planning constraints</h6>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_capacity"
+                           t-att-checked="state.capacity"
+                           t-on-change="onCapacityChange"/>
+                    <label class="form-check-label" for="frepple_capacity">
+                        Capacity: respect capacity limits
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_mfg_lt"
+                           t-att-checked="state.mfgLeadTime"
+                           t-on-change="onMfgLeadTimeChange"/>
+                    <label class="form-check-label" for="frepple_mfg_lt">
+                        Manufacturing lead time: do not manufacture in the past
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_po_lt"
+                           t-att-checked="state.poLeadTime"
+                           t-on-change="onPoLeadTimeChange"/>
+                    <label class="form-check-label" for="frepple_po_lt">
+                        Purchasing lead time: do not purchase in the past
+                    </label>
+                </div>
+
+                <t t-if="props.companies.length > 1">
+                    <hr/>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold" for="frepple_company">Please select one company only</label>
+                        <select class="form-select" id="frepple_company"
+                                t-on-change="onCompanyChange">
+                            <t t-foreach="props.companies" t-as="company" t-key="company.id">
+                                <option t-att-value="company.id"
+                                        t-att-selected="company.id === state.companyId">
+                                    <t t-out="company.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                </t>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onConfirm">
+                    <i class="fa fa-bolt me-1"/>Generate
+                </button>
+                <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
