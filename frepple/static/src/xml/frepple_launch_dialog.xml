@@ -8,24 +8,27 @@
                     <input type="checkbox" class="form-check-input" id="frepple_capacity"
                            t-att-checked="state.capacity"
                            t-on-change="onCapacityChange"/>
-                    <label class="form-check-label" for="frepple_capacity">
-                        Capacity: respect capacity limits
+                    <label class="form-check-label" for="frepple_capacity"
+                           title="Do not exceed capacities">
+                        Respect work center capacities
                     </label>
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" class="form-check-input" id="frepple_mfg_lt"
                            t-att-checked="state.mfgLeadTime"
                            t-on-change="onMfgLeadTimeChange"/>
-                    <label class="form-check-label" for="frepple_mfg_lt">
-                        Manufacturing lead time: do not manufacture in the past
+                    <label class="form-check-label" for="frepple_mfg_lt"
+                           title="Do not start manufacturing orders in the past">
+                        Respect manufacturing lead times
                     </label>
                 </div>
                 <div class="form-check mb-2">
                     <input type="checkbox" class="form-check-input" id="frepple_po_lt"
                            t-att-checked="state.poLeadTime"
                            t-on-change="onPoLeadTimeChange"/>
-                    <label class="form-check-label" for="frepple_po_lt">
-                        Purchasing lead time: do not purchase in the past
+                    <label class="form-check-label" for="frepple_po_lt"
+                           title="Do not purchase in the past">
+                        Respect purchasing lead times
                     </label>
                 </div>
 

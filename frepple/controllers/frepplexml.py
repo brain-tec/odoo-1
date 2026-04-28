@@ -494,10 +494,8 @@ class XMLController(odoo.http.Controller):
             # Pick up the company
             if job:
                 company_id = job.company_id.id
-                logger.info(f"found job, company is {company_id}")
             else:
                 company_name = data.get("company", None)
-                logger.info(f"using company in the data {company_name}")
                 if not company_name:
                     return Response(
                         "Missing company name argument. Multi-database recommendations aren't supported.",
