@@ -92,5 +92,34 @@
             ]"/>
         </record>
 
+        <record id="frepple_confirmed_subcontractor_po" model="purchase.order">
+            <field name="partner_id" ref="res_partner_subcontractor_chair"/>
+            <field name="user_id" ref="base.user_admin"/>
+            <field name="state">purchase</field>
+            <field name="order_line" model="purchase.order.line" eval="[
+                (0, 0, {
+                    'product_id': ref('product_product.chair'),
+                    'name': obj().env.ref('product_product.chair').partner_ref,
+                    'price_unit': 44,
+                    'product_qty': 1,
+                    'product_uom': ref('uom.product_uom_unit'),
+                    'date_planned': DateTime.today() + relativedelta(days=10)})
+            ]"/>
+        </record>
+
+        <record id="frepple_draft_subcontractor_po" model="purchase.order">
+            <field name="partner_id" ref="res_partner_subcontractor_chair"/>
+            <field name="user_id" ref="base.user_admin"/>
+            <field name="state">draft</field>
+            <field name="order_line" model="purchase.order.line" eval="[
+                (0, 0, {
+                    'product_id': ref('product_product.chair'),
+                    'name': obj().env.ref('product_product.chair').partner_ref,
+                    'price_unit': 44,
+                    'product_qty': 1,
+                    'product_uom': ref('uom.product_uom_unit'),
+                    'date_planned': DateTime.today() + relativedelta(days=20)})
+            ]"/>
+        </record>
     </data>
 </odoo>

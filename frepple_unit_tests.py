@@ -39,6 +39,7 @@ from freppledb.input.models import (
     Item,
     PurchaseOrder,
     ManufacturingOrder,
+    OperationPlanMaterial,
     Demand,
     WorkOrder,
     ItemSupplier,
@@ -207,8 +208,26 @@ class OdooTest(TransactionTestCase):
                 item__name__in=frepple_items,
                 status="confirmed",
             ).count(),
-            0,  # TODO add draft and confirmed PO in demo dataset
+            2,  # TODO add draft and confirmed PO in demo dataset
             "difference in number of imported manufacturing orders",
+        )
+        self.assertEqual(
+            ManufacturingOrder.objects.filter(
+                item__name__in=frepple_items,
+                status="confirmed",
+                reference__contains="P000",
+            ).count(),
+            2,
+            "difference in number of imported subcontracting manufacturing orders",
+        )
+        self.assertEqual(
+            OperationPlanMaterial.objects.filter(
+                item__name__in=frepple_items,
+                operationplan__reference__contains="P000",
+                quantity__lt=0,
+            ).count(),
+            2,
+            "incorrect material consumption of subcontracting manufacturing orders",
         )
         self.assertEqual(
             ManufacturingOrder.objects.all()
