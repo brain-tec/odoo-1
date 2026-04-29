@@ -57,6 +57,7 @@
             <field name="delay">20</field>
             <field name="price">44</field>
             <field name="currency_id" ref="base.USD"/>
+            <field name="date_end">2020-01-01</field>
         </record>
     </data>
 </odoo>
