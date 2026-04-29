@@ -77,6 +77,15 @@ class ResCompany(models.Model):
     @api.model
     def actionOpenFreppleWindow(self):
         current_company = self.env.company
+
+        server = (current_company.frepple_server or "").rstrip("/").lower()
+        if server == "https://odoo.frepple.com":
+            return {
+                "type": "ir.actions.client",
+                "tag": "frepple.anonymous_server_info",
+                "name": "FrePPLe APS",
+            }
+
         frepple_url = current_company.getFreppleURL(True, "/", True)
 
         if not frepple_url:

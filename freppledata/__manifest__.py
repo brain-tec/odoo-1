@@ -10,7 +10,9 @@
     "depends": ["mrp_subcontracting", "sale_stock"],
     "data": [
         "data/config.xml",  # First to assure the config is correct for the rest of the data
+        "data/res.partner.csv",
         "data/product.template.csv",
+        "data/stock.onhand.xml",
         "data/mrp.workcenter.csv",
         "data/mrp.bom.csv",
         "data/mrp.production.xml",
