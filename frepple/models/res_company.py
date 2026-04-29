@@ -82,7 +82,7 @@ class ResCompany(models.Model):
         if server == "https://odoo.frepple.com":
             return {
                 "type": "ir.actions.client",
-                "tag": "frepple.anonymous_server_info",
+                "tag": "frepple.aps_service_info",
                 "name": "FrePPLe APS",
             }
 
