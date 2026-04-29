@@ -275,7 +275,7 @@ class FreppleJob(models.Model):
                     company=company.name,
                     mode=1,
                     timezone=None,
-                    singlecompany=False,
+                    singlecompany=True,
                     delta=999,
                     apps="",
                 )
