@@ -3733,18 +3733,10 @@ class exporter(object):
                     + i[2]
                     - (i[3] if self.respect_reservations else 0)
                 )
-        for key, val in inventory.items():
-            buf = "%s @ %s" % (key[0], key[1])
-            yield '<buffer name=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
-                quoteattr(buf),
-                val,
-                quoteattr(key[0]),
-                quoteattr(key[1]),
-            )
 
         # Extract MTO chained inventory.
         # These stock moves have not been consumed by the downstream consumer yet.
-        inventory = {}
+        inventory_mto = {}
         for mv in self.generator.getData(
             "stock.move",
             search=[
@@ -3754,12 +3746,8 @@ class exporter(object):
                 ("purchase_line_id", "!=", False),
                 # The receipt/production is finished
                 ("state", "=", "done"),
-                # It has not been consumed by the next level yet
+                # In transit - It has not been consumed by the next level yet
                 ("move_dest_ids.state", "not in", ["done", "cancel"]),
-                # Explicit MTO flag or has a destination (chained/MTO)
-                "|",
-                ("move_dest_ids", "!=", False),
-                ("procure_method", "=", "make_to_order"),
             ],
             object=True,
         ):
@@ -3782,11 +3770,24 @@ class exporter(object):
                         if batch:
                             break
             if batch:
-                inventory[(item["name"], location, batch)] = (
-                    inventory.get((item["name"], location, batch), 0)
-                    + unconsumed_quantity
+                inventory_mto[(item["name"], location, batch)] = (
+                inventory_mto.get((item["name"], location, batch), 0)
+                + unconsumed_quantity
+            )
+            else:
+                inventory[(item["name"], location)] = (
+                    inventory.get((item["name"], location), 0) + unconsumed_quantity
                 )
+
         for key, val in inventory.items():
+            buf = "%s @ %s" % (key[0], key[1])
+            yield '<buffer name=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
+                quoteattr(buf),
+                val,
+                quoteattr(key[0]),
+                quoteattr(key[1]),
+            )            
+        for key, val in inventory_mto.items():
             yield '<buffer name=%s batch=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
                 quoteattr(f"{key[0]} @ {key[2]} @ {key[1]}"),
                 quoteattr(key[2]),
@@ -3794,5 +3795,4 @@ class exporter(object):
                 quoteattr(key[0]),
                 quoteattr(key[1]),
             )
-
         yield "</buffers>\n"
