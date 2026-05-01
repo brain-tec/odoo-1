@@ -3681,8 +3681,7 @@ class exporter(object):
         try:
             if isinstance(self.generator, Odoo_generator):
                 # SQL query gives much better performance
-                self.generator.env.cr.execute(
-                    """
+                self.generator.env.cr.execute("""
                     SELECT stock_quant.product_id,
                     stock_quant.location_id,
                     sum(stock_quant.quantity) as quantity,
@@ -3700,8 +3699,7 @@ class exporter(object):
                     stock_lot.name,
                     stock_lot.expiration_date
                     ORDER BY location_id ASC
-                    """
-                )
+                    """)
                 data = self.generator.env.cr.fetchall()
             else:
                 data = [
@@ -3806,6 +3804,40 @@ class exporter(object):
                     inventory[(item["name"], location)] = (
                         inventory.get((item["name"], location), 0) + i[2] - i[3]
                     )
+
+            # These stock moves have not been consumed by the downstream consumer yet.
+            inventory_mto = {}
+            for mv in self.generator.getData(
+                "stock.move",
+                search=[
+                    # It came from an PO/MO
+                    ("production_id", "!=", False),
+                    # The receipt/production is finished
+                    ("state", "=", "done"),
+                    # In transit - It has not been consumed by the next level yet
+                    "!",
+                    ("move_dest_ids.raw_material_production_id.state", "=", "done"),
+                ],
+                object=True,
+            ):
+                item = self.product_product.get(mv.product_id.id, None)
+                location = self.map_locations.get(mv.location_dest_id.id, None)
+                if not item or not location:
+                    continue
+                batch = self.getBatch(mv.production_id)
+                qty = mv.product_uom._compute_quantity(
+                    mv.quantity, mv.product_id.uom_id
+                )
+                if qty > 0:
+                    if batch:
+                        inventory_mto[(item["name"], location, batch)] = (
+                            inventory_mto.get((item["name"], location, batch), 0) + qty
+                        )
+                    else:
+                        inventory[(item["name"], location)] = (
+                            inventory.get((item["name"], location), 0) + qty
+                        )
+
             for key, val in inventory.items():
                 try:
                     yield json.dumps(
@@ -3820,40 +3852,7 @@ class exporter(object):
                     yield from self.flagException(
                         f"exporting on hand inventory for {key} {val}", e
                     )
-
-            # Extract MTO chained inventory.
-            # These stock moves have not been consumed by the downstream consumer yet.
-            inventory = {}
-            for mv in self.generator.getData(
-                "stock.move",
-                search=[
-                    # It came from an MO
-                    ("production_id", "!=", False),
-                    # The production is finished
-                    ("state", "=", "done"),
-                    # It has not been consumed by a next level yet
-                    "!",
-                    ("move_dest_ids.raw_material_production_id.state", "=", "done"),
-                    # Explicit MTO flag or has a destination (chained/MTO)
-                    "|",
-                    ("move_dest_ids", "!=", False),
-                    ("procure_method", "=", "make_to_order"),
-                ],
-                object=True,
-            ):
-                item = self.product_product.get(mv.product_id.id, None)
-                location = self.map_locations.get(mv.location_dest_id.id, None)
-                if not item or not location:
-                    continue
-                batch = self.getBatch(mv.production_id)
-                qty = mv.product_uom._compute_quantity(
-                    mv.quantity, mv.product_id.uom_id
-                )
-                if batch and qty > 0:
-                    inventory[(item["name"], location, batch)] = (
-                        inventory.get((item["name"], location, batch), 0) + qty
-                    )
-            for key, val in inventory.items():
+            for key, val in inventory_mto.items():
                 try:
                     yield json.dumps(
                         {
