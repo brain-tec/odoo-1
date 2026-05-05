@@ -167,6 +167,7 @@ class FreppleJob(models.Model):
                 else None
             )
 
+        failed = False
         if running_job:
             # Calculate duration
             now = fields.Datetime.now()
@@ -206,17 +207,18 @@ class FreppleJob(models.Model):
                     message = f"Last refresh for {company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}{constraints_str}"
                 else:
                     message = f"Last refresh for {company.name} failed at: {local_time.strftime('%Y-%m-%d %H:%M:%S')} - {last_job[0].status}"
+                    failed = True
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
-        r = {
+        return {
             "message": (
                 markupsafe.Markup(message) if hasattr(markupsafe, "Markup") else message
             ),
             "is_running": True if running_job else False,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
+            "failed": failed,
         }
-        return r
 
     @api.model
     def action_cancel_all(self, company_id):
