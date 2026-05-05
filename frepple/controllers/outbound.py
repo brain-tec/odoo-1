@@ -2969,7 +2969,7 @@ class exporter(object):
                             bom.id,
                         )
                         yield (
-                            '<operationplan reference=%s %sordertype="MO" end="%s" quantity="%f" status="confirmed"><operation name=%s/></operationplan>\n'
+                            '<operationplan reference=%s %sordertype="MO" end="%s" quantity="%f" status="confirmed"><operation name=%s><location name=%s/></operation></operationplan>\n'
                         ) % (
                             quoteattr(
                                 f"{j.name} - {i.id}"
@@ -2980,6 +2980,7 @@ class exporter(object):
                             end,
                             qty,
                             quoteattr(operation),
+                            quoteattr(location),
                         )
                     else:
                         yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
@@ -3577,8 +3578,7 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute(
-                """
+            self.generator.env.cr.execute("""
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3597,8 +3597,7 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """
-            )
+                """)
             data = self.generator.env.cr.fetchall()
         else:
             data = [
@@ -3771,9 +3770,9 @@ class exporter(object):
                             break
             if batch:
                 inventory_mto[(item["name"], location, batch)] = (
-                inventory_mto.get((item["name"], location, batch), 0)
-                + unconsumed_quantity
-            )
+                    inventory_mto.get((item["name"], location, batch), 0)
+                    + unconsumed_quantity
+                )
             else:
                 inventory[(item["name"], location)] = (
                     inventory.get((item["name"], location), 0) + unconsumed_quantity
@@ -3786,7 +3785,7 @@ class exporter(object):
                 val,
                 quoteattr(key[0]),
                 quoteattr(key[1]),
-            )            
+            )
         for key, val in inventory_mto.items():
             yield '<buffer name=%s batch=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
                 quoteattr(f"{key[0]} @ {key[2]} @ {key[1]}"),
