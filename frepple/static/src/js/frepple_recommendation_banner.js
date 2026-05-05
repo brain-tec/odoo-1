@@ -19,6 +19,7 @@ export class FreppleRecommendationBanner extends Component {
       isRunning: false, // track if a job is running
       lastUpdate: null,
       settingsMissing: false,
+      failed: false,
     });
 
     this.companies = [];
@@ -65,6 +66,7 @@ export class FreppleRecommendationBanner extends Component {
       this.state.isRunning = data.is_running;
       this.state.lastUpdate = data.last_update_date;
       this.state.settingsMissing = !!data.settings_missing;
+      this.state.failed = data.failed;
 
       if (hasNewData) {
         await this.refreshList();
@@ -72,6 +74,7 @@ export class FreppleRecommendationBanner extends Component {
 
     } catch (error) {
       this.state.message = error;
+      this.state.failed = true;
     }
   }
 
@@ -83,7 +86,7 @@ export class FreppleRecommendationBanner extends Component {
 
     // Safety check: prevent execution if settings are missing
     if (this.state.settingsMissing) {
-        return;
+      return;
     }
 
     const companyId = this.currentCompanyId;
