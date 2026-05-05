@@ -16,7 +16,7 @@
                            t-att-checked="state.capacity"
                            t-on-change="onCapacityChange"/>
                     <label class="form-check-label" for="frepple_capacity"
-                           title="Do not exceed capacities">
+                        data-tooltip="Do not exceed capacities">
                         Respect work center capacities
                     </label>
                 </div>
@@ -25,7 +25,7 @@
                            t-att-checked="state.mfgLeadTime"
                            t-on-change="onMfgLeadTimeChange"/>
                     <label class="form-check-label" for="frepple_mfg_lt"
-                           title="Do not start manufacturing orders in the past">
+                           data-tooltip="Do not start manufacturing orders in the past">
                         Respect manufacturing lead times
                     </label>
                 </div>
@@ -34,16 +34,18 @@
                            t-att-checked="state.poLeadTime"
                            t-on-change="onPoLeadTimeChange"/>
                     <label class="form-check-label" for="frepple_po_lt"
-                           title="Do not purchase in the past">
+                        data-tooltip="Do not purchase in the past">
                         Respect purchasing lead times
                     </label>
                 </div>
 
                 <t t-if="props.companies.length > 1">
                     <hr/>
-                    <div class="mb-2">
-                        <label class="form-label fw-bold" for="frepple_company">Please select one company only</label>
-                        <select class="form-select" id="frepple_company"
+                    <div class="mb-2 d-flex align-items-center gap-2">
+                        <label class="form-label fw-bold mb-0" for="frepple_company"
+                          data-tooltip="Recommendations are generated for a single company at a time">
+                          Select a company:</label>
+                        <select class="form-select w-auto" id="frepple_company"
                                 t-on-change="onCompanyChange">
                             <t t-foreach="props.companies" t-as="company" t-key="company.id">
                                 <option t-att-value="company.id"
