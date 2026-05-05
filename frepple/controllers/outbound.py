@@ -2978,7 +2978,7 @@ class exporter(object):
                                     ),
                                     "end": end,
                                     "quantity": qty,
-                                    "operation": {"name": operation},
+                                    "operation": {"name": operation, "location": {"name": location}},
                                     "status": "confirmed",
                                 }
                             else:
