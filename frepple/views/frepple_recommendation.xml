@@ -27,7 +27,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
@@ -59,7 +59,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
@@ -91,7 +91,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to generate your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
