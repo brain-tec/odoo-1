@@ -64,16 +64,21 @@ class SaleOrder(models.Model):
 
         use_short_names = self.use_product_short_names()
 
+        valid = False
         for sale_order in self:
 
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
+                logger.info(
+                    f"{line.product_id.name} {line.product_id.product_tmpl_id.type} {line.product_id.product_tmpl_id.is_storable}"
+                )
                 if (
                     line.product_id.product_tmpl_id.type in ("service", "combo")
                     or line.product_id.product_tmpl_id.is_storable == False
                 ):
                     continue
+                valid = True
                 product_name = self.getfrePPLeItemName(line.product_id, use_short_names)
 
                 # Get the due date: commitment date if set or now, in the user timezone
@@ -117,6 +122,9 @@ class SaleOrder(models.Model):
                         "source": "odoo_1",
                     }
                 )
+
+            if not valid:
+                raise exceptions.UserError("No valid sales order line to quote")
 
             # -----[ CREATE AUTH TOKEN ]-----
             encode_params = dict(
