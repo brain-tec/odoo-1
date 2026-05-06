@@ -1102,6 +1102,7 @@ class exporter(object):
 
         supplierinfo_fields = [
             "product_tmpl_id",
+            "product_id",
             "partner_id",
             "delay",
             "min_qty",
@@ -1112,16 +1113,23 @@ class exporter(object):
             "sequence",
             "is_subcontractor",
         ]
-        itemsuppliers = {}
+        itemsuppliers_tmpl = {}
+        itemsuppliers_product = {}
         for i in self.generator.getData(
             "product.supplierinfo",
             fields=supplierinfo_fields,
             search=[("product_tmpl_id", "!=", False)],
         ):
-            if i["product_tmpl_id"][0] in itemsuppliers:
-                itemsuppliers[i["product_tmpl_id"][0]].append(i)
+            if i["product_id"]:
+                if i["product_id"][0] in itemsuppliers_product:
+                    itemsuppliers_product[i["product_id"][0]].append(i)
+                else:
+                    itemsuppliers_product[i["product_id"][0]] = [i]
             else:
-                itemsuppliers[i["product_tmpl_id"][0]] = [i]
+                if i["product_tmpl_id"][0] in itemsuppliers_tmpl:
+                    itemsuppliers_tmpl[i["product_tmpl_id"][0]].append(i)
+                else:
+                    itemsuppliers_tmpl[i["product_tmpl_id"][0]] = [i]
 
         # Read the products
         first = True
@@ -1242,7 +1250,9 @@ class exporter(object):
             # Export suppliers for the item, if the item is allowed to be purchased
             if tmpl["purchase_ok"]:
                 suppliers = {}
-                for sup in itemsuppliers.get(tmpl["id"], []):
+                for sup in itemsuppliers_product.get(
+                    i["id"], itemsuppliers_tmpl.get(tmpl["id"], [])
+                ):
                     name = self.map_suppliers.get(sup["partner_id"][0], None)
                     if not name:
                         # Skip uninterested suppliers (eg archived ones)
