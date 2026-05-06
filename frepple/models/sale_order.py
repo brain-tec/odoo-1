@@ -69,11 +69,12 @@ class SaleOrder(models.Model):
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
-                if line.product_id.product_tmpl_id.type in ("service","combo") or line.product_id.product_tmpl_id.is_storable = False:
+                if (
+                    line.product_id.product_tmpl_id.type in ("service", "combo")
+                    or line.product_id.product_tmpl_id.is_storable == False
+                ):
                     continue
-                product_name = self.getfrePPLeItemName(
-                    line.product_id, use_short_names
-                )
+                product_name = self.getfrePPLeItemName(line.product_id, use_short_names)
 
                 # Get the due date: commitment date if set or now, in the user timezone
                 sale_order_utc = (
