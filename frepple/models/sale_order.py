@@ -70,9 +70,6 @@ class SaleOrder(models.Model):
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
-                logger.info(
-                    f"{line.product_id.name} {line.product_id.product_tmpl_id.type} {line.product_id.product_tmpl_id.is_storable}"
-                )
                 if (
                     line.product_id.product_tmpl_id.type in ("service", "combo")
                     or line.product_id.product_tmpl_id.is_storable == False
