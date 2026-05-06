@@ -69,52 +69,53 @@ class SaleOrder(models.Model):
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
-                if line.product_id.type == "consu":
-                    product_name = self.getfrePPLeItemName(
-                        line.product_id, use_short_names
-                    )
+                if line.product_id.product_tmpl_id.type in ("service","combo") or line.product_id.product_tmpl_id.is_storable = False:
+                    continue
+                product_name = self.getfrePPLeItemName(
+                    line.product_id, use_short_names
+                )
 
-                    # Get the due date: commitment date if set or now, in the user timezone
-                    sale_order_utc = (
-                        sale_order.commitment_date or datetime.datetime.now()
-                    ).replace(tzinfo=tz.gettz("UTC"))
-                    sale_order_user_tz = sale_order_utc.astimezone(
-                        tz.gettz(self.env.user.tz)
-                    ).replace(tzinfo=None)
+                # Get the due date: commitment date if set or now, in the user timezone
+                sale_order_utc = (
+                    sale_order.commitment_date or datetime.datetime.now()
+                ).replace(tzinfo=tz.gettz("UTC"))
+                sale_order_user_tz = sale_order_utc.astimezone(
+                    tz.gettz(self.env.user.tz)
+                ).replace(tzinfo=None)
 
-                    due_date = sale_order_user_tz.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                due_date = sale_order_user_tz.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-                    request_body["demands"].append(
-                        {
-                            "name": "%s %s" % (sale_order.name, line.id),
-                            "quantity": int(line.product_uom_qty),
-                            "description": "",
-                            "due": due_date,
-                            "item": {"name": product_name},
-                            "location": {"name": sale_order.warehouse_id.code},
-                            "customer": {
-                                "name": "%s %s"
-                                % (
-                                    sale_order.partner_id.name,
-                                    sale_order.partner_id.id,
-                                )
-                            },
-                            "minshipment": int(line.product_uom_qty),
-                            "maxlateness": 86400000,
-                            "priority": 20,
-                            "policy": (
-                                "independent"
-                                if sale_order.picking_policy == "direct"
-                                else "alltogether"
-                            ),
-                            "owner": (
-                                None
-                                if sale_order.picking_policy == "direct"
-                                else sale_order.name
-                            ),
-                            "source": "odoo_1",
-                        }
-                    )
+                request_body["demands"].append(
+                    {
+                        "name": "%s %s" % (sale_order.name, line.id),
+                        "quantity": int(line.product_uom_qty),
+                        "description": "",
+                        "due": due_date,
+                        "item": {"name": product_name},
+                        "location": {"name": sale_order.warehouse_id.code},
+                        "customer": {
+                            "name": "%s %s"
+                            % (
+                                sale_order.partner_id.name,
+                                sale_order.partner_id.id,
+                            )
+                        },
+                        "minshipment": int(line.product_uom_qty),
+                        "maxlateness": 86400000,
+                        "priority": 20,
+                        "policy": (
+                            "independent"
+                            if sale_order.picking_policy == "direct"
+                            else "alltogether"
+                        ),
+                        "owner": (
+                            None
+                            if sale_order.picking_policy == "direct"
+                            else sale_order.name
+                        ),
+                        "source": "odoo_1",
+                    }
+                )
 
             # -----[ CREATE AUTH TOKEN ]-----
             encode_params = dict(
