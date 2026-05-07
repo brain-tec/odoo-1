@@ -32,9 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class importer(object):
-    def __init__(
-        self, req, database=None, company=None, mode=1
-    ):
+    def __init__(self, req, database=None, company=None, mode=1):
         self.env = req.env
         self.database = database
         self.company = company
@@ -394,19 +392,6 @@ class importer(object):
 
                         if (item_id, supplier_id) not in product_supplier_dict:
                             product = product_product.browse(int(item_id))
-                            supplier = product_supplierinfo.search(
-                                [
-                                    ("partner_id", "=", supplier_id),
-                                    (
-                                        "product_tmpl_id",
-                                        "=",
-                                        product.product_tmpl_id.id,
-                                    ),
-                                    ("min_qty", "<=", quantity),
-                                ],
-                                limit=1,
-                                order="min_qty desc",
-                            )
                             product_uom = uom_uom.browse(int(uom_id))
                             # first create a minimal PO line
                             po_line = proc_orderline.create(
