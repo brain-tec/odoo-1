@@ -792,7 +792,9 @@ class exporter(object):
                 "product.supplierinfo",
                 search=[
                     "&",
-                    ("product_tmpl_id.type", "not in", ("service", "consu", "combo")),
+                    "&",
+                    ("product_tmpl_id.type", "not in", ("service", "combo")),
+                    ("product_tmpl_id.is_storable", "=", True),
                     ("partner_id.is_company", "=", False),
                 ],
                 fields=["partner_id"],
