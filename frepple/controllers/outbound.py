@@ -804,6 +804,29 @@ class exporter(object):
         individual_inserted = False
         offset = 0
         pagesize = 25000
+
+        # We want first to capture the Individuals that have a product_supplierinfo record
+        individualSuppliers = []
+        while True:
+            recs = self.generator.getData(
+                "product.supplierinfo",
+                search=[
+                    "&",
+                    "&",
+                    ("product_tmpl_id.type", "not in", ("service", "combo")),
+                    ("product_tmpl_id.is_storable", "=", True),
+                    ("partner_id.is_company", "=", False),
+                ],
+                fields=["partner_id"],
+                offset=offset,
+                limit=pagesize,
+            )
+            if len(recs) == 0:
+                break
+            offset += pagesize
+            for i in recs:
+                individualSuppliers.append(i["partner_id"][0])
+        offset = 0
         try:
             while True:
                 recs = self.generator.getData(
@@ -833,14 +856,27 @@ class exporter(object):
                         ) + ",\n"
                     elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
                         name = "Individuals"
-                        supplier = "Individuals"
+                        supplier = (
+                            "Individuals"
+                            if i["id"] not in individualSuppliers
+                            else "%s %s" % (i["name"], i["id"])
+                        )
                         if not individual_inserted:
                             yield json.dumps({"name": name}) + ",\n"
                             individual_inserted = True
                     else:
                         if i["parent_id"][0] in self.map_customers:
                             name = str(self.map_customers[i["parent_id"][0]])
-                            supplier = "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                            supplier = (
+                                "%s @ %s %s"
+                                % (
+                                    i["name"],
+                                    i["parent_id"][1],
+                                    i["id"],
+                                )
+                                if i["id"] in individualSuppliers
+                                else "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                            )
                         else:
                             continue
 
