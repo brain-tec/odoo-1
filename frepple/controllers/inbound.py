@@ -32,9 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class importer(object):
-    def __init__(
-        self, req, database=None, company=None, mode=1
-    ):
+    def __init__(self, req, database=None, company=None, mode=1):
         self.env = req.env
         self.database = database
         self.company = company
@@ -394,19 +392,37 @@ class importer(object):
 
                         if (item_id, supplier_id) not in product_supplier_dict:
                             product = product_product.browse(int(item_id))
+                            # look first for a record for that specific variant/product
                             supplier = product_supplierinfo.search(
                                 [
+                                    "&",
                                     ("partner_id", "=", supplier_id),
                                     (
-                                        "product_tmpl_id",
+                                        "product_id",
                                         "=",
-                                        product.product_tmpl_id.id,
+                                        product.id,
                                     ),
                                     ("min_qty", "<=", quantity),
                                 ],
                                 limit=1,
                                 order="min_qty desc",
                             )
+                            # if no record found then move at template level
+                            if not supplier:
+                                supplier = product_supplierinfo.search(
+                                    [
+                                        "&",
+                                        ("partner_id", "=", supplier_id),
+                                        (
+                                            "product_tmpl_id",
+                                            "=",
+                                            product.product_tmpl_id.id,
+                                        ),
+                                        ("min_qty", "<=", quantity),
+                                    ],
+                                    limit=1,
+                                    order="min_qty desc",
+                                )
                             product_uom = uom_uom.browse(int(uom_id))
                             # first create a minimal PO line
                             po_line = proc_orderline.create(
@@ -418,6 +434,15 @@ class importer(object):
                                 }
                             )
                             po = po_line.order_id
+                            # set the PO currency.
+                            # By default Odoo sets the company currency for the PO currency
+                            # which can be different from the vendor currency
+                            if (
+                                supplier
+                                and supplier.currency_id
+                                and supplier.currency_id.id != po.currency_id.id
+                            ):
+                                po.currency_id = supplier.currency_id.id
 
                             # Is there a blanket order for this product /supplier ?
                             if (
