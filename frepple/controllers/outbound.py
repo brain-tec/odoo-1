@@ -3196,11 +3196,11 @@ class exporter(object):
                         for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                             if (
                                 # Normal reservation case
-                                l.move_id.procure_method != "make_to_order"
+                                mv.procure_method != "make_to_order"
                                 and l.state == "assigned"
                             ) or (
                                 # Special case for multi-level MTO chains
-                                l.move_id.procure_method == "make_to_order"
+                                mv.procure_method == "make_to_order"
                                 and l.move_id.state
                                 not in (
                                     "waiting",
@@ -3321,10 +3321,10 @@ class exporter(object):
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                                 if (
-                                    l.move_id.procure_method != "make_to_order"
+                                    mv.procure_method != "make_to_order"
                                     and l.state == "assigned"
                                 ) or (
-                                    l.move_id.procure_method == "make_to_order"
+                                    mv.procure_method == "make_to_order"
                                     and l.move_id.state
                                     not in (
                                         "waiting",
