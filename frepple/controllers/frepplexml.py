@@ -494,8 +494,10 @@ class XMLController(odoo.http.Controller):
             # Pick up the company
             if job:
                 company_id = job.company_id.id
+                logger.info(f"found job, company is {company_id}")
             else:
                 company_name = data.get("company", None)
+                logger.info(f"using company in the data {company_name}")
                 if not company_name:
                     return Response(
                         "Missing company name argument. Multi-database recommendations aren't supported.",
@@ -618,18 +620,18 @@ class XMLController(odoo.http.Controller):
                     frepple_import=True
                 ).create(data.get("recommendations"))
 
-                if job:
-                    # Mark the job as done
-                    job.write({"status": "Done", "finished": datetime.now()})
-                else:
-                    # recommendations are coming from frepple, new job to be created
-                    req.env["frepple.job"].sudo().create(
-                        {
-                            "status": "Done",
-                            "started": datetime.now(),
-                            "finished": datetime.now(),
-                        }
-                    )
+            if job:
+                # Mark the job as done
+                job.write({"status": "Done", "finished": datetime.now()})
+            else:
+                # recommendations are coming from frepple, new job to be created
+                req.env["frepple.job"].sudo().create(
+                    {
+                        "status": "Done",
+                        "started": datetime.now(),
+                        "finished": datetime.now(),
+                    }
+                )
 
         except Exception as e:
             traceback.print_exc()
