@@ -23,6 +23,7 @@
 
 from datetime import datetime, timedelta
 import gzip
+import html
 import json
 import logging
 import markupsafe
@@ -30,6 +31,7 @@ from odoo import fields, models, api, release
 from odoo.exceptions import ValidationError
 import os
 from pathlib import Path
+import re
 import requests
 import secrets
 from tempfile import NamedTemporaryFile
@@ -56,6 +58,7 @@ class FreppleJob(models.Model):
     started = fields.Datetime(string="Date when the job was launched")
     finished = fields.Datetime(string="Date when a response was received from frePPLe")
     hashed_token = fields.Char(string="Hashed secret token", groups="base.group_system")
+    constraints = fields.Char(string="Constraints enabled for this job")
 
     @api.model
     def findJob(self, token):
@@ -85,13 +88,43 @@ class FreppleJob(models.Model):
             rec.started = fields.Datetime.now()
 
     @api.model
+    def get_allowed_companies(self):
+        return [
+            {
+                "id": c.id,
+                "name": c.name,
+                "frepple_server": c.frepple_server or "",
+            }
+            for c in self.env.companies
+        ]
+
+    @api.model
+    def get_last_constraints(self, company_id):
+        last_job = self.env["frepple.job"].search(
+            [
+                ("company_id.id", "=", company_id),
+                ("constraints", "!=", False),
+            ],
+            order="started desc",
+            limit=1,
+        )
+        if last_job and last_job.constraints:
+            enabled = last_job.constraints.split(",")
+            return {
+                "capacity": "capa" in enabled,
+                "mfgLeadTime": "mfg_lt" in enabled,
+                "poLeadTime": "po_lt" in enabled,
+            }
+        return None
+
+    @api.model
     def get_status(self, company_id):
         # Check if settings are configured
+        company = self.env["res.company"].browse(company_id)
 
         config_ok = True
-        current_company = self.env.company
-        webtoken_key = current_company.getWebtoken_key()
-        frepple_server = current_company.getFrepple_server()
+        webtoken_key = company.getWebtoken_key()
+        frepple_server = company.getFrepple_server()
 
         if not webtoken_key or not frepple_server:
             config_ok = False
@@ -108,12 +141,10 @@ class FreppleJob(models.Model):
                 "last_update_date": False,
                 "settings_missing": True,
             }
-
         last_job = self.env["frepple.job"].search(
             [
                 ("company_id.id", "=", company_id),
                 ("finished", "!=", False),
-                ("status", "=", "Done"),
             ],
             order="finished desc",
             limit=1,
@@ -127,6 +158,16 @@ class FreppleJob(models.Model):
             order="started desc",
             limit=1,
         )
+
+        # Make sure we don't have an old hanging job
+        if running_job:
+            running_job = (
+                running_job
+                if not last_job or running_job.started > last_job.started
+                else None
+            )
+
+        failed = False
         if running_job:
             # Calculate duration
             now = fields.Datetime.now()
@@ -142,24 +183,42 @@ class FreppleJob(models.Model):
                 rem_seconds = seconds % 60
                 elapsed_str = f"{minutes}m {rem_seconds}s ago"
 
-            message = f"started {elapsed_str} for {self.env.company.name}"
+            message = f"started {elapsed_str} for {company.name}"
         else:
             if last_job:
                 raw_utc_time = last_job[0].finished
-                # get the user time in the user time zone
                 local_time = fields.Datetime.context_timestamp(self, raw_utc_time)
-                message = f"Last refresh for {self.env.company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                constraint_labels = {
+                    "capa": "capacity",
+                    "mfg_lt": "manufacturing lead time",
+                    "po_lt": "purchase lead time",
+                }
+                constraints_str = ""
+                if last_job[0].constraints:
+                    enabled = [
+                        constraint_labels.get(c, c)
+                        for c in last_job[0].constraints.split(",")
+                        if c
+                    ]
+                    if enabled:
+                        constraints_str = f" (respect {', '.join(enabled)})"
+                if last_job[0].status == "Done":
+                    # get the user time in the user time zone
+                    message = f"Last refresh for {company.name}: {local_time.strftime('%Y-%m-%d %H:%M:%S')}{constraints_str}"
+                else:
+                    message = f"Last refresh for {company.name} failed at: {local_time.strftime('%Y-%m-%d %H:%M:%S')} - {last_job[0].status}"
+                    failed = True
             else:
                 message = f"Click on the generate recommendations button to get your first recommendations"
 
-        r = {
+        return {
             "message": (
                 markupsafe.Markup(message) if hasattr(markupsafe, "Markup") else message
             ),
-            "is_running": len(running_job) > 0,
+            "is_running": True if running_job else False,
             "last_update_date": last_job.finished.isoformat() if last_job else False,
+            "failed": failed,
         }
-        return r
 
     @api.model
     def action_cancel_all(self, company_id):
@@ -173,10 +232,25 @@ class FreppleJob(models.Model):
         jobs_to_cancel.write({"status": "cancelled"})
 
     @api.model
-    def action_launch(self, company_id):
+    def action_launch(self, company_id, options=None):
+        if options is None:
+            options = {}
 
-        if len(self.env.companies) > 1:
-            raise ValidationError(f"Please select one company only and try again.")
+        company = self.env["res.company"].browse(company_id)
+        if not company.exists():
+            raise ValidationError(f"Company with id {company_id} does not exist.")
+
+        missing = []
+        if not company.webtoken_key:
+            missing.append("Webtoken key")
+        if not company.frepple_server:
+            missing.append("frePPLe server")
+        if missing:
+            raise ValidationError(
+                f"The following frePPLe settings are not configured for company "
+                f"'{company.name}': {', '.join(missing)}. "
+                f"Please go to Settings > frePPLe to configure them."
+            )
 
         filename = None
         try:
@@ -194,23 +268,27 @@ class FreppleJob(models.Model):
 
             job.write({"status": "Collecting data"})
 
-            company = self.env["res.company"].browse(company_id)
-            if not company.exists():
-                raise ValueError(f"Company with id {company_id} does not exist.")
-
-            xp = exporter(
-                Odoo_generator(self.env),
-                None,
-                uid=self.env.user.id,
-                database=None,
-                company=company.name,
-                mode=1,
-                timezone=None,
-                singlecompany=False,
-                delta=999,
-                language=self.env.context.get("lang", "en_US"),
-                apps="",
-            )
+            try:
+                xp = exporter(
+                    Odoo_generator(self.env),
+                    None,
+                    uid=self.env.user.id,
+                    database=None,
+                    company=company.name,
+                    mode=1,
+                    timezone=None,
+                    singlecompany=True,
+                    delta=999,
+                    apps="",
+                )
+            except Exception as e:
+                job.write(
+                    {
+                        "status": f"Error collecting data: {e}",
+                        "finished": fields.Datetime.now(),
+                    }
+                )
+                return
 
             # last empty double quote is to let python understand frepple is a folder.
             xml_folder = os.path.join(str(Path.home()), "logs", "frepple", "")
@@ -228,6 +306,15 @@ class FreppleJob(models.Model):
             # Submitting the file to frepple
             job.write({"status": "Submitting data"})
             with open(filename, "rb") as f:
+                constraint = []
+                if options.get("capacity", True):
+                    constraint.append("capa")
+                if options.get("mfgLeadTime", True):
+                    constraint.append("mfg_lt")
+                if options.get("poLeadTime", True):
+                    constraint.append("po_lt")
+
+                job.write({"constraints": ",".join(constraint)})
 
                 metadata = {
                     "email": self.env.user.email,
@@ -239,6 +326,7 @@ class FreppleJob(models.Model):
                     "submitted": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "token": token,
                     "database": self.env.cr.dbname,
+                    "constraint": ",".join(constraint),
                 }
 
                 webtoken = encode_jwt(
@@ -248,22 +336,45 @@ class FreppleJob(models.Model):
                 if not isinstance(webtoken, str):
                     webtoken = webtoken.decode("ascii")
 
-                response = requests.post(
-                    f"{company.frepple_server.replace('localhost', 'host.docker.internal')}/odoo/submit/",
-                    headers={"Authorization": f"Bearer {str(webtoken)}"},
-                    files={
-                        "datafile": ("odoodata.xml", f, "application/octet-stream"),
-                        "metadata": (
-                            "metadata.json",
-                            json.dumps(metadata),
-                            "application/json",
-                        ),
-                    },
-                    timeout=300,
-                )
+                try:
+                    response = requests.post(
+                        f"{company.frepple_server.replace('localhost', 'host.docker.internal')}/odoo/submit/",
+                        headers={"Authorization": f"Bearer {str(webtoken)}"},
+                        files={
+                            "datafile": (
+                                "odoodata.xml",
+                                f,
+                                "application/octet-stream",
+                            ),
+                            "metadata": (
+                                "metadata.json",
+                                json.dumps(metadata),
+                                "application/json",
+                            ),
+                        },
+                        timeout=300,
+                    )
+                except requests.ConnectionError:
+                    job.write(
+                        {
+                            "status": "Connection error",
+                            "finished": fields.Datetime.now(),
+                        }
+                    )
+                    return
                 if response.status_code != 200:
-                    job.write({"status": f"Failure submitting: {response.content}"})
+                    raw_status = response.content.decode("utf-8", errors="replace")
+                    plain_status = re.sub(r"<[^>]+>", "", raw_status)
+                    plain_status = html.unescape(plain_status).strip()
+                    plain_status = re.sub(r"\s+", " ", plain_status)
+                    job.write(
+                        {
+                            "status": plain_status[:500],
+                            "finished": fields.Datetime.now(),
+                        }
+                    )
                     logger.critical("Job submission failed.")
+                    return
                 else:
                     job.write({"status": "Waiting for results"})
         finally:
