@@ -762,7 +762,7 @@ class exporter(object):
                     "subcategory": i["id"],
                 }
                 if self.calendar:
-                    location["location"]["available"] = {"name": self.calendar}
+                    location["available"] = {"name": self.calendar}
                 yield json.dumps(location) + ",\n"
                 self.warehouses[i["id"]] = i["code"] or i["name"]
             if self.mfg_location and self.mfg_location in self.warehouses:
