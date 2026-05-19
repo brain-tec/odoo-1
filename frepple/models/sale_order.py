@@ -15,21 +15,6 @@ logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    # This field is used to hide/display the quote button
-    # in the "Other info" tab of the sales order
-    _without_quote = fields.Boolean(
-        compute="_compute_without_quote", store=False, default=False
-    )
-
-    def _compute_without_quote(self):
-        groups = self.env["res.groups"].search([("name", "=", "frePPLe quoting user")])
-        if not groups:
-            enable_quoting_module = False
-        else:
-            enable_quoting_module = self.user_id.id in groups.users.ids
-        for order in self:
-            order._without_quote = order.state != "draft" or not enable_quoting_module
-
     def use_product_short_names(self):
         # Check if we can use short names
         # To use short names, the internal reference (or the name when no internal reference is defined)
@@ -79,57 +64,64 @@ class SaleOrder(models.Model):
 
         use_short_names = self.use_product_short_names()
 
+        valid = False
         for sale_order in self:
 
             # -----[ BUILD THE REQUEST BODY ]-----
             request_body = {"demands": []}
             for line in sale_order.order_line:
-                if line.product_id.type == "consu":
-                    product_name = self.getfrePPLeItemName(
-                        line.product_id, use_short_names
-                    )
+                if (
+                    line.product_id.product_tmpl_id.type in ("service", "combo")
+                    or line.product_id.product_tmpl_id.is_storable == False
+                ):
+                    continue
+                valid = True
+                product_name = self.getfrePPLeItemName(line.product_id, use_short_names)
 
-                    # Get the due date: commitment date if set or now, in the user timezone
-                    sale_order_utc = (
-                        sale_order.commitment_date or datetime.datetime.now()
-                    ).replace(tzinfo=tz.gettz("UTC"))
-                    sale_order_user_tz = sale_order_utc.astimezone(
-                        tz.gettz(self.env.user.tz)
-                    ).replace(tzinfo=None)
+                # Get the due date: commitment date if set or now, in the user timezone
+                sale_order_utc = (
+                    sale_order.commitment_date or datetime.datetime.now()
+                ).replace(tzinfo=tz.gettz("UTC"))
+                sale_order_user_tz = sale_order_utc.astimezone(
+                    tz.gettz(self.env.user.tz)
+                ).replace(tzinfo=None)
 
-                    due_date = sale_order_user_tz.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                due_date = sale_order_user_tz.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-                    request_body["demands"].append(
-                        {
-                            "name": "%s %s" % (sale_order.name, line.id),
-                            "quantity": int(line.product_uom_qty),
-                            "description": "",
-                            "due": due_date,
-                            "item": {"name": product_name},
-                            "location": {"name": sale_order.warehouse_id.code},
-                            "customer": {
-                                "name": "%s %s"
-                                % (
-                                    sale_order.partner_id.name,
-                                    sale_order.partner_id.id,
-                                )
-                            },
-                            "minshipment": int(line.product_uom_qty),
-                            "maxlateness": 86400000,
-                            "priority": 20,
-                            "policy": (
-                                "independent"
-                                if sale_order.picking_policy == "direct"
-                                else "alltogether"
-                            ),
-                            "owner": (
-                                None
-                                if sale_order.picking_policy == "direct"
-                                else sale_order.name
-                            ),
-                            "source": "odoo_1",
-                        }
-                    )
+                request_body["demands"].append(
+                    {
+                        "name": "%s %s" % (sale_order.name, line.id),
+                        "quantity": int(line.product_uom_qty),
+                        "description": "",
+                        "due": due_date,
+                        "item": {"name": product_name},
+                        "location": {"name": sale_order.warehouse_id.code},
+                        "customer": {
+                            "name": "%s %s"
+                            % (
+                                sale_order.partner_id.name,
+                                sale_order.partner_id.id,
+                            )
+                        },
+                        "minshipment": int(line.product_uom_qty),
+                        "maxlateness": 86400000,
+                        "priority": 20,
+                        "policy": (
+                            "independent"
+                            if sale_order.picking_policy == "direct"
+                            else "alltogether"
+                        ),
+                        "owner": (
+                            None
+                            if sale_order.picking_policy == "direct"
+                            else sale_order.name
+                        ),
+                        "source": "odoo_1",
+                    }
+                )
+
+            if not valid:
+                raise exceptions.UserError("No valid sales order line to quote")
 
             # -----[ CREATE AUTH TOKEN ]-----
             encode_params = dict(

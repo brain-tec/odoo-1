@@ -784,6 +784,29 @@ class exporter(object):
         individual_inserted = False
         offset = 0
         pagesize = 25000
+
+        # We want first to capture the Individuals that have a product_supplierinfo record
+        individualSuppliers = []
+        while True:
+            recs = self.generator.getData(
+                "product.supplierinfo",
+                search=[
+                    "&",
+                    "&",
+                    ("product_tmpl_id.type", "not in", ("service", "combo")),
+                    ("product_tmpl_id.is_storable", "=", True),
+                    ("partner_id.is_company", "=", False),
+                ],
+                fields=["partner_id"],
+                offset=offset,
+                limit=pagesize,
+            )
+            if len(recs) == 0:
+                break
+            offset += pagesize
+            for i in recs:
+                individualSuppliers.append(i["partner_id"][0])
+        offset = 0
         while True:
             recs = self.generator.getData(
                 "res.partner",
@@ -817,14 +840,27 @@ class exporter(object):
                     )
                 elif i["parent_id"] == False or i["id"] == i["parent_id"][0]:
                     name = "Individuals"
-                    supplier = "Individuals"
+                    supplier = (
+                        "Individuals"
+                        if i["id"] not in individualSuppliers
+                        else "%s %s" % (i["name"], i["id"])
+                    )
                     if not individual_inserted:
                         yield "<customer name=%s/>\n" % quoteattr(name)
                         individual_inserted = True
                 else:
                     if i["parent_id"][0] in self.map_customers:
                         name = str(self.map_customers[i["parent_id"][0]])
-                        supplier = "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                        supplier = (
+                            "%s @ %s %s"
+                            % (
+                                i["name"],
+                                i["parent_id"][1],
+                                i["id"],
+                            )
+                            if i["id"] in individualSuppliers
+                            else "%s %s" % (i["parent_id"][1], i["parent_id"][0])
+                        )
                     else:
                         continue
 
@@ -1102,6 +1138,7 @@ class exporter(object):
 
         supplierinfo_fields = [
             "product_tmpl_id",
+            "product_id",
             "partner_id",
             "delay",
             "min_qty",
@@ -1112,16 +1149,23 @@ class exporter(object):
             "sequence",
             "is_subcontractor",
         ]
-        itemsuppliers = {}
+        itemsuppliers_tmpl = {}
+        itemsuppliers_product = {}
         for i in self.generator.getData(
             "product.supplierinfo",
             fields=supplierinfo_fields,
             search=[("product_tmpl_id", "!=", False)],
         ):
-            if i["product_tmpl_id"][0] in itemsuppliers:
-                itemsuppliers[i["product_tmpl_id"][0]].append(i)
+            if i["product_id"]:
+                if i["product_id"][0] in itemsuppliers_product:
+                    itemsuppliers_product[i["product_id"][0]].append(i)
+                else:
+                    itemsuppliers_product[i["product_id"][0]] = [i]
             else:
-                itemsuppliers[i["product_tmpl_id"][0]] = [i]
+                if i["product_tmpl_id"][0] in itemsuppliers_tmpl:
+                    itemsuppliers_tmpl[i["product_tmpl_id"][0]].append(i)
+                else:
+                    itemsuppliers_tmpl[i["product_tmpl_id"][0]] = [i]
 
         # Read the products
         first = True
@@ -1242,7 +1286,9 @@ class exporter(object):
             # Export suppliers for the item, if the item is allowed to be purchased
             if tmpl["purchase_ok"]:
                 suppliers = {}
-                for sup in itemsuppliers.get(tmpl["id"], []):
+                for sup in itemsuppliers_product.get(
+                    i["id"], itemsuppliers_tmpl.get(tmpl["id"], [])
+                ):
                     name = self.map_suppliers.get(sup["partner_id"][0], None)
                     if not name:
                         # Skip uninterested suppliers (eg archived ones)
@@ -1982,53 +2028,6 @@ class exporter(object):
         stock.warehouse.name -> demand->location
         (if sale.order.picking_policy = 'one' then same as demand.quantity else 1) -> demand.minshipment
         """
-        # Get all sales order lines
-        search = (
-            [("product_id", "!=", False)]
-            if self.delta >= 999
-            else [
-                ("product_id", "!=", False),
-                (
-                    "write_date",
-                    ">=",
-                    datetime.now() - timedelta(days=self.delta),
-                ),
-            ]
-        )
-        so_line = self.generator.getData(
-            "sale.order.line",
-            search=search,
-            fields=[
-                "qty_delivered",
-                "state",
-                "product_id",
-                "product_uom_qty",
-                "commitment_date",
-                "product_uom",
-                "order_id",
-                "move_ids",
-                "is_rental",
-                "rental_return_date",
-                "rental_pickup_date",
-            ],
-        )
-
-        # Get all sales orders
-        so = {
-            i["id"]: i
-            for i in self.generator.getData(
-                "sale.order",
-                ids=[j["order_id"][0] for j in so_line],
-                fields=[
-                    "state",
-                    "partner_id",
-                    "commitment_date",
-                    "date_order",
-                    "picking_policy",
-                    "warehouse_id",
-                ],
-            )
-        }
 
         # Get all move ids
         # We only read the open ones
@@ -2083,6 +2082,255 @@ class exporter(object):
         yield "<!-- sales order lines -->\n"
         yield "<demands>\n"
 
+        # A first loop if parameter odoo.delta is less than 999.
+        # We want to pick the closed sales order lines with a write date in the last odoo.delta days
+        # A second loop will pick all the open sales orders over the entire horizon
+
+        if self.delta < 999:
+
+            # Get all sales order lines
+            search = [
+                ("product_id", "!=", False),
+                ("order_id.state", "=", "sale"),
+                (
+                    "write_date",
+                    ">=",
+                    datetime.now() - timedelta(days=self.delta),
+                ),
+            ]
+            so_line = self.generator.getData(
+                "sale.order.line",
+                search=search,
+                fields=[
+                    "qty_delivered",
+                    "state",
+                    "product_id",
+                    "product_uom_qty",
+                    "commitment_date",
+                    "product_uom",
+                    "order_id",
+                    "move_ids",
+                    "is_rental",
+                    "rental_return_date",
+                    "rental_pickup_date",
+                ],
+            )
+
+            # Get all sales orders
+            so = {
+                i["id"]: i
+                for i in self.generator.getData(
+                    "sale.order",
+                    ids=[j["order_id"][0] for j in so_line],
+                    fields=[
+                        "state",
+                        "partner_id",
+                        "commitment_date",
+                        "date_order",
+                        "picking_policy",
+                        "warehouse_id",
+                    ],
+                )
+            }
+
+            for i in so_line:
+                name = "%s %d" % (i["order_id"][1], i["id"])
+                batch = i["order_id"][1]
+                product = (
+                    self.product_product.get(i["product_id"][0], None)
+                    if i["product_id"]
+                    else None
+                )
+                j = so[i["order_id"][0]]
+                location = (
+                    self.warehouses.get(j["warehouse_id"][0], None)
+                    if j["warehouse_id"]
+                    else None
+                )
+                customer = (
+                    self.map_customers.get(j["partner_id"][0], None)
+                    if j["partner_id"]
+                    else None
+                )
+
+                if not customer or not location or not product:
+                    # Not interested in this sales order...
+                    continue
+                due = self.formatDateTime(
+                    i.get("commitment_date", False)
+                    or j.get("commitment_date", False)
+                    or j["date_order"]
+                )
+                priority = 1  # We give all customer orders the same default priority
+
+                # if no stock_move if that SO line is still open, we can consider the line closed
+                state = j.get("state", "sale")
+                if state == "sale" and not any(
+                    x in stock_moves_dict
+                    and stock_moves_dict[x] not in ("cancel", "done")
+                    for x in i["move_ids"]
+                ):
+                    state = "done"
+                if state == "sale":
+                    if i["move_ids"] and any(
+                        [mv_id in stock_moves_dict for mv_id in i["move_ids"]]
+                    ):
+                        for mv_id in i["move_ids"]:
+                            sol_name = (
+                                "%s %s" % (name, mv_id)
+                                if len(i["move_ids"]) > 1
+                                else name
+                            )
+                            sm = stock_moves_dict.get(mv_id)
+                            if sm:
+                                sm_product = (
+                                    self.product_product.get(sm["product_id"][0], None)
+                                    if sm["product_id"]
+                                    else product
+                                )
+                                if not sm_product:
+                                    continue
+                                qty = self.convert_qty_uom(
+                                    sm["product_uom_qty"],
+                                    sm["product_uom"],
+                                    sm_product["template"],
+                                )
+                                reserved_quantity = getReservedAndDoneQuantity(
+                                    sm, self.respect_reservations
+                                )
+                                # only interestes in closde ones
+                                if qty - reserved_quantity > 0:
+                                    continue
+                                due = self.formatDateTime(
+                                    sm["date"]
+                                    or i.get("commitment_date", False)
+                                    or j.get("commitment_date", False)
+                                    or j["date_order"]
+                                )
+
+                                yield (
+                                    '<demand name=%s category=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                                    # Disable the next line in frepple < 6.25
+                                    '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                                    "</demand>\n"
+                                ) % (
+                                    quoteattr(sol_name),
+                                    quoteattr(state),
+                                    quoteattr(batch),
+                                    (
+                                        qty - reserved_quantity
+                                        if qty - reserved_quantity > 0
+                                        else qty
+                                    ),
+                                    due,
+                                    priority,
+                                    (
+                                        qty - reserved_quantity
+                                        if j["picking_policy"] == "one"
+                                        and qty - reserved_quantity > 0
+                                        else 0.0
+                                    ),
+                                    "closed",
+                                    quoteattr(sm_product["name"]),
+                                    quoteattr(customer),
+                                    quoteattr(location),
+                                    # Disable the next 2 lines in frepple < 6.25
+                                    quoteattr(i["order_id"][1]),
+                                    (
+                                        "alltogether"
+                                        if j["picking_policy"] == "one"
+                                        else "independent"
+                                    ),
+                                )
+                        # We are done with this line, move to the next one
+                        continue
+                    else:
+                        qty = i["product_uom_qty"] - i["qty_delivered"]
+                        if qty > 0:
+                            continue
+                        status = "closed"
+                        qty = self.convert_qty_uom(
+                            i["product_uom_qty"],
+                            i["product_uom"],
+                            product["template"],
+                        )
+                elif state == "done":
+                    status = "closed"
+                    qty = self.convert_qty_uom(
+                        i["product_uom_qty"],
+                        i["product_uom"],
+                        product["template"],
+                    )
+
+                else:
+                    continue
+
+                yield (
+                    '<demand name=%s category=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                    # Disable the next line in frepple < 6.25
+                    '<owner name=%s policy="%s" xsi:type="demand_group"/>'
+                    "</demand>\n"
+                ) % (
+                    quoteattr(name),
+                    quoteattr(state),
+                    quoteattr(batch),
+                    qty,
+                    due,
+                    priority,
+                    qty if j["picking_policy"] == "one" and qty > 0 else 0.0,
+                    status,
+                    quoteattr(product["name"]),
+                    quoteattr(customer),
+                    quoteattr(location),
+                    # Disable the next lines in frepple < 6.25
+                    quoteattr(i["order_id"][1]),
+                    "alltogether" if j["picking_policy"] == "one" else "independent",
+                )
+
+        # Second loop to get all the sales orders
+        # Get all sales order lines.
+        # This loop will skip the closed sales orders if odoo.delta < 999
+        # as we assume they have been continuously pulled by the first loop
+        # Get all sales order lines
+        search = [
+            ("product_id", "!=", False),
+            ("state", "!=", "cancel"),
+        ]
+        so_line = self.generator.getData(
+            "sale.order.line",
+            search=search,
+            fields=[
+                "qty_delivered",
+                "state",
+                "product_id",
+                "product_uom_qty",
+                "commitment_date",
+                "product_uom",
+                "order_id",
+                "move_ids",
+                "is_rental",
+                "rental_return_date",
+                "rental_pickup_date",
+            ],
+        )
+
+        # Get all sales orders
+        so = {
+            i["id"]: i
+            for i in self.generator.getData(
+                "sale.order",
+                ids=[j["order_id"][0] for j in so_line],
+                fields=[
+                    "state",
+                    "partner_id",
+                    "commitment_date",
+                    "date_order",
+                    "picking_policy",
+                    "warehouse_id",
+                ],
+            )
+        }
+
         for i in so_line:
             name = "%s %d" % (i["order_id"][1], i["id"])
             batch = i["order_id"][1]
@@ -2122,6 +2370,8 @@ class exporter(object):
                 for x in i["move_ids"]
             ):
                 state = "done"
+                if self.delta < 999:
+                    continue
             if state in ("draft", "sent"):
                 # status = "inquiry"  # Inquiries don't reserve capacity and materials
                 status = "quote"  # Quotes do reserve capacity and materials
@@ -2209,6 +2459,8 @@ class exporter(object):
                             reserved_quantity = getReservedAndDoneQuantity(
                                 sm, self.respect_reservations
                             )
+                            if qty - reserved_quantity <= 0 and self.delta < 999:
+                                continue
                             due = self.formatDateTime(
                                 sm["date"]
                                 or i.get("commitment_date", False)
@@ -2217,12 +2469,13 @@ class exporter(object):
                             )
 
                             yield (
-                                '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                                '<demand name=%s category=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
                                 # Disable the next line in frepple < 6.25
                                 '<owner name=%s policy="%s" xsi:type="demand_group"/>'
                                 "</demand>\n"
                             ) % (
                                 quoteattr(sol_name),
+                                quoteattr(state),
                                 quoteattr(batch),
                                 (
                                     qty - reserved_quantity
@@ -2255,6 +2508,8 @@ class exporter(object):
                     qty = i["product_uom_qty"] - i["qty_delivered"]
                     if qty <= 0:
                         status = "closed"
+                        if self.delta < 999:
+                            continue
                         qty = self.convert_qty_uom(
                             i["product_uom_qty"],
                             i["product_uom"],
@@ -2269,6 +2524,8 @@ class exporter(object):
                         )
             elif state == "done":
                 status = "closed"
+                if self.delta < 999:
+                    continue
                 qty = self.convert_qty_uom(
                     i["product_uom_qty"],
                     i["product_uom"],
@@ -2286,12 +2543,13 @@ class exporter(object):
                 continue
 
             yield (
-                '<demand name=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
+                '<demand name=%s category=%s batch=%s quantity="%s" due="%s" priority="%s" minshipment="%s" status="%s"><item name=%s/><customer name=%s/><location name=%s/>'
                 # Disable the next line in frepple < 6.25
                 '<owner name=%s policy="%s" xsi:type="demand_group"/>'
                 "</demand>\n"
             ) % (
                 quoteattr(name),
+                quoteattr(state),
                 quoteattr(batch),
                 qty,
                 due,
@@ -2305,6 +2563,7 @@ class exporter(object):
                 quoteattr(i["order_id"][1]),
                 "alltogether" if j["picking_policy"] == "one" else "independent",
             )
+
         yield "</demands>\n"
 
     def export_forecasts(self):
@@ -2389,7 +2648,6 @@ class exporter(object):
                 # Remaining open quantity
                 return sm.product_uom._compute_quantity(sm.product_uom_qty, target_uom)
 
-        self.subcontracting_mo_po_mapping = {}
         po_line = {
             i["id"]: i
             for i in self.generator.getData(
@@ -2401,17 +2659,22 @@ class exporter(object):
                         "not in",
                         # Comment out on of the following alternative approaches:
                         # Alternative I: don't send RFQs to frepple because that supply isn't certain to be available yet.
+                        # (
+                        #     "draft",
+                        #     "sent",
+                        #     "bid",
+                        #     "to approve",
+                        #     # "confirmed",  # Not a standard state any longer in odoo 18
+                        #     "cancel",
+                        #     # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
+                        # ),
+                        # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
                         (
-                            "draft",
-                            "sent",
                             "bid",
-                            "to approve",
                             # "confirmed",  # Not a standard state any longer in odoo 18
                             "cancel",
-                            # "done",  # Do not exclude done purchase orders! They can still have pending moves to receive the material.
+                            # "done",  # Do NOT exclude done purchase orders! They can still have pending moves to receive the material.
                         ),
-                        # Alternative II: send RFQs to frepple to avoid that the same purchasing proposal is generated again by frepple.
-                        # ("bid", "confirmed", "cancel"),
                     ),
                     ("order_id.state", "=", False),
                     # Note: do NOT filter on receipt_status. A PO can be fully received but still have pending stock moves.
@@ -2423,8 +2686,15 @@ class exporter(object):
         yield "<!-- open purchase orders -->\n"
         yield "<operationplans>\n"
         for i in po_line.values():
+            location = self.warehouses.get(
+                i.order_id.picking_type_id.warehouse_id.id, None
+            )
+            if not location:
+                continue
+
             if i.move_ids:
                 # METHOD 1: Use the stock move information rather than the po line
+                firstmove = True
                 for mv in i.move_ids:
                     if (
                         not mv.product_id
@@ -2440,19 +2710,16 @@ class exporter(object):
                         continue
                     j = mv.purchase_line_id.order_id
                     po_line_reference = "%s - %s - %s - %s" % (
-                        j.name,
+                        (
+                            j.name
+                            if j.state not in ("draft", "sent", "to approve")
+                            else f"{j.name} RFQ"
+                        ),
                         mv.picking_id.name,
                         mv.id,
                         mv.purchase_line_id.id,
                     )
-                    if getattr(mv, "is_subcontract", False):
-                        # PO lines on a subcontracting BOM are mapped as a MO in frepple
-                        for k in mv.move_orig_ids:
-                            if k.production_id:
-                                self.subcontracting_mo_po_mapping[
-                                    k.production_id.id
-                                ] = po_line_reference
-                        continue
+
                     item = self.product_product.get(mv.product_id.id, None)
                     if not item:
                         continue
@@ -2476,15 +2743,13 @@ class exporter(object):
                     else:
                         batch = None
 
-                    location = self.map_locations.get(mv.location_dest_id.id, None)
-                    if not location:
-                        continue
                     start = j.date_order
                     if not isinstance(start, datetime):
                         try:
                             start = datetime.fromisoformat(start)
                         except Exception:
                             start = None
+
                     end = mv.date
                     if not isinstance(end, datetime):
                         try:
@@ -2493,11 +2758,6 @@ class exporter(object):
                             end = None
                     if not start or not end:
                         continue
-                    start = self.formatDateTime(start if start < end else end)
-                    end = self.formatDateTime(end)
-
-                    # Compute the quantity that we still need to receive
-                    qty = getRemainingQuantity(mv, mv.product_id.uom_id)
 
                     supplier = self.map_suppliers.get(j.partner_id.id)
                     if not supplier:
@@ -2521,8 +2781,22 @@ class exporter(object):
                             break
                     if not supplier:
                         continue
-                    if qty > 0:
-                        yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
+
+                    start = self.formatDateTime(start if start < end else end)
+                    end = self.formatDateTime(end)
+
+                    # Compute the quantity that we still need to receive
+                    qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                    if qty <= 0:
+                        continue
+
+                    if not getattr(mv, "is_subcontract", False):
+                        # Regular purchase order line
+                        yield (
+                            '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">'
+                            "<item name=%s/><location name=%s/><supplier name=%s/>"
+                            "</operationplan>\n"
+                        ) % (
                             quoteattr(po_line_reference),
                             "batch=%s " % quoteattr(batch) if batch else "",
                             start,
@@ -2532,6 +2806,105 @@ class exporter(object):
                             quoteattr(location),
                             quoteattr(supplier),
                         )
+                    else:
+                        # Subcontracting purchase order line, mapped as a manufacturing order in frepple
+                        production = mv.production_id
+                        if not production:
+                            production = self.generator.env["mrp.production"].search(
+                                [("move_finished_ids", "in", mv.ids)], limit=1
+                            )
+                        if not production:
+                            production = (
+                                mv.move_orig_ids.production_id[:1]
+                                or mv.move_dest_ids.production_id[:1]
+                            )
+                        if not production or production.state == "cancel":
+                            continue
+
+                        yield (
+                            '<operationplan reference=%s %sordertype="MO" start="%s" end="%s" quantity="%f" status="confirmed">\n'
+                            '<operation name=%s category="subcontractor" subcategory=%s xsi:type="operation_fixed_time" priority="0">\n'
+                            "<item name=%s/>"
+                            "<location name=%s/>"
+                            "</operation>\n"
+                            "<flowplans>\n"
+                            '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>\n'
+                        ) % (
+                            # Operationplan fields
+                            quoteattr(f"{po_line_reference}"),
+                            "batch=%s " % quoteattr(batch) if batch else "",
+                            start,
+                            end,
+                            qty,
+                            # Operation fields
+                            quoteattr(po_line_reference),
+                            quoteattr(supplier),
+                            quoteattr(item["name"]),
+                            quoteattr(location),
+                            # Flowplan fields
+                            qty,
+                            end or start,
+                            quoteattr(item["name"]),
+                        )
+                        if firstmove:
+                            # On the first move we add the subcontractor resupply materials
+                            firstmove = False
+                            for component_move in production.move_raw_ids.filtered(
+                                lambda m: m.state != "cancel"
+                            ):
+                                consumed_item = self.product_product.get(
+                                    component_move.product_id.id, None
+                                )
+                                if not consumed_item:
+                                    continue
+                                # Filter outbound moves to subcontractor
+                                # We exclude returns and cancellations
+                                outbound_moves = component_move.move_orig_ids.filtered(
+                                    lambda m: m.state != "cancel"
+                                    and not m.origin_returned_move_id
+                                )
+                                if not outbound_moves:
+                                    # Direct stock consumption
+                                    demand = component_move.product_uom_qty
+                                    reserved = component_move.availability
+                                    if demand > reserved:
+                                        yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
+                                            reserved - demand,
+                                            self.formatDateTime(current.date),
+                                            quoteattr(consumed_item["name"]),
+                                        )
+                                else:
+                                    for out_move in outbound_moves:
+                                        current = out_move
+
+                                        # Trace back to the source picking (Pick -> Pack -> Out)
+                                        # We only follow non-canceled paths
+                                        valid_origins = current.move_orig_ids.filtered(
+                                            lambda m: m.state != "cancel"
+                                        )
+                                        while valid_origins:
+                                            current = valid_origins[0]
+                                            valid_origins = (
+                                                current.move_orig_ids.filtered(
+                                                    lambda m: m.state != "cancel"
+                                                )
+                                            )
+
+                                        # Remaining quantity = total demand - reserved - done
+                                        remaining_consumption = (
+                                            current.product_uom_qty
+                                            - sum(
+                                                current.move_line_ids.mapped("quantity")
+                                            )
+                                            - current.quantity
+                                        )
+                                        if remaining_consumption > 0:
+                                            yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
+                                                -remaining_consumption,
+                                                self.formatDateTime(current.date),
+                                                quoteattr(consumed_item["name"]),
+                                            )
+                        yield "</flowplans>\n</operationplan>\n"
             else:
                 # METHOD 2: Create purchasing operations from purchase order lines
                 if not i["product_id"] or i["state"] in ("cancel", "done"):
@@ -2540,8 +2913,8 @@ class exporter(object):
                 j = i.order_id
                 if not item:
                     continue
-                location = self.mfg_location
-                if location and item and i.product_qty > i.qty_received:
+
+                if item and i.product_qty > i.qty_received:
                     start = j.date_order
                     if not isinstance(start, datetime):
                         start = datetime.fromisoformat(start)
@@ -2601,16 +2974,75 @@ class exporter(object):
                     else:
                         batch = None
 
-                    yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
-                        quoteattr("%s - %s" % (j.name, i.id)),
-                        "batch=%s " % quoteattr(batch) if batch else "",
-                        start,
-                        end,
-                        qty,
-                        quoteattr(item["name"]),
-                        quoteattr(location),
-                        quoteattr(supplier),
+                    # Check if this is a subcontracting purchase order line
+                    bom = self.generator.env["mrp.bom"]._bom_subcontract_find(
+                        i.product_id,
+                        company_id=i.company_id.id,
+                        bom_type="subcontract",
+                        subcontractor=j.partner_id,
                     )
+                    if bom:
+                        # Subcontracting purchase order line, mapped as a manufacturing order in frepple
+                        date_start = None
+                        for vendor_price_list in self.generator.env[
+                            "product.supplierinfo"
+                        ].search(
+                            [
+                                ("partner_id", "=", j.partner_id.id),
+                                "|",
+                                ("product_id", "=", i.product_id.id),
+                                (
+                                    "product_tmpl_id",
+                                    "=",
+                                    i.product_id.product_tmpl_id.id,
+                                ),
+                                ("company_id", "in", [i.company_id.id, False]),
+                            ]
+                        ):
+                            if not vendor_price_list.date_start:
+                                date_start = None
+                                break
+                            elif (
+                                not date_start
+                                or vendor_price_list.date_start < date_start
+                            ):
+                                date_start = vendor_price_list.date_start
+                        operation = "%s %d @ %s%s %s" % (
+                            item["code"] or item["name"],
+                            i.product_id.id,
+                            supplier,
+                            ((" from %s" % date_start) if date_start else ""),
+                            bom.id,
+                        )
+                        yield (
+                            '<operationplan reference=%s %sordertype="MO" end="%s" quantity="%f" status="confirmed"><operation name=%s><location name=%s/></operation></operationplan>\n'
+                        ) % (
+                            quoteattr(
+                                f"{j.name} - {i.id}"
+                                if j.state not in ("draft", "sent", "to approve")
+                                else f"{j.name} RFQ - {i.id}"
+                            ),
+                            "batch=%s " % quoteattr(batch) if batch else "",
+                            end,
+                            qty,
+                            quoteattr(operation),
+                            quoteattr(location),
+                        )
+                    else:
+                        yield '<operationplan reference=%s %sordertype="PO" start="%s" end="%s" quantity="%f" status="confirmed">' "<item name=%s/><location name=%s/><supplier name=%s/></operationplan>\n" % (
+                            quoteattr(
+                                f"{j.name} - {i.id}"
+                                if j.state not in ("draft", "sent", "to approve")
+                                else f"{j.name} RFQ - {i.id}"
+                            ),
+                            "batch=%s " % quoteattr(batch) if batch else "",
+                            start,
+                            end,
+                            qty,
+                            quoteattr(item["name"]),
+                            quoteattr(location),
+                            quoteattr(supplier),
+                        )
         yield "</operationplans>\n"
 
     def getBatch(self, mo, mo_chain=None):
@@ -2662,18 +3094,10 @@ class exporter(object):
         ):
             # Filter out irrelevant manufacturing orders
             location = self.map_locations.get(i.location_dest_id.id, None)
+            if not location:
+                continue
             operation = i.name
             type = "MO"
-            if not location and i.picking_type_id:
-                # For subcontracting MO we find the warehouse on the operation type
-                operation_type = self.operation_types.get(i.picking_type_id.id, None)
-                if operation_type:
-                    location = operation_type["warehouse_id"]
-                    if location:
-                        code = self.subcontracting_mo_po_mapping.get(i.id, None)
-                        if code:
-                            operation = code
-                            type = "subcontractor"
             item = self.product_product.get(i.product_id.id, None)
             if not item or not location:
                 continue
@@ -2696,7 +3120,7 @@ class exporter(object):
             if i.product_id.tracking in ["serial", "lot"]:
                 # Tracking by lot or unique serial number requires that we track
                 # the production intent.
-                self.convert_qty_uom(
+                qty = self.convert_qty_uom(
                     i.product_qty,
                     i.product_uom_id.id,
                     self.product_product[i.product_id.id]["template"],
@@ -2757,7 +3181,7 @@ class exporter(object):
                 operation_materials = {}
                 for mv in (i.move_raw_ids if type != "subcontractor" else None) or []:
                     consumed_item = self.product_product.get(mv.product_id.id, None)
-                    if not consumed_item or mv.state in ("done", "cancelled"):
+                    if not consumed_item or mv.state in ("done", "cancel"):
                         continue
                     default_uom = mv.product_id.uom_id
                     qty_flow = mv.product_uom._compute_quantity(
@@ -2777,7 +3201,13 @@ class exporter(object):
                             ) or (
                                 # Special case for multi-level MTO chains
                                 mv.procure_method == "make_to_order"
-                                and mv.state == "waiting"
+                                and l.move_id.state
+                                not in (
+                                    "waiting",
+                                    "waiting availability",
+                                    "available",
+                                    "partially_available",
+                                )
                             ):
                                 qty_flow -= l.product_uom_id._compute_quantity(
                                     l.quantity, default_uom
@@ -2877,7 +3307,7 @@ class exporter(object):
                             if wo.id != i.workorder_ids[-1].id:
                                 continue
                         item = self.product_product.get(mv.product_id.id, None)
-                        if not item or mv.state in ("done", "cancelled"):
+                        if not item or mv.state in ("done", "cancel"):
                             continue
                         default_uom = mv.product_id.uom_id
                         qty_flow = mv.product_uom._compute_quantity(
@@ -2891,13 +3321,11 @@ class exporter(object):
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
                                 if (
-                                    # Normal reservation case
                                     mv.procure_method != "make_to_order"
                                     and l.state == "assigned"
                                 ) or (
-                                    # Special case for multi-level MTO chains
                                     mv.procure_method == "make_to_order"
-                                    and mv.state
+                                    and l.move_id.state
                                     not in (
                                         "waiting",
                                         "waiting availability",
@@ -2957,7 +3385,7 @@ class exporter(object):
                                             if not sec.duration
                                             or wo.operation_id.time_cycle == 0
                                             else sec.duration
-                                            / wo.operation_idtime_cycle
+                                            / wo.operation_id.time_cycle
                                         ),
                                         quoteattr(sec.search_mode),
                                         quoteattr(
@@ -3196,8 +3624,7 @@ class exporter(object):
         yield "<operationplans>\n"
         if isinstance(self.generator, Odoo_generator):
             # SQL query gives much better performance
-            self.generator.env.cr.execute(
-                """
+            self.generator.env.cr.execute("""
                 SELECT stock_quant.product_id,
                 stock_quant.location_id,
                 sum(stock_quant.quantity) as quantity,
@@ -3216,8 +3643,7 @@ class exporter(object):
                 stock_lot.name,
                 stock_lot.expiration_date
                 ORDER BY location_id ASC
-                """
-            )
+                """)
             data = self.generator.env.cr.fetchall()
         else:
             data = [
@@ -3278,6 +3704,28 @@ class exporter(object):
     # export_stockorders will be called instead of export_onhand
     # when expiration dates is enabled in Odoo
 
+    def get_unconsumed_quantity(self, move):
+        """
+        Recursively calculates how much of the move's quantity is still
+        sitting in internal locations (unconsumed).
+        """
+        if move.state == "cancel":
+            return 0.0
+        if move.state == "done" and move.location_dest_id.usage != "internal":
+            return 0.0
+        if move.move_dest_ids:
+            total_unconsumed = 0.0
+            for dest_move in move.move_dest_ids:
+                if dest_move.state != "cancel":
+                    total_unconsumed += self.get_unconsumed_quantity(dest_move)
+            return total_unconsumed
+        if move.location_dest_id.usage == "internal":
+            return move.product_uom._compute_quantity(
+                move.quantity, move.product_id.uom_id
+            )
+        else:
+            return 0.0
+
     def export_onhand(self):
         """
         Extracting all on hand inventories to frePPLe.
@@ -3330,6 +3778,52 @@ class exporter(object):
                     + i[2]
                     - (i[3] if self.respect_reservations else 0)
                 )
+
+        # Extract MTO chained inventory.
+        # These stock moves have not been consumed by the downstream consumer yet.
+        inventory_mto = {}
+        for mv in self.generator.getData(
+            "stock.move",
+            search=[
+                # It came from an PO/MO
+                "|",
+                ("production_id", "!=", False),
+                ("purchase_line_id", "!=", False),
+                # The receipt/production is finished
+                ("state", "=", "done"),
+                # In transit - It has not been consumed by the next level yet
+                ("move_dest_ids.state", "not in", ["done", "cancel"]),
+            ],
+            object=True,
+        ):
+            item = self.product_product.get(mv.product_id.id, None)
+            location = self.map_locations.get(mv.location_dest_id.id, None)
+            if not item or not location:
+                continue
+            unconsumed_quantity = self.get_unconsumed_quantity(mv)
+            if unconsumed_quantity <= 0:
+                continue
+            if mv.production_id:
+                batch = self.getBatch(mv.production_id)
+            elif mv.purchase_line_id:
+                mto_so = mv.move_dest_ids.group_id.sale_id
+                batch = mto_so[0].name if mto_so else None
+                if not batch:
+                    # Follow multi-level MTO chain to the sale order
+                    for mo in mv.purchase_line_id.order_id._get_mrp_productions():
+                        batch = self.getBatch(mo)
+                        if batch:
+                            break
+            if batch:
+                inventory_mto[(item["name"], location, batch)] = (
+                    inventory_mto.get((item["name"], location, batch), 0)
+                    + unconsumed_quantity
+                )
+            else:
+                inventory[(item["name"], location)] = (
+                    inventory.get((item["name"], location), 0) + unconsumed_quantity
+                )
+
         for key, val in inventory.items():
             buf = "%s @ %s" % (key[0], key[1])
             yield '<buffer name=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
@@ -3338,38 +3832,7 @@ class exporter(object):
                 quoteattr(key[0]),
                 quoteattr(key[1]),
             )
-
-        # Extract MTO chained inventory.
-        # These stock moves have not been consumed by the downstream consumer yet.
-        inventory = {}
-        for mv in self.generator.getData(
-            "stock.move",
-            search=[
-                # It came from an MO
-                ("production_id", "!=", False),
-                # The production is finished
-                ("state", "=", "done"),
-                # It has not been consumed by a next level yet
-                "!",
-                ("move_dest_ids.raw_material_production_id.state", "=", "done"),
-                # Explicit MTO flag or has a destination (chained/MTO)
-                "|",
-                ("move_dest_ids", "!=", False),
-                ("procure_method", "=", "make_to_order"),
-            ],
-            object=True,
-        ):
-            item = self.product_product.get(mv.product_id.id, None)
-            location = self.map_locations.get(mv.location_dest_id.id, None)
-            if not item or not location:
-                continue
-            batch = self.getBatch(mv.production_id)
-            qty = mv.product_uom._compute_quantity(mv.quantity, mv.product_id.uom_id)
-            if batch and qty > 0:
-                inventory[(item["name"], location, batch)] = (
-                    inventory.get((item["name"], location, batch), 0) + qty
-                )
-        for key, val in inventory.items():
+        for key, val in inventory_mto.items():
             yield '<buffer name=%s batch=%s onhand="%f"><item name=%s/><location name=%s/></buffer>\n' % (
                 quoteattr(f"{key[0]} @ {key[2]} @ {key[1]}"),
                 quoteattr(key[2]),
@@ -3377,5 +3840,4 @@ class exporter(object):
                 quoteattr(key[0]),
                 quoteattr(key[1]),
             )
-
         yield "</buffers>\n"

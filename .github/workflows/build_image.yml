@@ -7,6 +7,10 @@ on:
   schedule:
       - cron: "0 0 * * 0"
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     if: github.repository == 'frePPLe/odoo' && (github.ref == 'refs/heads/18.0' || github.event_name == 'schedule')
@@ -14,12 +18,12 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6
       with:
         ref: "18.0"
 
     - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}

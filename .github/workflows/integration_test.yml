@@ -6,6 +6,9 @@ on:
       - "18.0-dev"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   trigger:
     runs-on: ubuntu-24.04
@@ -16,8 +19,5 @@ jobs:
           token: ${{ secrets.COMMUNITY_GITHUB_TOKEN }}
           repo: frepple
           owner: frePPLe
-          event_type: odoo_connector
-          message: |
-            {
-            "branch": "18.0-dev"
-            }
+          event_type: odoo_connector_18
+
