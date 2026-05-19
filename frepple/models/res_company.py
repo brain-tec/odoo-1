@@ -39,8 +39,14 @@ class ResCompany(models.Model):
         "stock.warehouse", "Manufacturing warehouse", ondelete="set null"
     )
     calendar = fields.Many2one("resource.calendar", "Calendar", ondelete="set null")
-    webtoken_key = fields.Char("Webtoken key", size=128)
-    frepple_server = fields.Char("frePPLe web server", size=128)
+    webtoken_key = fields.Char(
+        "Webtoken key",
+        size=128,
+        default="advanced_planning_and_scheduling_service",
+    )
+    frepple_server = fields.Char(
+        "frePPLe web server", size=128, default="https://odoo.frepple.com"
+    )
     frepple_interface_user = fields.Many2one(
         "res.users", "frePPLe interface user", ondelete="set null"
     )
@@ -77,6 +83,15 @@ class ResCompany(models.Model):
     @api.model
     def actionOpenFreppleWindow(self):
         current_company = self.env.company
+
+        server = (current_company.frepple_server or "").rstrip("/").lower()
+        if server == "https://odoo.frepple.com":
+            return {
+                "type": "ir.actions.client",
+                "tag": "frepple.aps_service_info",
+                "name": "FrePPLe APS",
+            }
+
         frepple_url = current_company.getFreppleURL(True, "/", True)
 
         if not frepple_url:

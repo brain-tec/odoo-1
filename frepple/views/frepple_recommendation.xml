@@ -27,7 +27,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
@@ -59,7 +59,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
@@ -91,7 +91,7 @@
         <field name="help" type="html">
             <div class="frepple_empty_state">
                 <p class="o_view_nocontent_smiling_face">
-                    Don't wait to <a type="object" name="action_generate_recommendations" class="o_link">generate</a> your first recommendations.
+                    Finding it difficult to manage your plan in Odoo?
                 </p>
                 <p class="text-muted text-start">
                     FrePPLe will analyze the data in Odoo and will come up with recommendations.<br/>
@@ -155,6 +155,7 @@
                 <field name="startdate" optional="show"/>
                 <field name="enddate" optional="show"/>
                 <field name="related_data_id" optional="show" readonly="1"/>
+				<field name="company_id" optional="hide" readonly="1" widget="many2one" />
             </list>
         </field>
     </record>
@@ -167,6 +168,17 @@
         <field name="state">code</field>
         <field name="code">
             records.action_approve()
+        </field>
+    </record>
+
+    <record id="action_server_bulk_delete" model="ir.actions.server">
+        <field name="name">Delete Recommendations</field>
+        <field name="model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_model_id" ref="model_frepple_recommendation"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+            records.unlink()
         </field>
     </record>
 </odoo>

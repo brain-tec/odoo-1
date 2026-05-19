@@ -9,15 +9,18 @@
     "version": "19.0.0.0",
     "depends": ["mrp_subcontracting", "sale_stock"],
     "data": [
+        "data/config.xml",  # First to assure the config is correct for the rest of the data
+        "data/res.partner.csv",
         "data/product.template.csv",
+        "data/stock.onhand.xml",
         "data/mrp.workcenter.csv",
         "data/mrp.bom.csv",
         "data/mrp.production.xml",
-        "data/sale.order.xml",
         "data/purchase.order.xml",
         "data/stock.warehouse.orderpoint.csv",
         "data/product.supplierinfo.xml",
-        "data/config.xml",
+        "data/purchase.requisition.csv",
+        "data/sale.order.xml",  # Last to assure the bom and suppliers are in place for MTO sales orders
     ],
     "autoinstall": False,
     "installable": True,
