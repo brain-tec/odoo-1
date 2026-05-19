@@ -3,7 +3,7 @@ name: Trigger test odoo 17
 on:
   push:
     branches:
-      - "17.0"
+      - "17.0-dev"
 
 jobs:
   trigger:
@@ -15,8 +15,4 @@ jobs:
           token: ${{ secrets.COMMUNITY_GITHUB_TOKEN }}
           repo: frepple
           owner: frePPLe
-          event_type: odoo_connector
-          message: |
-            {
-            "branch": "17.0"
-            }
+          event_type: odoo_connector_17

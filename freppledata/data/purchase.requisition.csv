@@ -1,0 +1,2 @@
+"name","id","date_end","company_id","ordering_date","user_id","origin","state","vendor_id","line_ids/product_id/id","line_ids/product_qty","line_ids/price_unit"
+"BO00002",__export__.purchase_requisition_2_3f341588","","My Company (San Francisco)","","Mitchell Admin","","Ongoing","Lumber Inc","__export__.product_product_56_ea472d4f","100.0","5.0"

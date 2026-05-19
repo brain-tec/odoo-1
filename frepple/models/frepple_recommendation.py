@@ -289,35 +289,6 @@ class FreppleRecommendation(models.Model):
 
         return True
 
-    def action_generate_recommendations(self):
-        # 1. Get the list of active companies from the environment
-        active_companies = self.env.companies
-
-        # 2. Check if more than one company is selected
-        if len(active_companies) > 1:
-            raise UserError(
-                "You have multiple companies selected. "
-                "Please select only one company before generating recommendations."
-            )
-
-        # 3. Get the single active company ID
-        # (self.env.company always returns the 'current' or first active company)
-        company_id = self.env.company.id
-
-        # 4. Launch the job
-        self.env["frepple.job"].action_launch(company_id)
-
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "Computing frePPLe recommendations",
-                "message": f"Data collection started for {self.env.company.name}.",
-                "type": "success",
-                "sticky": False,
-            },
-        }
-
     # Used to format the recommendation in the list view
     def _format_recommendation(self, raw_text):
         lines = raw_text.split("\\n")

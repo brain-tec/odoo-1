@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="frepple.LaunchDialog">
+        <Dialog title="'Generate Recommendations'" size="'md'">
+            <div class="p-3">
+                <t t-if="isAnonymousServer">
+                    <div class="alert alert-info mb-3" role="alert">
+                        <i class="fa fa-info-circle me-1"/>
+                        Your Odoo data will be sent to the Advanced Planning and Scheduling Service to generate a plan.
+                        <a href="https://frepple.com/docs/current/erp-integration/odoo-connector/odoo-from-march-2026/using-the-connectors-with-the-aps-service.html" target="_blank">More details</a>
+                    </div>
+                </t>
+                <h6 class="mb-3">Planning options</h6>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_capacity"
+                           t-att-checked="state.capacity"
+                           t-on-change="onCapacityChange"/>
+                    <label class="form-check-label" for="frepple_capacity"
+                        data-tooltip="Do not exceed capacities">
+                        Respect work center capacities
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_mfg_lt"
+                           t-att-checked="state.mfgLeadTime"
+                           t-on-change="onMfgLeadTimeChange"/>
+                    <label class="form-check-label" for="frepple_mfg_lt"
+                           data-tooltip="Do not start manufacturing orders in the past">
+                        Respect manufacturing lead times
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" id="frepple_po_lt"
+                           t-att-checked="state.poLeadTime"
+                           t-on-change="onPoLeadTimeChange"/>
+                    <label class="form-check-label" for="frepple_po_lt"
+                        data-tooltip="Do not purchase in the past">
+                        Respect purchasing lead times
+                    </label>
+                </div>
+
+                <t t-if="props.companies.length > 1">
+                    <hr/>
+                    <div class="mb-2 d-flex align-items-center gap-2">
+                        <label class="form-label fw-bold mb-0" for="frepple_company"
+                          data-tooltip="Recommendations are generated for a single company at a time">
+                          Select a company:</label>
+                        <select class="form-select w-auto" id="frepple_company"
+                                t-on-change="onCompanyChange">
+                            <t t-foreach="props.companies" t-as="company" t-key="company.id">
+                                <option t-att-value="company.id"
+                                        t-att-selected="company.id === state.companyId">
+                                    <t t-out="company.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                </t>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="onConfirm">
+                    <i class="fa fa-bolt me-1"/>Generate
+                </button>
+                <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
