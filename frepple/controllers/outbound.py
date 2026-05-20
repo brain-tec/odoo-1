@@ -2870,7 +2870,7 @@ class exporter(object):
                                     if demand > reserved:
                                         yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
                                             reserved - demand,
-                                            self.formatDateTime(current.date),
+                                            self.formatDateTime(component_move.date),
                                             quoteattr(consumed_item["name"]),
                                         )
                                 else:
