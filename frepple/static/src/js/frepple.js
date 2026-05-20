@@ -29,8 +29,8 @@ class ApsServiceInfo extends Component {
         </div>
         <h2 class="mb-4">Advanced Planning and Scheduling Service</h2>
         <p class="mb-3" style="font-size:1.1rem;">
-          This Odoo instance is connected to the Advanced Planning and Scheduling (APS) service provided by frePPLe, accessible at
-          (https://odoo.frepple.com), which computes planning recommendations.
+          This Odoo instance is connected to the Advanced Planning and Scheduling (APS) cloud service provided by frePPLe. It
+          computes planning recommendations but has no user interface.
         </p>
         <p class="mb-3" style="font-size:1.1rem;">
           If you want the complete APS experience (with more detailed reports, plan analysis screens, interactive planning capabilities, etc...), you need a
