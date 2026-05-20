@@ -168,23 +168,26 @@ class exporter(object):
         """
         Convert a quantity to the reference uom of the product template.
         """
+
         try:
             uom_id = uom_id[0]
         except Exception:
             pass
+
         if not uom_id:
             return qty
         if not product_template_id:
-            return qty * self.uom[uom_id]["factor"]
+            return qty / self.uom[uom_id].factor
         try:
             product_uom = self.product_templates[product_template_id]["uom_id"][0]
         except Exception:
-            return qty * self.uom[uom_id]["factor"]
+            return qty / self.uom[uom_id].factor
         # check if default product uom is the one we received
         if product_uom == uom_id:
             return qty
-        # check if different uoms belong to the same category
-        return qty / self.uom[uom_id]["factor"] * self.uom[product_uom]["factor"]
+
+        # use default odoo conversion
+        self.uom[uom_id]._compute_quantity(qty, self.uom[product_uom])
 
     def convert_float_time(self, float_time, units="days"):
         """
@@ -387,18 +390,16 @@ class exporter(object):
         unit of measure of the uom dimension.
         """
         try:
-            self.uom = {}
-            for i in self.generator.getData(
-                "uom.uom",
-                # We also need to load INactive UOMs, because there still might be records
-                # using the inactive UOM. Questionable practice, but can happen...
-                search=["|", ("active", "=", 1), ("active", "=", 0)],
-                fields=["factor", "name"],
-            ):
-                self.uom[i["id"]] = {
-                    "factor": i["factor"],
-                    "name": i["name"],
-                }
+            self.uom = {
+                i.id: i
+                for i in self.generator.getData(
+                    "uom.uom",
+                    # We also need to load INactive UOMs, because there still might be records
+                    # using the inactive UOM. Questionable practice, but can happen...
+                    search=["|", ("active", "=", 1), ("active", "=", 0)],
+                    object=True,
+                )
+            }
         except Exception as e:
             yield from self.flagException("loading uom", e)
 
