@@ -187,7 +187,7 @@ class exporter(object):
             return qty
 
         # use default odoo conversion
-        self.uom[uom_id]._compute_quantity(qty, self.uom[product_uom])
+        return self.uom[uom_id]._compute_quantity(qty, self.uom[product_uom])
 
     def convert_float_time(self, float_time, units="days"):
         """
