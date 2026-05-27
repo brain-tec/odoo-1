@@ -3779,6 +3779,47 @@ class exporter(object):
                     - (i[3] if self.respect_reservations else 0)
                 )
 
+        # All reservations were removed from the previous SQL query, but some
+        # of them need to added back.
+        # Only reservations that are linked to a manufacturing order or sale order should be
+        # subtracted from the inventory (since we account for them separately by reducing the
+        # required quantity).
+        for mvln in self.generator.getData(
+            "stock.move.line",
+            search=[
+                ["state", "in", ["assigned", "partially_available"]],
+                ["quantity", ">", 0],
+                # not linked to a manufacturing, sales or purchase order
+                ["production_id", "=", False],
+                ["workorder_id", "=", False],
+                "|",
+                ["picking_id", "=", False],
+                ["picking_id.purchase_id", "=", False],
+                # not linked to a SO or MO via the parent move
+                ["move_id.raw_material_production_id", "=", False],
+                ["move_id.production_id", "=", False],
+                ["move_id.sale_line_id", "=", False],
+                "|",
+                ["move_id.group_id", "=", False],
+                "&",
+                ["move_id.group_id.mrp_production_ids", "=", False],
+                ["move_id.group_id.sale_id", "=", False],
+            ],
+            fields=[
+                "product_id",
+                "quantity",
+                "location_dest_id",
+                "move_id",
+            ],
+            order="product_id asc",
+        ):
+            item = self.product_product.get(mvln["product_id"][0], None)
+            location = self.map_locations.get(mvln["location_dest_id"][0], None)
+            if item and location:
+                inventory[(item["name"], location)] = (
+                    inventory.get((item["name"], location), 0) + mvln["quantity"]
+                )
+
         # Extract MTO chained inventory.
         # These stock moves have not been consumed by the downstream consumer yet.
         inventory_mto = {}

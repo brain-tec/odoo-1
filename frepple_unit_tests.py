@@ -30,13 +30,14 @@ import xmlrpc.client
 
 from django.conf import settings
 from django.core import management
-from django.db.models import F
+from django.db.models import F, Sum
 from django.test import TransactionTestCase
 from django.contrib.auth.models import Group
 
 from freppledb.common.models import User
 from freppledb.input.models import (
     Item,
+    Buffer,
     PurchaseOrder,
     ManufacturingOrder,
     OperationPlanMaterial,
@@ -281,6 +282,23 @@ class OdooTest(TransactionTestCase):
             2,
             "difference in number of approved work orders",
         )
+
+        # Check the inventory is correct for items with incoming receipts
+        self.assertEqual(
+            Buffer.objects.all()
+            .filter(item_id="FURN_7777", location_id="WH")
+            .aggregate(total_onhand=Sum("onhand"))["total_onhand"],
+            35,
+            "expected inventory of 35 for FURN_7777",
+        )
+        self.assertEqual(
+            Buffer.objects.all()
+            .filter(item_id="E-COM11", location_id="WH")
+            .aggregate(total_onhand=Sum("onhand"))["total_onhand"],
+            138,
+            "expected inventory of 138 for E-COM11",
+        )
+
 
         # Check plan results
         proposed_mo = (
