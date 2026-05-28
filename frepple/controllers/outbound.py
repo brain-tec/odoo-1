@@ -168,23 +168,26 @@ class exporter(object):
         """
         Convert a quantity to the reference uom of the product template.
         """
+
         try:
             uom_id = uom_id[0]
         except Exception:
             pass
+
         if not uom_id:
             return qty
         if not product_template_id:
-            return qty * self.uom[uom_id]["factor"]
+            return qty / self.uom[uom_id].factor
         try:
             product_uom = self.product_templates[product_template_id]["uom_id"][0]
         except Exception:
-            return qty * self.uom[uom_id]["factor"]
+            return qty / self.uom[uom_id].factor
         # check if default product uom is the one we received
         if product_uom == uom_id:
             return qty
-        # check if different uoms belong to the same category
-        return qty / self.uom[uom_id]["factor"] * self.uom[product_uom]["factor"]
+
+        # use default odoo conversion
+        return self.uom[uom_id]._compute_quantity(qty, self.uom[product_uom])
 
     def convert_float_time(self, float_time, units="days"):
         """
@@ -387,18 +390,16 @@ class exporter(object):
         unit of measure of the uom dimension.
         """
         try:
-            self.uom = {}
-            for i in self.generator.getData(
-                "uom.uom",
-                # We also need to load INactive UOMs, because there still might be records
-                # using the inactive UOM. Questionable practice, but can happen...
-                search=["|", ("active", "=", 1), ("active", "=", 0)],
-                fields=["factor", "name"],
-            ):
-                self.uom[i["id"]] = {
-                    "factor": i["factor"],
-                    "name": i["name"],
-                }
+            self.uom = {
+                i.id: i
+                for i in self.generator.getData(
+                    "uom.uom",
+                    # We also need to load INactive UOMs, because there still might be records
+                    # using the inactive UOM. Questionable practice, but can happen...
+                    search=["|", ("active", "=", 1), ("active", "=", 0)],
+                    object=True,
+                )
+            }
         except Exception as e:
             yield from self.flagException("loading uom", e)
 
@@ -3852,6 +3853,43 @@ class exporter(object):
                 if item and location:
                     inventory[(item["name"], location)] = (
                         inventory.get((item["name"], location), 0) + i[2] - i[3]
+                    )
+
+            # All reservations were removed from the previous SQL query, but some
+            # of them need to added back.
+            # Only reservations that are linked to a manufacturing order or sale order should be
+            # subtracted from the inventory (since we account for them separately by reducing the
+            # required quantity).
+            for mvln in self.generator.getData(
+                "stock.move.line",
+                search=[
+                    ["state", "in", ["assigned", "partially_available"]],
+                    ["quantity", ">", 0],
+                    # not linked to a manufacturing, sales or purchase order
+                    ["production_id", "=", False],
+                    ["workorder_id", "=", False],
+                    # not linked to a SO or MO via the parent move
+                    ["move_id.raw_material_production_id", "=", False],
+                    ["move_id.production_id", "=", False],
+                    ["move_id.sale_line_id", "=", False],
+                    "|",
+                    ["picking_id", "=", False],
+                    "&",
+                    ["picking_id.purchase_id", "=", False],
+                    ["picking_id.sale_id", "=", False],
+                    ["picking_id.move_ids.production_id", "=", False],
+                ],
+                fields=[
+                    "product_id",
+                    "quantity",
+                    "location_dest_id",
+                ],
+            ):
+                item = self.product_product.get(mvln["product_id"][0], None)
+                location = self.map_locations.get(mvln["location_dest_id"][0], None)
+                if item and location:
+                    inventory[(item["name"], location)] = (
+                        inventory.get((item["name"], location), 0) + mvln["quantity"]
                     )
 
             # These stock moves have not been consumed by the downstream consumer yet.
