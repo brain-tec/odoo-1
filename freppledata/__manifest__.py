@@ -7,7 +7,7 @@
     "license": "Other OSI approved licence",
     "category": "Uncategorized",
     "version": "18.0.0.0",
-    "depends": ["mrp_subcontracting", "sale_stock"],
+    "depends": ["mrp_subcontracting", "sale_stock", "purchase_requisition"],
     "data": [
         "data/config.xml",  # First to assure the config is correct for the rest of the data
         "data/res.partner.csv",
