@@ -8,16 +8,7 @@
     "website": "https://frepple.com",
     "license": "Other OSI approved licence",
     "description": "Connector to frePPLe - finite capacity planning and scheduling",
-    "depends": [
-        "base",
-        "product",
-        "purchase",
-        "sale",
-        "resource",
-        "mrp",
-        "web",
-        "purchase_requisition",
-    ],
+    "depends": ["base", "product", "purchase", "sale", "resource", "mrp", "web"],
     "data": [
         "security/frepple_security.xml",
         "security/ir.model.access.csv",
