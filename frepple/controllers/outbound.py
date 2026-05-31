@@ -2698,6 +2698,8 @@ class exporter(object):
                                     "cancel",
                                     # Do NOT exclude "done" moves, because they can be open moves chained to it
                                 )
+                                # Filter out return moves back to the supplier
+                                or mv.location_dest_id.usage == "supplier"
                             ):
                                 continue
                             j = mv.purchase_line_id.order_id
@@ -2777,7 +2779,14 @@ class exporter(object):
                             end = self.formatDateTime(end)
 
                             # Compute the quantity that we still need to receive
-                            qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                            if batch:
+                                qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                            elif mv.state == "done":
+                                continue
+                            else:
+                                qty = mv.product_uom._compute_quantity(
+                                    mv.product_uom_qty, mv.product_id.uom_id
+                                )
                             if qty <= 0:
                                 continue
 
@@ -3958,10 +3967,6 @@ class exporter(object):
                     if batch:
                         inventory_mto[(item["name"], location, batch)] = (
                             inventory_mto.get((item["name"], location, batch), 0) + qty
-                        )
-                    else:
-                        inventory[(item["name"], location)] = (
-                            inventory.get((item["name"], location), 0) + qty
                         )
 
             for key, val in inventory.items():
