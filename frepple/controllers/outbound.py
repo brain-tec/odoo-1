@@ -2068,6 +2068,7 @@ class exporter(object):
                         "product_uom",
                         "state",
                         "move_line_ids",
+                        "picking_type_id",
                     ],
                 )
             }
@@ -2191,8 +2192,15 @@ class exporter(object):
                                         if len(i["move_ids"]) > 1
                                         else name
                                     )
-                                    sm = stock_moves_dict.get(mv_id)
+                                    sm = stock_moves_dict.get(mv_id, None)
                                     if sm:
+                                        if sm["picking_type_id"]:
+                                            t = self.operation_types.get(
+                                                sm["picking_type_id"][0], None
+                                            )
+                                            if t and t["code"] == "incoming":
+                                                # Exclude return receipts
+                                                continue
                                         sm_product = (
                                             self.product_product.get(
                                                 sm["product_id"][0], None
@@ -2408,8 +2416,15 @@ class exporter(object):
                                     if len(i["move_ids"]) > 1
                                     else name
                                 )
-                                sm = stock_moves_dict.get(mv_id)
+                                sm = stock_moves_dict.get(mv_id, None)
                                 if sm:
+                                    if sm["picking_type_id"]:
+                                        t = self.operation_types.get(
+                                            sm["picking_type_id"][0], None
+                                        )
+                                        if t and t["code"] == "incoming":
+                                            # Exclude return receipts
+                                            continue
                                     sm_product = (
                                         self.product_product.get(
                                             sm["product_id"][0], None
@@ -2683,6 +2698,8 @@ class exporter(object):
                                     "cancel",
                                     # Do NOT exclude "done" moves, because they can be open moves chained to it
                                 )
+                                # Filter out return moves back to the supplier
+                                or mv.location_dest_id.usage == "supplier"
                             ):
                                 continue
                             j = mv.purchase_line_id.order_id
@@ -2762,7 +2779,14 @@ class exporter(object):
                             end = self.formatDateTime(end)
 
                             # Compute the quantity that we still need to receive
-                            qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                            if batch:
+                                qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                            elif mv.state == "done":
+                                continue
+                            else:
+                                qty = mv.product_uom._compute_quantity(
+                                    mv.product_uom_qty, mv.product_id.uom_id
+                                )
                             if qty <= 0:
                                 continue
 
@@ -3892,6 +3916,30 @@ class exporter(object):
                         inventory.get((item["name"], location), 0) + mvln["quantity"]
                     )
 
+            # Add customer returns as inbound inventory
+            for mvln in self.generator.getData(
+                "stock.move.line",
+                search=[
+                    ["location_id.usage", "=", "customer"],
+                    ["location_dest_id.usage", "=", "internal"],
+                    ["state", "not in", ["cancel", "done"]],
+                    ["quantity", ">", 0],
+                ],
+                fields=[
+                    "product_id",
+                    "quantity",
+                    "location_dest_id",
+                    "move_id",
+                ],
+                order="product_id asc",
+            ):
+                item = self.product_product.get(mvln["product_id"][0], None)
+                location = self.map_locations.get(mvln["location_dest_id"][0], None)
+                if item and location:
+                    inventory[(item["name"], location)] = (
+                        inventory.get((item["name"], location), 0) + mvln["quantity"]
+                    )
+
             # These stock moves have not been consumed by the downstream consumer yet.
             inventory_mto = {}
             for mv in self.generator.getData(
@@ -3919,10 +3967,6 @@ class exporter(object):
                     if batch:
                         inventory_mto[(item["name"], location, batch)] = (
                             inventory_mto.get((item["name"], location, batch), 0) + qty
-                        )
-                    else:
-                        inventory[(item["name"], location)] = (
-                            inventory.get((item["name"], location), 0) + qty
                         )
 
             for key, val in inventory.items():
