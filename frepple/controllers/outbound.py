@@ -1069,7 +1069,7 @@ class exporter(object):
         self.product_product = {}
         self.product_template_product = {}
         self.product_templates = {}
-        self.route_mto = None
+        self.routes_mto = []
         try:
             # Read the product tags
             product_tags = {
@@ -1079,12 +1079,19 @@ class exporter(object):
 
             # Read the product templates
             self.routes = {
-                i["id"]: i
-                for i in self.generator.getData("stock.route", fields=["name"])
+                i["id"]: i for i in self.generator.getData("stock.route", object=True)
             }
             for k, v in self.routes.items():
-                if v["name"] == "Replenish on Order (MTO)":
-                    self.route_mto = k
+                mto = False
+                for rule in v.rule_ids:
+                    if (
+                        rule.action == "pull"
+                        and rule.procure_method == "make_to_order"
+                        and rule.location_dest_id.usage == "internal"
+                    ):
+                        mto = True
+                if mto:
+                    self.routes_mto.append(k)
             for i in self.generator.getData(
                 "product.template",
                 # use is_storable = True to exclude real consumable like screws, nails...
@@ -1243,7 +1250,7 @@ class exporter(object):
                     }
                     if use_short_names:
                         item["description"] = description
-                    if self.route_mto in tmpl["route_ids"]:
+                    if any(r in tmpl["route_ids"] for r in self.routes_mto):
                         item["type"] = "item_mto"
                     if (
                         self.has_expiry
@@ -2701,9 +2708,10 @@ class exporter(object):
                                 continue
 
                             # MTO links
-                            if (
-                                self.route_mto
+                            if any(
+                                r
                                 in self.product_templates[item["template"]]["route_ids"]
+                                for r in self.routes_mto
                             ):
                                 mto_so = i.sale_order_id
                                 batch = mto_so[0].name if mto_so else None
@@ -2954,9 +2962,10 @@ class exporter(object):
                                 continue
 
                             # MTO links
-                            if (
-                                self.route_mto
+                            if any(
+                                r
                                 in self.product_templates[item["template"]]["route_ids"]
+                                for r in self.routes_mto
                             ):
                                 mto_so = i.sale_order_id
                                 batch = mto_so[0].name if mto_so else None
@@ -3148,11 +3157,12 @@ class exporter(object):
                         continue
 
                     # Get MTO link
-                    if (
-                        self.route_mto
+                    if any(
+                        r
                         in self.product_templates[
                             self.product_product[i.product_id.id]["template"]
                         ]["route_ids"]
+                        for r in self.routes_mto
                     ):
                         batch = self.getBatch(i)
                         if not batch:
