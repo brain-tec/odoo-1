@@ -2899,33 +2899,15 @@ class exporter(object):
                                         )
                                 else:
                                     for out_move in outbound_moves:
-                                        current = out_move
-
-                                        # Trace back to the source picking (Pick -> Pack -> Out)
-                                        # We only follow non-canceled paths
-                                        valid_origins = current.move_orig_ids.filtered(
-                                            lambda m: m.state != "cancel"
-                                        )
-                                        while valid_origins:
-                                            current = valid_origins[0]
-                                            valid_origins = (
-                                                current.move_orig_ids.filtered(
-                                                    lambda m: m.state != "cancel"
-                                                )
-                                            )
-
-                                        # Remaining quantity = total demand - reserved - done
-                                        remaining_consumption = (
-                                            current.product_uom_qty
-                                            - sum(
-                                                current.move_line_ids.mapped("quantity")
-                                            )
-                                            - current.quantity
+                                        remaining_consumption = out_move.product_uom._compute_quantity(
+                                            out_move.product_uom_qty
+                                            - out_move.quantity,
+                                            out_move.product_id.uom_id
                                         )
                                         if remaining_consumption > 0:
                                             yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
                                                 -remaining_consumption,
-                                                self.formatDateTime(current.date),
+                                                self.formatDateTime(out_move.date),
                                                 quoteattr(consumed_item["name"]),
                                             )
                         yield "</flowplans>\n</operationplan>\n"
