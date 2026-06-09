@@ -1092,6 +1092,15 @@ class exporter(object):
                         mto = True
                 if mto:
                     self.routes_mto.append(k)
+
+            # Get the variant display name
+            variants = {
+                i["id"]: i["display_name"]
+                for i in self.generator.getData(
+                    "product.template.attribute.value", fields=["display_name"]
+                )
+            }
+
             for i in self.generator.getData(
                 "product.template",
                 # use is_storable = True to exclude real consumable like screws, nails...
@@ -1193,6 +1202,7 @@ class exporter(object):
                     "volume",
                     "weight",
                     "product_template_attribute_value_ids",
+                    "product_template_variant_value_ids",
                     "price_extra",
                 ],
             ):
@@ -1204,14 +1214,38 @@ class exporter(object):
                     if i["product_template_attribute_value_ids"]:
                         if use_short_names:
                             name = i["code"] or i["name"]
-                            description = i["name"]
+                            description = "%s%s%s" % (
+                                i["name"],
+                                ". " if i["product_template_variant_value_ids"] else "",
+                                (
+                                    ", ".join(
+                                        [
+                                            variants[i]
+                                            for i in i[
+                                                "product_template_variant_value_ids"
+                                            ]
+                                        ]
+                                    )
+                                    if i["product_template_variant_value_ids"]
+                                    else None
+                                ),
+                            )
                         else:
                             name = (
                                 (("[%s] %s %s" % (i["code"], i["name"], i["id"])))
                                 if i["code"]
                                 else "%s %s" % (i["name"], i["id"])
                             )
-                            description = None
+                            description = (
+                                ", ".join(
+                                    [
+                                        variants[i]
+                                        for i in i["product_template_variant_value_ids"]
+                                    ]
+                                )
+                                if i["product_template_variant_value_ids"]
+                                else None
+                            )
                     # generate name and description for non-variant products
                     elif i["code"]:
                         name = (
@@ -1248,8 +1282,7 @@ class exporter(object):
                         ),
                         "subcategory": f"{tmpl["uom_id"][0]},{i["id"]}",
                     }
-                    if use_short_names:
-                        item["description"] = description
+                    item["description"] = description
                     if any(r in tmpl["route_ids"] for r in self.routes_mto):
                         item["type"] = "item_mto"
                     if (
@@ -3402,7 +3435,7 @@ class exporter(object):
                                 for l in (
                                     mv.move_line_ids | mv.move_orig_ids.move_line_ids
                                 ):
-                                     if l.state == "assigned" and l.move_id.picking_id:
+                                    if l.state == "assigned" and l.move_id.picking_id:
                                         qty_flow -= l.product_uom_id._compute_quantity(
                                             l.quantity, default_uom
                                         )
