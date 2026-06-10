@@ -23,6 +23,7 @@
 #
 
 import odoo
+import json
 import logging
 from xml.etree.cElementTree import iterparse
 from datetime import datetime
@@ -376,8 +377,12 @@ class importer(object):
                                 "min_planned": date_planned,
                                 "min_ordered": date_ordered,
                                 "po": po,
+                                "frepple_references": [elem.get("id")],
                             }
                         else:
+                            supplier_reference[supplier_id][
+                                "frepple_references"
+                            ].append(elem.get("id"))
                             if (
                                 date_planned
                                 < supplier_reference[supplier_id]["min_planned"]
@@ -954,7 +959,27 @@ class importer(object):
             if sup["min_ordered"]:
                 sup["po"].date_order = sup["min_ordered"]
 
+        # Collect created PO/MO references
+        created_pos = [
+            {
+                "reference": sup["po"].name,
+                "id": sup["id"],
+                "frepple_references": sup["frepple_references"],
+            }
+            for sup in supplier_reference.values()
+        ]
+        created_mos = [
+            {"reference": mo.name, "id": mo.id, "frepple_reference": frepple_ref}
+            for frepple_ref, mo in mo_references.items()
+        ]
+
         # Be polite, and reply to the post
         msg.append("Processed %s uploaded procurement orders" % countproc)
         msg.append("Processed %s uploaded manufacturing orders" % countmfg)
-        return "\n".join(msg)
+        return json.dumps(
+            {
+                "messages": msg,
+                "created_purchase_orders": created_pos,
+                "created_manufacturing_orders": created_mos,
+            }
+        )

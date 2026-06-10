@@ -414,7 +414,7 @@ class XMLController(odoo.http.Controller):
                 return req.make_response(
                     ip.run(),
                     [
-                        ("Content-Type", "text/plain"),
+                        ("Content-Type", "application/json"),
                         ("Cache-Control", "no-cache, no-store, must-revalidate"),
                         ("Pragma", "no-cache"),
                         ("Expires", "0"),
