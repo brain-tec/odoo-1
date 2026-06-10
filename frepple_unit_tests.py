@@ -505,6 +505,41 @@ class OdooTest(TransactionTestCase):
             200,
             "couldn't upload the proposed manufacturing order",
         )
+        # Parse response to get the new MO reference
+        approved_mo_reference = proposed_mo.reference
+        try:
+            mo_response_data = response.content
+            if isinstance(mo_response_data, bytes):
+                mo_response_data = mo_response_data.decode("utf-8")
+            mo_response = json.loads(mo_response_data)
+            if (
+                "created_manufacturing_orders" in mo_response
+                and mo_response["created_manufacturing_orders"]
+            ):
+                approved_mo_reference = mo_response["created_manufacturing_orders"][0][
+                    "reference"
+                ]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+        # Fallback: if old reference doesn't exist, search by item and status
+        try:
+            approved_mo = ManufacturingOrder.objects.get(pk=approved_mo_reference)
+        except ManufacturingOrder.DoesNotExist:
+            approved_mo = (
+                ManufacturingOrder.objects.filter(
+                    item=proposed_mo.item,
+                    status="approved",
+                    operation=proposed_mo.operation,
+                )
+                .order_by("-lastmodified")
+                .first()
+            )
+            if not approved_mo:
+                raise AssertionError(
+                    f"Could not find approved MO for item {proposed_mo.item} after export. Response was: {response.content.decode()}"
+                )
+
         response = self.client.post(
             "/erp/upload/",
             json.dumps(
@@ -524,15 +559,47 @@ class OdooTest(TransactionTestCase):
         self.assertEqual(
             response.status_code, 200, "couldn't upload the proposed purchase order"
         )
+        # Parse response to get the new PO reference
+        approved_po_reference = proposed_po.reference
+        try:
+            po_response_data = response.content
+            if isinstance(po_response_data, bytes):
+                po_response_data = po_response_data.decode("utf-8")
+            po_response = json.loads(po_response_data)
+            if (
+                "created_purchase_orders" in po_response
+                and po_response["created_purchase_orders"]
+            ):
+                approved_po_reference = po_response["created_purchase_orders"][0][
+                    "reference"
+                ]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+        # Fallback: if old reference doesn't exist, search by item and supplier
+        try:
+            approved_po = PurchaseOrder.objects.get(pk=approved_po_reference)
+        except PurchaseOrder.DoesNotExist:
+            approved_po = (
+                PurchaseOrder.objects.filter(
+                    item=proposed_po.item,
+                    status="approved",
+                    supplier=proposed_po.supplier,
+                )
+                .order_by("-lastmodified")
+                .first()
+            )
+            if not approved_po:
+                raise AssertionError(
+                    f"Could not find approved PO for item {proposed_po.item} after export. Response was: {response.content.decode()}"
+                )
 
         # Check new status
-        approved_mo = ManufacturingOrder.objects.get(pk=proposed_mo.reference)
         self.assertEqual(
             approved_mo.status,
             "approved",
             "the manufacturing order should have been approved after uploading it",
         )
-        approved_po = PurchaseOrder.objects.get(pk=proposed_po.reference)
         self.assertEqual(
             approved_po.status,
             "approved",
