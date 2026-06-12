@@ -3854,29 +3854,6 @@ class exporter(object):
                     inventory.get((item["name"], location), 0) + mvln["quantity"]
                 )
 
-        # Remove confirmed scrap moves from the inventory
-        for mv in self.generator.getData(
-            "stock.move",
-            search=[
-              #  ["state", "=", "confirmed"],
-                ["location_dest_id.scrap_location", "=", True],
-            ],
-            fields=[
-                "product_id",
-                "product_uom_qty",
-                "product_uom",
-                "location_id"
-            ],
-        ):
-            item = self.product_product.get(mv["product_id"][0], None)
-            location = self.map_locations.get(mv["location_id"][0], None)
-            if item and location:
-                inventory[(item["name"], location)] = inventory.get(
-                    (item["name"], location), 0
-                ) - self.convert_qty_uom(
-                    mv["product_uom_qty"], mv["product_uom"][0], item["template"]
-                )
-
         # Extract MTO chained inventory.
         # These stock moves have not been consumed by the downstream consumer yet.
         inventory_mto = {}
