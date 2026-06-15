@@ -526,7 +526,7 @@ class OdooTest(TransactionTestCase):
         )
 
         # Check new status
-        approved_mo = ManufacturingOrder.objects.get(
+        approved_mo = ManufacturingOrder.objects.filter(
             pk__startswith=f"{proposed_mo.reference} exported as"
         )[0]
         self.assertEqual(
@@ -534,7 +534,7 @@ class OdooTest(TransactionTestCase):
             "approved",
             "the manufacturing order should have been approved after uploading it",
         )
-        approved_po = PurchaseOrder.objects.get(
+        approved_po = PurchaseOrder.objects.filter(
             pk__startswith=f"{proposed_po.reference} exported as"
         )[0]
         self.assertEqual(
