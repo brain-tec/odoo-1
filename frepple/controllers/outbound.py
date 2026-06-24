@@ -3456,12 +3456,13 @@ class exporter(object):
                             wo_date = ' start="%s"' % self.formatDateTime(dt)
                     except Exception:
                         wo_date = ""
+                    woref = quoteattr("%s - %s" % (suboperation, wo.id))
                     yield '<operationplan type="MO" reference=%s%s quantity="%s" status="%s"><operation name=%s/><owner reference=%s/>' % (
-                        quoteattr(wo.display_name),
+                        woref,
                         wo_date,
                         qty,
                         state,
-                        quoteattr("%s - %s" % (suboperation, wo.id)),
+                        woref,
                         quoteattr(i.name),
                     )
                     if (
