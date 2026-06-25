@@ -3564,14 +3564,13 @@ class exporter(object):
                                     wo_opplan_json["start"] = self.formatDateTime(dt)
                             except Exception:
                                 wo_opplan_json = {}
+                            woref = "%s - %s" % (suboperation, wo.id)
                             wo_opplan_json = wo_opplan_json | {
                                 "ordertype": "MO",
-                                "reference": wo.display_name,
+                                "reference": woref,
                                 "quantity": qty,
                                 "status": state,
-                                "operation": {
-                                    "name": "%s - %s" % (suboperation, wo.id)
-                                },
+                                "operation": {"name": woref},
                                 "owner": {"reference": i.name},
                             }
 
