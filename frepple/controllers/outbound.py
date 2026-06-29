@@ -3286,7 +3286,7 @@ class exporter(object):
                                 continue
                             default_uom = mv.product_id.uom_id
                             qty_flow = mv.product_uom._compute_quantity(
-                                mv.product_uom_qty, default_uom
+                                mv.product_uom_qty - mv.quantity, default_uom
                             )
                             for l in mv.move_line_ids:
                                 if l.state == "done":
@@ -3425,7 +3425,7 @@ class exporter(object):
                                     continue
                                 default_uom = mv.product_id.uom_id
                                 qty_flow = mv.product_uom._compute_quantity(
-                                    mv.product_uom_qty, default_uom
+                                    mv.product_uom_qty - mv.quantity, default_uom
                                 )
                                 for l in mv.move_line_ids:
                                     if l.state == "done":
