@@ -3928,10 +3928,7 @@ class exporter(object):
                     ["move_id.sale_line_id", "=", False],
                     "|",
                     ["picking_id", "=", False],
-                    "&",
-                    ["picking_id.purchase_id", "=", False],
                     ["picking_id.sale_id", "=", False],
-                    ["picking_id.move_ids.production_id", "=", False],
                 ],
                 fields=[
                     "product_id",
