@@ -1076,6 +1076,15 @@ class exporter(object):
             i["id"]: i for i in self.generator.getData("stock.route", fields=["name"])
         }
         self.route_mto = None
+
+        # Get the variant display name
+        variants = {
+            i["id"]: i["display_name"]
+            for i in self.generator.getData(
+                "product.template.attribute.value", fields=["display_name"]
+            )
+        }
+
         for k, v in self.routes.items():
             if v["name"] == "Replenish on Order (MTO)":
                 self.route_mto = k
@@ -1179,6 +1188,7 @@ class exporter(object):
                 "volume",
                 "weight",
                 "product_template_attribute_value_ids",
+                "product_template_variant_value_ids",
                 "price_extra",
             ],
         ):
@@ -1193,14 +1203,36 @@ class exporter(object):
             if i["product_template_attribute_value_ids"]:
                 if use_short_names:
                     name = i["code"] or i["name"]
-                    description = i["name"]
+                    description = "%s%s%s" % (
+                        i["name"],
+                        ". " if i["product_template_variant_value_ids"] else "",
+                        (
+                            ", ".join(
+                                [
+                                    variants[i]
+                                    for i in i["product_template_variant_value_ids"]
+                                ]
+                            )
+                            if i["product_template_variant_value_ids"]
+                            else None
+                        ),
+                    )
                 else:
                     name = (
                         (("[%s] %s %s" % (i["code"], i["name"], i["id"])))
                         if i["code"]
                         else "%s %s" % (i["name"], i["id"])
                     )
-                    description = None
+                    description = (
+                        ", ".join(
+                            [
+                                variants[i]
+                                for i in i["product_template_variant_value_ids"]
+                            ]
+                        )
+                        if i["product_template_variant_value_ids"]
+                        else None
+                    )
             # generate name and description for non-variant products
             elif i["code"]:
                 name = (
@@ -1230,11 +1262,7 @@ class exporter(object):
             # For make-to-order items the next line needs to XML snippet ' type="item_mto"'.
             yield '<item name=%s %s uom=%s volume="%f" weight="%f" cost="%f" subcategory="%s,%s"%s%s%s>%s\n' % (
                 quoteattr(name),
-                (
-                    ("description=%s" % (quoteattr(description),))
-                    if use_short_names
-                    else ""
-                ),
+                (("description=%s" % (quoteattr(description),)) if description else ""),
                 quoteattr(tmpl["uom_id"][1]) if tmpl["uom_id"] else "",
                 i["volume"] or 0,
                 i["weight"] or 0,
@@ -2055,6 +2083,7 @@ class exporter(object):
                     "product_uom",
                     "state",
                     "move_line_ids",
+                    "picking_type_id",
                 ],
             )
         }
@@ -2181,8 +2210,15 @@ class exporter(object):
                                 if len(i["move_ids"]) > 1
                                 else name
                             )
-                            sm = stock_moves_dict.get(mv_id)
+                            sm = stock_moves_dict.get(mv_id, None)
                             if sm:
+                                if sm["picking_type_id"]:
+                                    t = self.operation_types.get(
+                                        sm["picking_type_id"][0], None
+                                    )
+                                    if t and t["code"] == "incoming":
+                                        # Exclude return receipts
+                                        continue
                                 sm_product = (
                                     self.product_product.get(sm["product_id"][0], None)
                                     if sm["product_id"]
@@ -2442,8 +2478,15 @@ class exporter(object):
                         sol_name = (
                             "%s %s" % (name, mv_id) if len(i["move_ids"]) > 1 else name
                         )
-                        sm = stock_moves_dict.get(mv_id)
+                        sm = stock_moves_dict.get(mv_id, None)
                         if sm:
+                            if sm["picking_type_id"]:
+                                t = self.operation_types.get(
+                                    sm["picking_type_id"][0], None
+                                )
+                                if t and t["code"] == "incoming":
+                                    # Exclude return receipts
+                                    continue
                             sm_product = (
                                 self.product_product.get(sm["product_id"][0], None)
                                 if sm["product_id"]
@@ -2706,6 +2749,8 @@ class exporter(object):
                             "cancel",
                             # Do NOT exclude "done" moves, because they can be open moves chained to it
                         )
+                        # Filter out return moves back to the supplier
+                        or mv.location_dest_id.usage == "supplier"
                     ):
                         continue
                     j = mv.purchase_line_id.order_id
@@ -2786,7 +2831,14 @@ class exporter(object):
                     end = self.formatDateTime(end)
 
                     # Compute the quantity that we still need to receive
-                    qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                    if batch:
+                        qty = getRemainingQuantity(mv, mv.product_id.uom_id)
+                    elif mv.state == "done":
+                        continue
+                    else:
+                        qty = mv.product_uom._compute_quantity(
+                            mv.product_uom_qty, mv.product_id.uom_id
+                        )
                     if qty <= 0:
                         continue
 
@@ -2875,33 +2927,15 @@ class exporter(object):
                                         )
                                 else:
                                     for out_move in outbound_moves:
-                                        current = out_move
-
-                                        # Trace back to the source picking (Pick -> Pack -> Out)
-                                        # We only follow non-canceled paths
-                                        valid_origins = current.move_orig_ids.filtered(
-                                            lambda m: m.state != "cancel"
-                                        )
-                                        while valid_origins:
-                                            current = valid_origins[0]
-                                            valid_origins = (
-                                                current.move_orig_ids.filtered(
-                                                    lambda m: m.state != "cancel"
-                                                )
-                                            )
-
-                                        # Remaining quantity = total demand - reserved - done
-                                        remaining_consumption = (
-                                            current.product_uom_qty
-                                            - sum(
-                                                current.move_line_ids.mapped("quantity")
-                                            )
-                                            - current.quantity
+                                        remaining_consumption = out_move.product_uom._compute_quantity(
+                                            out_move.product_uom_qty
+                                            - out_move.quantity,
+                                            out_move.product_id.uom_id
                                         )
                                         if remaining_consumption > 0:
                                             yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
                                                 -remaining_consumption,
-                                                self.formatDateTime(current.date),
+                                                self.formatDateTime(out_move.date),
                                                 quoteattr(consumed_item["name"]),
                                             )
                         yield "</flowplans>\n</operationplan>\n"
@@ -3056,10 +3090,12 @@ class exporter(object):
         for related_mo in mo._get_sources():
             if not mo_chain:
                 batch = self.getBatch(related_mo, [mo.id])
+                if batch:
+                    return batch
             elif related_mo.id not in mo_chain:
                 batch = self.getBatch(related_mo, mo_chain + [mo.id])
-            if batch:
-                return batch
+                if batch:
+                    return batch
         if mo_chain:
             # The MTO chain ends at a (manually created) MO.
             return mo.name
@@ -3185,7 +3221,7 @@ class exporter(object):
                         continue
                     default_uom = mv.product_id.uom_id
                     qty_flow = mv.product_uom._compute_quantity(
-                        mv.product_uom_qty, default_uom
+                        mv.product_uom_qty - mv.quantity, default_uom
                     )
                     for l in mv.move_line_ids:
                         if l.state == "done":
@@ -3194,21 +3230,7 @@ class exporter(object):
                             )
                     if self.respect_reservations:
                         for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                            if (
-                                # Normal reservation case
-                                mv.procure_method != "make_to_order"
-                                and l.state == "assigned"
-                            ) or (
-                                # Special case for multi-level MTO chains
-                                mv.procure_method == "make_to_order"
-                                and l.move_id.state
-                                not in (
-                                    "waiting",
-                                    "waiting availability",
-                                    "available",
-                                    "partially_available",
-                                )
-                            ):
+                            if l.state == "assigned" and l.move_id.picking_id:
                                 qty_flow -= l.product_uom_id._compute_quantity(
                                     l.quantity, default_uom
                                 )
@@ -3311,7 +3333,7 @@ class exporter(object):
                             continue
                         default_uom = mv.product_id.uom_id
                         qty_flow = mv.product_uom._compute_quantity(
-                            mv.product_uom_qty, default_uom
+                            mv.product_uom_qty - mv.quantity, default_uom
                         )
                         for l in mv.move_line_ids:
                             if l.state == "done":
@@ -3320,19 +3342,7 @@ class exporter(object):
                                 )
                         if self.respect_reservations:
                             for l in mv.move_line_ids | mv.move_orig_ids.move_line_ids:
-                                if (
-                                    mv.procure_method != "make_to_order"
-                                    and l.state == "assigned"
-                                ) or (
-                                    mv.procure_method == "make_to_order"
-                                    and l.move_id.state
-                                    not in (
-                                        "waiting",
-                                        "waiting availability",
-                                        "available",
-                                        "partially_available",
-                                    )
-                                ):
+                                if l.state == "assigned" and l.move_id.picking_id:
                                     qty_flow -= l.product_uom_id._compute_quantity(
                                         l.quantity, default_uom
                                     )
@@ -3446,12 +3456,13 @@ class exporter(object):
                             wo_date = ' start="%s"' % self.formatDateTime(dt)
                     except Exception:
                         wo_date = ""
+                    woref = quoteattr("%s - %s" % (suboperation, wo.id))
                     yield '<operationplan type="MO" reference=%s%s quantity="%s" status="%s"><operation name=%s/><owner reference=%s/>' % (
-                        quoteattr(wo.display_name),
+                        woref,
                         wo_date,
                         qty,
                         state,
-                        quoteattr("%s - %s" % (suboperation, wo.id)),
+                        woref,
                         quoteattr(i.name),
                     )
                     if (
@@ -3801,9 +3812,31 @@ class exporter(object):
                 ["move_id.sale_line_id", "=", False],
                 "|",
                 ["move_id.group_id", "=", False],
-                "&",
-                ["move_id.group_id.mrp_production_ids", "=", False],
                 ["move_id.group_id.sale_id", "=", False],
+            ],
+            fields=[
+                "product_id",
+                "quantity",
+                "location_dest_id",
+                "move_id",
+            ],
+            order="product_id asc",
+        ):
+            item = self.product_product.get(mvln["product_id"][0], None)
+            location = self.map_locations.get(mvln["location_dest_id"][0], None)
+            if item and location:
+                inventory[(item["name"], location)] = (
+                    inventory.get((item["name"], location), 0) + mvln["quantity"]
+                )
+
+        # Add customer returns as inbound inventory
+        for mvln in self.generator.getData(
+            "stock.move.line",
+            search=[
+                ["location_id.usage", "=", "customer"],
+                ["location_dest_id.usage", "=", "internal"],
+                ["state", "not in", ["cancel", "done"]],
+                ["quantity", ">", 0],
             ],
             fields=[
                 "product_id",
@@ -3859,10 +3892,6 @@ class exporter(object):
                 inventory_mto[(item["name"], location, batch)] = (
                     inventory_mto.get((item["name"], location, batch), 0)
                     + unconsumed_quantity
-                )
-            else:
-                inventory[(item["name"], location)] = (
-                    inventory.get((item["name"], location), 0) + unconsumed_quantity
                 )
 
         for key, val in inventory.items():
