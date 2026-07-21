@@ -23,6 +23,7 @@
 #
 
 import odoo
+import json
 import logging
 from xml.etree.cElementTree import iterparse
 from datetime import datetime
@@ -185,7 +186,8 @@ class importer(object):
 
         # Parsing the XML data file
         countproc = 0
-        countmfg = 0
+        countmfg_created = 0
+        countmfg_updated = 0
 
         # dictionary that stores as key the supplier id and the associated po id
         # this dict is used to aggregate the exported POs for a same supplier
@@ -373,8 +375,12 @@ class importer(object):
                                 "min_planned": date_planned,
                                 "min_ordered": date_ordered,
                                 "po": po,
+                                "frepple_references": [elem.get("id")],
                             }
                         else:
+                            supplier_reference[supplier_id][
+                                "frepple_references"
+                            ].append(elem.get("id"))
                             if (
                                 date_planned
                                 < supplier_reference[supplier_id]["min_planned"]
@@ -771,6 +777,7 @@ class importer(object):
                                     "origin": remark,
                                 }
                             )
+                            countmfg_created += 1
                             # Remember odoo name for the MO reference passed by frepple.
                             # This mapping is later used when importing WO.
                             mo_references[elem.get("reference")] = mo
@@ -786,6 +793,7 @@ class importer(object):
                                 )
                             except Exception:
                                 continue
+                            countmfg_updated += 1
                             if mo:
                                 new_qty = float(elem.get("quantity"))
                                 remark = elem.get("remark", None)
@@ -900,7 +908,6 @@ class importer(object):
                                                             )
                                                             break
 
-                        countmfg += 1
                 except Exception as e:
                     import traceback
 
@@ -948,7 +955,37 @@ class importer(object):
             if sup["min_ordered"]:
                 sup["po"].date_order = sup["min_ordered"]
 
+        # Collect created PO/MO references
+        created_pos = [
+            {
+                "reference": sup["po"].name,
+                "id": sup["id"],
+                "frepple_references": sup["frepple_references"],
+            }
+            for sup in supplier_reference.values()
+        ]
+        created_mos = [
+            {"reference": mo.name, "id": mo.id, "frepple_reference": frepple_ref}
+            for frepple_ref, mo in mo_references.items()
+        ]
+
         # Be polite, and reply to the post
-        msg.append("Processed %s uploaded procurement orders" % countproc)
-        msg.append("Processed %s uploaded manufacturing orders" % countmfg)
-        return "\n".join(msg)
+        if countmfg_created:
+            msg.append(
+                "Created %d manufacturing orders%s"
+                % (countmfg_created, "\n" if countmfg_updated or created_pos else "")
+            )
+        if countmfg_updated:
+            msg.append(
+                "Updated %d manufacturing orders%s"
+                % (countmfg_updated, "\n" if created_pos else "")
+            )
+        if created_pos:
+            msg.append("Created %d purchase orders" % (len(created_pos),))
+        return json.dumps(
+            {
+                "messages": msg,
+                "created_purchase_orders": created_pos,
+                "created_manufacturing_orders": created_mos,
+            }
+        )
