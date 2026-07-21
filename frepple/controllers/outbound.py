@@ -1282,9 +1282,8 @@ class exporter(object):
                         ),
                         "subcategory": f"{tmpl["uom_id"][0]},{i["id"]}",
                     }
-                    if use_short_names:
-                        item["description"] = description
-                    if self.route_mto in tmpl["route_ids"]:
+                    item["description"] = description
+                    if any(r in tmpl["route_ids"] for r in self.routes_mto):
                         item["type"] = "item_mto"
                     if (
                         self.has_expiry
