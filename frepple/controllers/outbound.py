@@ -147,9 +147,12 @@ class exporter(object):
             "expiration_date" in [f for f in self.generator.env["stock.lot"]._fields]
             and "freppledb.shelflife" in apps
         )
-        self.has_length_limits = int(self.version[0]) < 9 or (
-            int(self.version[0]) == 9 and int(self.version[1]) < 11
-        )
+        try:
+            self.has_length_limits = int(self.version[0]) < 9 or (
+                int(self.version[0]) == 9 and int(self.version[1]) < 11
+            )
+        except Exception:
+            self.has_length_limits = False
 
         # The mode argument defines different types of runs:
         #  - Mode 1:
@@ -2927,10 +2930,12 @@ class exporter(object):
                                         )
                                 else:
                                     for out_move in outbound_moves:
-                                        remaining_consumption = out_move.product_uom._compute_quantity(
-                                            out_move.product_uom_qty
-                                            - out_move.quantity,
-                                            out_move.product_id.uom_id
+                                        remaining_consumption = (
+                                            out_move.product_uom._compute_quantity(
+                                                out_move.product_uom_qty
+                                                - out_move.quantity,
+                                                out_move.product_id.uom_id,
+                                            )
                                         )
                                         if remaining_consumption > 0:
                                             yield '<flowplan status="confirmed" quantity="%s" date="%s"><item name=%s/></flowplan>' % (
