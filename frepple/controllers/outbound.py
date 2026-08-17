@@ -2804,7 +2804,7 @@ class exporter(object):
                             end = datetime.fromisoformat(end)
                         except Exception:
                             end = None
-                    if not start or not end:
+                    if not end:
                         continue
 
                     supplier = self.map_suppliers.get(j.partner_id.id)
@@ -2830,7 +2830,7 @@ class exporter(object):
                     if not supplier:
                         continue
 
-                    start = self.formatDateTime(start if start < end else end)
+                    start = self.formatDateTime(start if start and start < end else end)
                     end = self.formatDateTime(end)
 
                     # Compute the quantity that we still need to receive
@@ -2956,11 +2956,19 @@ class exporter(object):
                 if item and i.product_qty > i.qty_received:
                     start = j.date_order
                     if not isinstance(start, datetime):
+                      try:  
                         start = datetime.fromisoformat(start)
+                      except Exception:
+                        start = None
                     end = i.date_planned
                     if not isinstance(end, datetime):
-                        end = datetime.fromisoformat(end)
-                    start = self.formatDateTime(start if start < end else end)
+                        try:
+                            end = datetime.fromisoformat(end)
+                        except Exception:
+                            end = None
+                    if not end:
+                        continue
+                    start = self.formatDateTime(start if start and start < end else end)
                     end = self.formatDateTime(end)
                     qty = self.convert_qty_uom(
                         i.product_qty - i.qty_received,
