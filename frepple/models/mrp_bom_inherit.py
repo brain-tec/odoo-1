@@ -34,3 +34,9 @@ class MrpBomInherit(models.Model):
         digits="Product Unit",
         help="Frepple: Manufacturing orders should be a multiple of this quantity.",
     )
+    scrap_rate = fields.Float(
+        "Scrap Rate",
+        default=0.0,
+        digits=(16, 2),
+        help="Frepple: Scrap percentage.",
+    )
