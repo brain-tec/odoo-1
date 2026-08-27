@@ -1675,7 +1675,7 @@ class exporter(object):
                         yield "<flows>\n"
 
                         # We need a producing flow if there is a scrap rate
-                        if i["scrap_rate"]:
+                        if i["scrap_rate"] and i["scrap_rate"] and 0.0 < i["scrap_rate"] < 1.0:
                             yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
                                 1 - i["scrap_rate"],
                                 quoteattr(product_buf["name"]),
@@ -2050,7 +2050,11 @@ class exporter(object):
                             )
                             first_flow = True
 
-                            if step == steplist[-1] and i["scrap_rate"]:
+                            if (
+                                step == steplist[-1]
+                                and i["scrap_rate"]
+                                and 0.0 < i["scrap_rate"] < 1.0
+                            ):
                                 # A producing flow if we have a scrap rate
                                 yield "<flows>\n"
                                 yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
@@ -3029,10 +3033,11 @@ class exporter(object):
                         operation_materials[key],
                         quoteattr(key),
                     )
-                yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
-                    1 - (i.bom_id.scrap_rate or 0),
-                    quoteattr(item["name"]),
-                )
+                if i.bom_id and i.bom_id.scrap_rate and 0 < i.bom_id.scrap_rate < 1.0:
+                    yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                        1 - i.bom_id.scrap_rate,
+                        quoteattr(item["name"]),
+                    )
                 yield "</flows>"
                 # Pick up work center loading of all work orders
                 loads = {}
@@ -3140,7 +3145,12 @@ class exporter(object):
                                 -qty_flow / qty,
                                 quoteattr(material["name"]),
                             )
-                    if wo == i.workorder_ids[-1] and i.bom_id.scrap_rate:
+                    if (
+                        wo == i.workorder_ids[-1]
+                        and i.bom_id
+                        and i.bom_id.scrap_rate
+                        and 0 < i.bom_id.scrap_rate < 1
+                    ):
                         yield '<flow quantity="%s" xsi:type="flow_end"><item name=%s/></flow>\n' % (
                             1 - i.bom_id.scrap_rate,
                             quoteattr(item["name"]),
