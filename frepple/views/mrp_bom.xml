@@ -7,6 +7,8 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='product_qty']/../.." position="inside">
                 <field name="product_qty_multiple" string="Quantity Multiple"/>
+                <field name="scrap_rate" string="Scrap Rate" widget="percentage"/>
+
             </xpath>
         </field>
     </record>
@@ -17,6 +19,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='product_uom_id']" position="after">
                 <field name="product_qty_multiple" optional="hide"/>
+                <field name="scrap_rate" string="Scrap Rate" widget="percentage" optional="hide"/>
             </xpath>
         </field>
     </record>
