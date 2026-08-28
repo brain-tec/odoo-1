@@ -853,7 +853,7 @@ class importer(object):
                                             wo.date_start = rec["start"]
                                             if not create:
                                                 wo.write({"date_start": wo.date_start})
-                                        for res in rec["workcenters"]:
+                                        for res in rec.get("workcenters", []):
                                             wc = mfg_workcenter.browse(res["id"])
                                             if not wc:
                                                 continue

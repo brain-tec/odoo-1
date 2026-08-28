@@ -40,6 +40,7 @@ from freppledb.input.models import (
     Buffer,
     PurchaseOrder,
     ManufacturingOrder,
+    OperationMaterial,
     OperationPlanMaterial,
     Demand,
     WorkOrder,
@@ -281,6 +282,13 @@ class OdooTest(TransactionTestCase):
             WorkOrder.objects.all().filter(status="approved", quantity=8).count(),
             2,
             "difference in number of approved work orders",
+        )
+        self.assertEqual(
+            OperationMaterial.objects.all()
+            .filter(item__name="chair leg", type="end",quantity__gt=0.899, quantity__lt=0.901)
+            .count(),
+            1,
+            "scrap rate of 'chair leg' BOM should be correctly imported from odoo",
         )
 
         # Check the inventory is correct for items with incoming receipts
