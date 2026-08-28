@@ -1509,6 +1509,7 @@ class exporter(object):
                 "sequence",
                 "code",
                 "product_qty_multiple",
+                "scrap_rate",
             ],
         ):
             # Determine the location
@@ -1647,6 +1648,13 @@ class exporter(object):
                         if producedQty != 1 and not subcontractor:
                             yield "<size_minimum>%s</size_minimum>\n" % producedQty
                         yield "<flows>\n"
+
+                        # We need a producing flow if there is a scrap rate
+                        if i["scrap_rate"] and 0.0 < i["scrap_rate"] < 1.0:
+                            yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                                1 - i["scrap_rate"],
+                                quoteattr(product_buf["name"]),
+                            )
 
                         # Build consuming flows.
                         # If the same component is consumed multiple times in the same BOM
@@ -2006,6 +2014,20 @@ class exporter(object):
                                 secondary_workcenter_str,
                             )
                             first_flow = True
+
+                            if (
+                                step == steplist[-1]
+                                and i["scrap_rate"]
+                                and 0.0 < i["scrap_rate"] < 1.0
+                            ):
+                                # A producing flow if we have a scrap rate
+                                yield "<flows>\n"
+                                yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                                    1 - i["scrap_rate"],
+                                    quoteattr(product_buf["name"]),
+                                )
+                                first_flow = False
+
                             for j in fl.values():
                                 if j["qty"] > 0 and (
                                     (
@@ -2804,7 +2826,7 @@ class exporter(object):
                             end = datetime.fromisoformat(end)
                         except Exception:
                             end = None
-                    if not start or not end:
+                    if not end:
                         continue
 
                     supplier = self.map_suppliers.get(j.partner_id.id)
@@ -2830,7 +2852,7 @@ class exporter(object):
                     if not supplier:
                         continue
 
-                    start = self.formatDateTime(start if start < end else end)
+                    start = self.formatDateTime(start if start and start < end else end)
                     end = self.formatDateTime(end)
 
                     # Compute the quantity that we still need to receive
@@ -2956,11 +2978,19 @@ class exporter(object):
                 if item and i.product_qty > i.qty_received:
                     start = j.date_order
                     if not isinstance(start, datetime):
-                        start = datetime.fromisoformat(start)
+                        try:
+                            start = datetime.fromisoformat(start)
+                        except Exception:
+                            start = None
                     end = i.date_planned
                     if not isinstance(end, datetime):
-                        end = datetime.fromisoformat(end)
-                    start = self.formatDateTime(start if start < end else end)
+                        try:
+                            end = datetime.fromisoformat(end)
+                        except Exception:
+                            end = None
+                    if not end:
+                        continue
+                    start = self.formatDateTime(start if start and start < end else end)
                     end = self.formatDateTime(end)
                     qty = self.convert_qty_uom(
                         i.product_qty - i.qty_received,
@@ -3249,9 +3279,11 @@ class exporter(object):
                         operation_materials[key],
                         quoteattr(key),
                     )
-                yield '<flow xsi:type="flow_end" quantity="1"><item name=%s/></flow>\n' % (
-                    quoteattr(item["name"]),
-                )
+                if i.bom_id and 0 < i.bom_id.scrap_rate < 1.0:
+                    yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                        1 - i.bom_id.scrap_rate,
+                        quoteattr(item["name"]),
+                    )
                 yield "</flows>"
                 # Pick up work center loading of all work orders
                 loads = {}
@@ -3333,8 +3365,8 @@ class exporter(object):
                             # Consumption at the last step
                             if wo.id != i.workorder_ids[-1].id:
                                 continue
-                        item = self.product_product.get(mv.product_id.id, None)
-                        if not item or mv.state in ("done", "cancel"):
+                        material = self.product_product.get(mv.product_id.id, None)
+                        if not material or mv.state in ("done", "cancel"):
                             continue
                         default_uom = mv.product_id.uom_id
                         qty_flow = mv.product_uom._compute_quantity(
@@ -3352,13 +3384,23 @@ class exporter(object):
                                         l.quantity, default_uom
                                     )
                         if qty_flow > 0:
-                            operation_materials[item["name"]] = operation_materials.get(
-                                item["name"], 0
-                            ) + (-qty_flow / qty)
+                            operation_materials[material["name"]] = (
+                                operation_materials.get(material["name"], 0)
+                                + (-qty_flow / qty)
+                            )
                     for key, val in operation_materials.items():
                         yield '<flow xsi:type="flow_start" quantity="%s"><item name=%s/></flow>\n' % (
                             val,
                             quoteattr(key),
+                        )
+                    if (
+                        wo == i.workorder_ids[-1]
+                        and i.bom_id
+                        and 0 < i.bom_id.scrap_rate < 1
+                    ):
+                        yield '<flow quantity="%s" xsi:type="flow_end"><item name=%s/></flow>\n' % (
+                            1 - i.bom_id.scrap_rate,
+                            quoteattr(item["name"]),
                         )
                     yield "</flows>"
                     if (
