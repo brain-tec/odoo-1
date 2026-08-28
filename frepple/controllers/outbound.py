@@ -1636,7 +1636,7 @@ class exporter(object):
                                 operation_json["flows"] = []
 
                                 # We need a producing flow if there is a scrap rate
-                                if i["scrap_rate"]:
+                                if i["scrap_rate"] and 0.0 <= i["scrap_rate"] < 1.0:
                                     operation_json["flows"].append(
                                         {
                                             "type": "flow_end",
@@ -2034,7 +2034,11 @@ class exporter(object):
                                     )
                                     suboperation_json["flows"] = []
 
-                                    if step == steplist[-1] and i["scrap_rate"]:
+                                    if (
+                                        step == steplist[-1]
+                                        and i["scrap_rate"]
+                                        and 0.0 <= i["scrap_rate"] < 1.0
+                                    ):
                                         suboperation_json["flows"].append(
                                             {
                                                 "type": "flow_end",
@@ -3344,13 +3348,19 @@ class exporter(object):
                                     "item": {"name": key},
                                 }
                             )
-                        operation_json["flows"].append(
-                            {
-                                "type": "flow_end",
-                                "quantity": 1 - (i.bom_id.scrap_rate or 0),
-                                "item": {"name": item["name"]},
-                            }
-                        )
+                        if (
+                            i.bom_id
+                            and i.bom_id.scrap_rate
+                            and 0.0 <= i.bom_id.scrap_rate < 1.0
+                        ):
+                            operation_json["flows"].append(
+                                {
+                                    "type": "flow_end",
+                                    "quantity": 1 - i.bom_id.scrap_rate,
+                                    "item": {"name": item["name"]},
+                                }
+                            )
+
                         # Pick up work center loading of all work orders
                         loads = {}
                         for wo in getattr(i, "workorder_ids", []):
