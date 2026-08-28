@@ -22,7 +22,8 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-from odoo import models, fields
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 
 class MrpBomInherit(models.Model):
@@ -34,3 +35,17 @@ class MrpBomInherit(models.Model):
         digits="Product Unit",
         help="Frepple: Manufacturing orders should be a multiple of this quantity.",
     )
+    scrap_rate = fields.Float(
+        "Scrap Rate",
+        default=0.0,
+        digits=(16, 2),
+        help="Frepple: Scrap percentage.",
+    )
+
+    @api.constrains("scrap_rate")
+    def _check_scrap_rate_range(self):
+        for record in self:
+            if not (0 <= record.scrap_rate < 1):
+                raise ValidationError(
+                    f"Scrap Rate must be between 0% and 100%, got {record.scrap_rate * 100}%"
+                )

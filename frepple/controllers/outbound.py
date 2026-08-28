@@ -1551,6 +1551,7 @@ class exporter(object):
                 "sequence",
                 "code",
                 "product_qty_multiple",
+                "scrap_rate",
             ],
         ):
             # Determine the location
@@ -1672,6 +1673,13 @@ class exporter(object):
                         if producedQty != 1 and not subcontractor:
                             yield "<size_minimum>%s</size_minimum>\n" % producedQty
                         yield "<flows>\n"
+
+                        # We need a producing flow if there is a scrap rate
+                        if i["scrap_rate"] and i["scrap_rate"] and 0.0 < i["scrap_rate"] < 1.0:
+                            yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                                1 - i["scrap_rate"],
+                                quoteattr(product_buf["name"]),
+                            )
 
                         # Build consuming flows.
                         # If the same component is consumed multiple times in the same BOM
@@ -2041,6 +2049,20 @@ class exporter(object):
                                 secondary_workcenter_str,
                             )
                             first_flow = True
+
+                            if (
+                                step == steplist[-1]
+                                and i["scrap_rate"]
+                                and 0.0 < i["scrap_rate"] < 1.0
+                            ):
+                                # A producing flow if we have a scrap rate
+                                yield "<flows>\n"
+                                yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                                    1 - i["scrap_rate"],
+                                    quoteattr(product_buf["name"]),
+                                )
+                                first_flow = False
+
                             for j in fl.values():
                                 if j["qty"] > 0 and (
                                     (
@@ -3011,9 +3033,11 @@ class exporter(object):
                         operation_materials[key],
                         quoteattr(key),
                     )
-                yield '<flow xsi:type="flow_end" quantity="1"><item name=%s/></flow>\n' % (
-                    quoteattr(item["name"]),
-                )
+                if i.bom_id and i.bom_id.scrap_rate and 0 < i.bom_id.scrap_rate < 1.0:
+                    yield '<flow xsi:type="flow_end" quantity="%f"><item name=%s/></flow>\n' % (
+                        1 - i.bom_id.scrap_rate,
+                        quoteattr(item["name"]),
+                    )
                 yield "</flows>"
                 # Pick up work center loading of all work orders
                 loads = {}
@@ -3085,8 +3109,8 @@ class exporter(object):
                     # dictionary needed as BOM in Odoo might have multiple lines with the same product
                     operation_materials = {}
                     for mv in mv_list:
-                        item = self.product_product.get(mv.product_id.id, None)
-                        if not item:
+                        material = self.product_product.get(mv.product_id.id, None)
+                        if not material:
                             continue
 
                         # Skip moves of other WOs
@@ -3119,8 +3143,18 @@ class exporter(object):
                         if qty_flow > 0:
                             yield '<flow quantity="%s"><item name=%s/></flow>\n' % (
                                 -qty_flow / qty,
-                                quoteattr(item["name"]),
+                                quoteattr(material["name"]),
                             )
+                    if (
+                        wo == i.workorder_ids[-1]
+                        and i.bom_id
+                        and i.bom_id.scrap_rate
+                        and 0 < i.bom_id.scrap_rate < 1
+                    ):
+                        yield '<flow quantity="%s" xsi:type="flow_end"><item name=%s/></flow>\n' % (
+                            1 - i.bom_id.scrap_rate,
+                            quoteattr(item["name"]),
+                        )
                     yield "</flows>"
                     if (
                         wo.operation_id
