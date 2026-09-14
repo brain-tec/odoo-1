@@ -3561,104 +3561,101 @@ class exporter(object):
         #     has_buffer_max = False
         has_buffer_max = False
 
+        orderpoints_by_warehouse_product = {}
+        for i in self.generator.getData(
+            "stock.warehouse.orderpoint",
+            fields=[
+                "warehouse_id",
+                "product_id",
+                "product_min_qty",
+                "product_max_qty",
+                "product_uom",
+                "qty_multiple",
+            ],
+        ):
+            item = self.product_product.get(
+                i["product_id"] and i["product_id"][0] or None, None
+            )
+            if not item:
+                continue
+            warehouse = (
+                self.warehouses.get(i["warehouse_id"][0] or None, None)
+                if i["warehouse_id"]
+                else None
+            )
+            if not warehouse:
+                continue
+            uom_factor = self.convert_qty_uom(
+                1.0,
+                i["product_uom"][0],
+                item["template"],
+            )
+            reorder = (i["product_max_qty"] or 0) - (
+                i["product_min_qty"] or 0
+            ) * uom_factor
+            existing = orderpoints_by_warehouse_product.get(
+                (item["name"], warehouse), (0, 0)
+            )
+            orderpoints_by_warehouse_product[(item["name"], warehouse)] = (
+                existing[0]
+                + (
+                    i["product_min_qty"]
+                    if i["product_min_qty"] and i["product_min_qty"] > 0
+                    else 0
+                )
+                * uom_factor,
+                reorder if reorder > existing[1] and reorder > 0 else existing[1],
+            )
+
         if has_buffer_max:
             # frepple >= 9.0 has native support for buffers with a min and max level
-            for i in self.generator.getData(
-                "stock.warehouse.orderpoint",
-                fields=[
-                    "warehouse_id",
-                    "product_id",
-                    "product_min_qty",
-                    "product_max_qty",
-                    "product_uom",
-                    "qty_multiple",
-                ],
-            ):
+            for (item, warehouse), (
+                ss,
+                roq,
+            ) in orderpoints_by_warehouse_product.items():
                 if first:
                     yield "<!-- order points -->\n"
                     yield "<buffers>\n"
                     first = False
-                item = self.product_product.get(
-                    i["product_id"] and i["product_id"][0] or 0, None
-                )
-                if not item:
-                    continue
-                warehouse = (
-                    self.warehouses.get(i["warehouse_id"][0])
-                    if i["warehouse_id"]
-                    else None
-                )
-                if not warehouse:
-                    continue
-                uom_factor = self.convert_qty_uom(
-                    1.0,
-                    i["product_uom"][0],
-                    self.product_product[i["product_id"][0]]["template"],
-                )
                 yield '<buffer name=%s minimum="%f" maximum="%f"><item name=%s/><location name=%s/></buffer>\n' % (
-                    quoteattr("%s @ %s" % (item["name"], warehouse)),
-                    ((i["product_min_qty"] or 0) * uom_factor),
-                    ((i["product_max_qty"] or 0) * uom_factor),
+                    quoteattr("%s @ %s" % (item, warehouse)),
+                    ss,
+                    roq,
                     quoteattr(item["name"]),
-                    quoteattr(i["warehouse_id"][1]),
+                    quoteattr(warehouse),
                 )
             if not first:
                 yield "</buffers>\n"
         else:
-            for i in self.generator.getData(
-                "stock.warehouse.orderpoint",
-                fields=[
-                    "warehouse_id",
-                    "product_id",
-                    "product_min_qty",
-                    "product_max_qty",
-                    "product_uom",
-                    "qty_multiple",
-                ],
-            ):
+            for (item, warehouse), (
+                ss,
+                roq,
+            ) in orderpoints_by_warehouse_product.items():
                 if first:
                     yield "<!-- order points -->\n"
                     yield "<calendars>\n"
                     first = False
-                item = self.product_product.get(
-                    i["product_id"] and i["product_id"][0] or 0, None
-                )
-                if not item:
-                    continue
-                warehouse = (
-                    self.warehouses.get(i["warehouse_id"][0])
-                    if i["warehouse_id"]
-                    else None
-                )
-                if not warehouse:
-                    continue
-                uom_factor = self.convert_qty_uom(
-                    1.0,
-                    i["product_uom"][0],
-                    self.product_product[i["product_id"][0]]["template"],
-                )
-                name = "%s @ %s" % (item["name"], warehouse)
-                if i["product_min_qty"]:
+                if ss > 0:
                     yield """
                     <calendar name=%s default="0"><buckets>
                     <bucket start="%s" end="2030-12-31T00:00:00" value="%s" days="127" priority="998" starttime="PT0M" endtime="PT1440M"/>
                     </buckets>
                     </calendar>\n
                     """ % (
-                        (quoteattr("SS for %s" % (name,))),
+                        (quoteattr("SS for %s @ %s" % (item, warehouse))),
                         self.currentdate.strftime("%Y-%m-%dT%H:%M:%S"),
-                        (i["product_min_qty"] * uom_factor),
+                        ss,
                     )
-                if i["product_max_qty"] - i["product_min_qty"] > 0:
+                if roq > 0:
                     yield """
                     <calendar name=%s default="0"><buckets>
                     <bucket start="%s" end="2030-12-31T00:00:00" value="%s" days="127" priority="998" starttime="PT0M" endtime="PT1440M"/>
                     </buckets>
                     </calendar>\n
                     """ % (
-                        (quoteattr("ROQ for %s" % (name,))),
+                        (quoteattr("ROQ for %s @ %s" % (item, warehouse))),
                         self.currentdate.strftime("%Y-%m-%dT%H:%M:%S"),
-                        ((i["product_max_qty"] - i["product_min_qty"]) * uom_factor),
+                        roq,
                     )
             if not first:
                 yield "</calendars>\n"
