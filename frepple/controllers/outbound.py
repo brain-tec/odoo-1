@@ -3688,46 +3688,66 @@ class exporter(object):
             #     has_buffer_max = False
             has_buffer_max = False
 
+            orderpoints_by_warehouse_product = {}
+            for i in self.generator.getData(
+                "stock.warehouse.orderpoint",
+                fields=[
+                    "warehouse_id",
+                    "product_id",
+                    "product_min_qty",
+                    "product_max_qty",
+                    "product_uom",
+                    "qty_multiple",
+                ],
+            ):
+                item = self.product_product.get(
+                    i["product_id"] and i["product_id"][0] or None, None
+                )
+                if not item:
+                    continue
+                warehouse = (
+                    self.warehouses.get(i["warehouse_id"][0] or None, None)
+                    if i["warehouse_id"]
+                    else None
+                )
+                if not warehouse:
+                    continue
+                uom_factor = self.convert_qty_uom(
+                    1.0,
+                    i["product_uom"][0],
+                    item["template"],
+                )
+                reorder = (i["product_max_qty"] or 0) - (
+                    i["product_min_qty"] or 0
+                ) * uom_factor
+                existing = orderpoints_by_warehouse_product.get(
+                    (item["name"], warehouse), (0, 0)
+                )
+                orderpoints_by_warehouse_product[(item["name"], warehouse)] = (
+                    existing[0]
+                    + (
+                        i["product_min_qty"]
+                        if i["product_min_qty"] and i["product_min_qty"] > 0
+                        else 0
+                    )
+                    * uom_factor,
+                    reorder if reorder > existing[1] and reorder > 0 else existing[1],
+                )
+
             if has_buffer_max:
                 # frepple >= 9.0 has native support for buffers with a min and max level
-                for i in self.generator.getData(
-                    "stock.warehouse.orderpoint",
-                    fields=[
-                        "warehouse_id",
-                        "product_id",
-                        "product_min_qty",
-                        "product_max_qty",
-                        "product_uom",
-                        "qty_multiple",
-                    ],
-                ):
+                for (item, warehouse), (
+                    ss,
+                    roq,
+                ) in orderpoints_by_warehouse_product.items():
                     try:
-                        item = self.product_product.get(
-                            i["product_id"] and i["product_id"][0] or 0, None
-                        )
-                        if not item:
-                            continue
-                        warehouse = (
-                            self.warehouses.get(i["warehouse_id"][0])
-                            if i["warehouse_id"]
-                            else None
-                        )
-                        if not warehouse:
-                            continue
-                        uom_factor = self.convert_qty_uom(
-                            1.0,
-                            i["product_uom"][0],
-                            self.product_product[i["product_id"][0]]["template"],
-                        )
                         yield json.dumps(
                             {
-                                "name": "%s @ %s" % (item["name"], warehouse),
-                                "minimum": (i["product_min_qty"] or 0) * uom_factor,
-                                "maximum": (i["product_max_qty"] or 0) * uom_factor,
-                                "item": {"item": {"name": item["name"]}},
-                                "location": {
-                                    "location": {"name": i["warehouse_id"][1]}
-                                },
+                                "name": "%s @ %s" % (item, warehouse),
+                                "minimum": ss,
+                                "maximum": roq,
+                                "item": {"name": item},
+                                "location": {"name": warehouse},
                             }
                         ) + ",\n"
                     except Exception as e:
@@ -3735,40 +3755,15 @@ class exporter(object):
                             f"exporting reordering rule {i}", e
                         )
             else:
-                for i in self.generator.getData(
-                    "stock.warehouse.orderpoint",
-                    fields=[
-                        "warehouse_id",
-                        "product_id",
-                        "product_min_qty",
-                        "product_max_qty",
-                        "product_uom",
-                        "qty_multiple",
-                    ],
-                ):
+                for (item, warehouse), (
+                    ss,
+                    roq,
+                ) in orderpoints_by_warehouse_product.items():
                     try:
-                        item = self.product_product.get(
-                            i["product_id"] and i["product_id"][0] or 0, None
-                        )
-                        if not item:
-                            continue
-                        warehouse = (
-                            self.warehouses.get(i["warehouse_id"][0])
-                            if i["warehouse_id"]
-                            else None
-                        )
-                        if not warehouse:
-                            continue
-                        uom_factor = self.convert_qty_uom(
-                            1.0,
-                            i["product_uom"][0],
-                            self.product_product[i["product_id"][0]]["template"],
-                        )
-                        name = "%s @ %s" % (item["name"], warehouse)
-                        if i["product_min_qty"]:
+                        if ss:
                             yield json.dumps(
                                 {
-                                    "name": "SS for %s" % (name,),
+                                    "name": "SS for %s @ %s" % (item, warehouse),
                                     "default": 0,
                                     "buckets": [
                                         {
@@ -3776,9 +3771,7 @@ class exporter(object):
                                                 "%Y-%m-%dT%H:%M:%S"
                                             ),
                                             "end": "2030-12-31T00:00:00",
-                                            "value": (
-                                                i["product_min_qty"] * uom_factor
-                                            ),
+                                            "value": ss,
                                             "days": "127",
                                             "priority": "998",
                                             "starttime": 0,
@@ -3787,10 +3780,10 @@ class exporter(object):
                                     ],
                                 }
                             ) + ",\n"
-                        if i["product_max_qty"] - i["product_min_qty"] > 0:
+                        if roq:
                             yield json.dumps(
                                 {
-                                    "name": "ROQ for %s" % (name,),
+                                    "name": "ROQ for %s @ %s" % (item, warehouse),
                                     "default": 0,
                                     "buckets": [
                                         {
@@ -3798,13 +3791,7 @@ class exporter(object):
                                                 "%Y-%m-%dT%H:%M:%S"
                                             ),
                                             "end": "2030-12-31T00:00:00",
-                                            "value": (
-                                                (
-                                                    i["product_max_qty"]
-                                                    - i["product_min_qty"]
-                                                )
-                                                * uom_factor
-                                            ),
+                                            "value": roq,
                                             "days": "127",
                                             "priority": "998",
                                             "starttime": 0,
