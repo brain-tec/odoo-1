@@ -3678,7 +3678,7 @@ class exporter(object):
         stock.warehouse.orderpoint.product.name -> buffer.item
         convert stock.warehouse.orderpoint.product_min_qty -> buffer.mininventory
         convert stock.warehouse.orderpoint.product_max_qty -> buffer.maxinventory
-        convert stock.warehouse.orderpoint.qty_multiple -> buffer->size_multiple
+        // unmapped: stock.warehouse.orderpoint.replenishment_uom_id as multiple
         """
         try:
             # Keeping with the original reorderpoint mapping now
@@ -3697,7 +3697,6 @@ class exporter(object):
                     "product_min_qty",
                     "product_max_qty",
                     "product_uom",
-                    "qty_multiple",
                 ],
             ):
                 item = self.product_product.get(
