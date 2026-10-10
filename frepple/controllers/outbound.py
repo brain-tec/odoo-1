@@ -295,6 +295,11 @@ class exporter(object):
         yield from self.export_items()
         yield "],\n"
 
+        logger.debug("Exporting item distributions.")
+        yield '"itemdistributions":[\n'
+        yield from self.export_itemdistributions()
+        yield "],\n"
+
         logger.debug("Exporting BOMs.")
         if self.mode == 1:
             yield '"operations": [\n'
@@ -316,8 +321,11 @@ class exporter(object):
             logger.debug("Exporting purchase orders.")
             yield '"operationplans": [\n'
             yield from self.export_purchaseorders()
-            yield from self.export_manufacturingorders()
             logger.debug("Exporting manufacturing orders.")
+            yield from self.export_manufacturingorders()
+            logger.debug("Exporting distribution orders.")
+            yield from self.export_distributionorders()
+
             if self.has_expiry:
                 logger.debug("Exporting stock orders.")
                 yield from self.export_stockorders()
@@ -336,6 +344,49 @@ class exporter(object):
             yield "]"
         # Footer
         yield "}\n"
+
+    def get_interwarehouse_route_info(self, route):
+        """Return (origin_wh, destination_wh, leadtime in days) if the route moves goods from
+        one warehouse to another, otherwise False.
+
+        Both values are stock.warehouse records.
+        """
+
+        if not route or not route.active:
+            return False
+
+        rules = route.rule_ids.filtered("active").sorted("sequence")
+        total_leadtime = sum(rules.filtered("active").mapped("delay"))
+
+        # 1. Standard resupply routes
+        if (
+            route.supplier_wh_id
+            and route.supplied_wh_id
+            and route.supplier_wh_id != route.supplied_wh_id
+        ):
+            return (route.supplier_wh_id, route.supplied_wh_id, total_leadtime)
+
+        # 2. Custom routes: each side is looked up independently
+        origin_wh = next(
+            (
+                r.location_src_id.warehouse_id
+                for r in rules
+                if r.location_src_id.warehouse_id
+            ),
+            False,
+        )
+        destination_wh = next(
+            (
+                r.location_dest_id.warehouse_id
+                for r in reversed(rules)
+                if r.location_dest_id.warehouse_id
+            ),
+            False,
+        )
+
+        if origin_wh and destination_wh and origin_wh != destination_wh:
+            return (origin_wh, destination_wh, total_leadtime)
+        return False
 
     def load_company(self):
         try:
@@ -1026,6 +1077,7 @@ class exporter(object):
                 fields=[
                     "complete_name",
                     "parent_id",
+                    "route_ids",
                 ],
             ):
                 self.categories[i["id"]] = i
@@ -1164,6 +1216,7 @@ class exporter(object):
                 "product_tmpl_id",
                 "product_id",
                 "partner_id",
+                "product_uom_id",
                 "delay",
                 "min_qty",
                 "date_end",
@@ -1190,6 +1243,39 @@ class exporter(object):
                         itemsuppliers_tmpl[i["product_tmpl_id"][0]].append(i)
                     else:
                         itemsuppliers_tmpl[i["product_tmpl_id"][0]] = [i]
+
+            # Warehouses receiving the goods of each buy route
+            buy_routes = {}
+            for rule in self.generator.getData(
+                "stock.rule",
+                search=[("action", "=", "buy")],
+                fields=["route_id", "warehouse_id", "location_dest_id"],
+            ):
+                if not rule["route_id"]:
+                    continue
+                wh = (
+                    self.warehouses.get(rule["warehouse_id"][0])
+                    if rule["warehouse_id"]
+                    else None
+                ) or (
+                    self.map_locations.get(rule["location_dest_id"][0])
+                    if rule["location_dest_id"]
+                    else None
+                )
+                if wh:
+                    buy_routes.setdefault(rule["route_id"][0], set()).add(wh)
+
+            # Routes of each category, including the ones inherited from parent categories
+            categ_routes = (
+                {
+                    c["id"]: c["total_route_ids"]
+                    for c in self.generator.getData(
+                        "product.category", fields=["total_route_ids"]
+                    )
+                }
+                if buy_routes
+                else {}
+            )
 
             # Read the products
             for i in self.generator.getData(
@@ -1314,6 +1400,11 @@ class exporter(object):
                         for sup in itemsuppliers_product.get(
                             i["id"], itemsuppliers_tmpl.get(tmpl["id"], [])
                         ):
+                            purchase_uom_quantity = self.convert_qty_uom(
+                                1.0, sup["product_uom_id"], tmpl["id"]
+                            )
+                            price = max(0, sup["price"]) / purchase_uom_quantity
+                            min_qty = (sup["min_qty"] or 0) * purchase_uom_quantity
                             name = self.map_suppliers.get(sup["partner_id"][0], None)
                             if not name:
                                 # Skip uninterested suppliers (eg archived ones)
@@ -1339,11 +1430,11 @@ class exporter(object):
                                                 and sup["sequence"] < s["priority"]
                                             ):
                                                 s["priority"] = sup["sequence"]
-                                            if sup["min_qty"] and (
+                                            if min_qty and (
                                                 not s["size_minimum"]
-                                                or sup["min_qty"] < s["size_minimum"]
+                                                or min_qty < s["size_minimum"]
                                             ):
-                                                s["size_minimum"] = sup["min_qty"]
+                                                s["size_minimum"] = min_qty
                                             if sup["date_end"] and (
                                                 not s["date_end"]
                                                 or sup["date_end"] > s["date_end"]
@@ -1358,7 +1449,7 @@ class exporter(object):
                                             "name": name,
                                             "delay": sup["delay"],
                                             "priority": sup["sequence"] or -1,
-                                            "size_minimum": sup["min_qty"],
+                                            "size_minimum": min_qty,
                                             "date_start": sup["date_start"],
                                             "date_end": sup["date_end"],
                                         }
@@ -1381,16 +1472,15 @@ class exporter(object):
                                     or sup["batching_window"] > r["batching_window"]
                                 ):
                                     r["batching_window"] = sup["batching_window"]
-                                if sup["min_qty"] and (
-                                    not r["min_qty"] or sup["min_qty"] < r["min_qty"]
+                                if min_qty and (
+                                    not r["min_qty"] or min_qty < r["min_qty"]
                                 ):
-                                    r["min_qty"] = sup["min_qty"]
-                                if sup["price"] and (
-                                    not r["price"] or sup["price"] < r["price"]
-                                ):
-                                    r["price"] = sup["price"]
-                                if sup["date_end"] and (
-                                    not r["date_end"] or sup["date_end"] > r["date_end"]
+                                    r["min_qty"] = min_qty
+                                if price and (not r["price"] or price < r["price"]):
+                                    r["price"] = price
+                                if r["date_end"] and (
+                                    not sup["date_end"]
+                                    or sup["date_end"] > r["date_end"]
                                 ):
                                     r["date_end"] = sup["date_end"]
                             else:
@@ -1398,11 +1488,24 @@ class exporter(object):
                                     "delay": sup["delay"],
                                     "sequence": sup["sequence"] or -1,
                                     "batching_window": sup["batching_window"] or 0,
-                                    "min_qty": sup["min_qty"],
-                                    "price": max(0, sup["price"]),
+                                    "min_qty": min_qty,
+                                    "price": price,
                                     "date_end": sup["date_end"],
                                 }
                         if suppliers:
+                            if "buy_warehouses" not in tmpl:
+                                buy_warehouses = set()
+                                for r in tmpl["route_ids"] + (
+                                    categ_routes.get(tmpl["categ_id"][0], [])
+                                    if tmpl["categ_id"]
+                                    else []
+                                ):
+                                    buy_warehouses |= buy_routes.get(r, set())
+                                tmpl["buy_warehouses"] = sorted(buy_warehouses)
+                            # Without any buy route, you are not getting any itemsupplier record
+                            locations = tmpl[
+                                "buy_warehouses"
+                            ]  #  or [None] # uncomment to get an itemsupplier record with an empty location
                             item["itemsuppliers"] = []
                             for k, v in suppliers.items():
                                 if (
@@ -1410,24 +1513,31 @@ class exporter(object):
                                     and v["date_end"] < self.currentdate.date()
                                 ):
                                     continue
-                                itemsupplier = {
-                                    "leadtime": (v["delay"] or 0) * 86400,
-                                    "priority": v["sequence"] or -1,
-                                    "batchwindow": (v["batching_window"] or 0) * 86400,
-                                    "size_minimum": v["min_qty"],
-                                    "cost": max(0, v["price"]),
-                                    "supplier": {"name": k[0]},
-                                }
+                                for loc in locations:
+                                    itemsupplier = {
+                                        "leadtime": (v["delay"] or 0) * 86400,
+                                        "priority": v["sequence"] or -1,
+                                        "batchwindow": (v["batching_window"] or 0)
+                                        * 86400,
+                                        "size_minimum": v["min_qty"],
+                                        "cost": max(0, v["price"]),
+                                        "supplier": {"name": k[0]},
+                                    }
+                                    itemsupplier.update(
+                                        {"location": {"name": loc}} if loc else {}
+                                    )
+                                    logger.info(f"itemsupplier={itemsupplier}")
 
-                                if v["date_end"]:
-                                    itemsupplier["effective_end"] = "%sT00:00:00" % v[
-                                        "date_end"
-                                    ].strftime("%Y-%m-%d")
-                                if k[1]:
-                                    itemsupplier["effective_start"] = "%sT00:00:00" % k[
-                                        1
-                                    ].strftime("%Y-%m-%d")
-                                item["itemsuppliers"].append(itemsupplier)
+                                    if v["date_end"]:
+                                        itemsupplier["effective_end"] = (
+                                            "%sT00:00:00"
+                                            % v["date_end"].strftime("%Y-%m-%d")
+                                        )
+                                    if k[1]:
+                                        itemsupplier["effective_start"] = (
+                                            "%sT00:00:00" % k[1].strftime("%Y-%m-%d")
+                                        )
+                                    item["itemsuppliers"].append(itemsupplier)
                     yield json.dumps(item) + ",\n"
                 except Exception as e:
                     yield from self.flagException(f"exporting item {i}", e)
@@ -3667,6 +3777,106 @@ class exporter(object):
         except Exception as e:
             yield from self.flagException("exporting manufacturing orders", e)
 
+    def export_distributionorders(self):
+        """
+        Extracting inter warehouse transfers.
+
+        We extract stock moves where the source location is a transit location and
+        the destination location is an internal location.
+        Depending on the previous stock move state (the stock move in the source warehouse from an
+        internal location to the transit location), we will know if the stock is still in the origin
+        warehouse or is in the transit location where it belongs to no warehouse.
+
+        Mapping:
+
+        """
+        try:
+            arrivals = self.generator.getData(
+                "stock.move",
+                search=[
+                    ("location_id.usage", "=", "transit"),
+                    ("location_dest_id.usage", "=", "internal"),
+                    ("state", "not in", ("done", "cancel")),
+                ],
+                object=True,
+            )
+            for arr in arrivals:
+                try:
+                    deps = arr.move_orig_ids.filtered(
+                        lambda m: m.location_id.usage == "internal"
+                        and m.location_dest_id.usage == "transit"
+                        and m.state != "cancel"
+                    )
+                    if not deps:
+                        continue  # orphan arrival, very likely not an interwarehouse transfer
+                    origin_wh = self.warehouses.get(deps[0].location_id.warehouse_id.id)
+                    destination_wh = self.warehouses.get(
+                        arr.location_dest_id.warehouse_id.id
+                    )
+                    product = self.product_product.get(arr.product_id.id)
+                    if (
+                        not product
+                        or not origin_wh
+                        or not destination_wh
+                        or origin_wh == destination_wh
+                    ):
+                        continue
+                    qty = arr.product_uom._compute_quantity(
+                        arr.product_uom_qty, arr.product_id.uom_id
+                    )
+                    # We want to look in the same procurement group for the reserved quantity in the origin warehouse.
+                    # We assume that either the entire quantity is reverved or none is reserved.
+                    # If no quantity is reserved, we need to set the origin location at DO level so that Frepple
+                    # consumes the stock.
+                    # If all the quantity is reserved, then no need to decrease the stock. The origin at DO level will be empty.
+                    related_moves = (
+                        arr.reference_ids.move_ids
+                        if "reference_ids" in arr._fields
+                        else arr.group_id.stock_move_ids
+                    )
+                    qty_reserved_at_origin = sum(
+                        [
+                            sm.quantity
+                            for sm in related_moves
+                            if sm.state
+                            in [
+                                "assigned",
+                                "partially_available",
+                            ]  # if it is assigned, then there is some reservation
+                            and sm.location_id.warehouse_id.id
+                            == deps[
+                                0
+                            ].location_id.warehouse_id.id  # make sure we are talking about the origin warehouse
+                        ]
+                    )
+
+                    shipping_date = min(deps.mapped("date")).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                    receipt_date = arr.date.strftime("%Y-%m-%d %H:%M:%S")
+                    in_transit = all(d.state == "done" for d in deps)
+                    yield json.dumps(
+                        {
+                            "ordertype": "DO",
+                            "reference": f"{arr.picking_id.name} {arr.id}",
+                            "start": shipping_date,
+                            "end": receipt_date,
+                            "quantity": qty,
+                            "status": "confirmed",
+                            "item": {"name": product["name"]},
+                            "location": {"name": destination_wh},
+                        }
+                        | (
+                            {"origin": {"name": origin_wh}}
+                            if not qty_reserved_at_origin and not in_transit
+                            else {}
+                        )
+                    ) + ",\n"
+                except Exception as e:
+                    yield from self.flagException(f"exporting stock picking {arr}", e)
+        except Exception as e:
+            yield from self.flagException("exporting distribution orders", e)
+
     def export_orderpoints(self):
         """
         Defining order points for frePPLe, based on the stock.warehouse.orderpoint
@@ -4065,3 +4275,132 @@ class exporter(object):
                     )
         except Exception as e:
             yield from self.flagException("exporting on hand inventory", e)
+
+    def export_itemdistributions(self):
+        """
+        Generate the item distributions to frePPLe, based on the inter-warehouse
+        resupply routes in odoo.
+
+        When a warehouse is resupplied from another warehouse, odoo creates a route
+        that carries the supplied and the supplying warehouse. The rules of that
+        route move the goods through a transit location, which belongs to no
+        warehouse, so no single rule has its source and its destination in 2
+        different warehouses. The warehouse pair is therefore read from the route.
+
+        Odoo applies the most specific route assignment: a route on the product or
+        on its category wins over a route selected on the warehouse. We export at
+        the same granularity, which also keeps the number of records low:
+          - route assigned to products    -> one distribution per product
+          - route assigned to categories  -> one distribution on the category item
+          - route selected on a warehouse -> one distribution on the root item
+
+        Mapping:
+        stock.route.supplied_wh_id -> itemdistribution.destination
+        stock.route.supplier_wh_id -> itemdistribution.origin
+        stock.route.product_ids / categ_ids / warehouse_ids -> itemdistribution.item
+        sum of the delay of the pull rules -> itemdistribution.leadtime
+        """
+        try:
+            # Routes that describe a resupply between 2 warehouses.
+            # Ordered by sequence, so the route odoo would pick comes first.
+            routes = [
+                r
+                for r in self.generator.getData(
+                    "stock.route",
+                    search=[
+                        ("supplied_wh_id", "!=", False),
+                        ("supplier_wh_id", "!=", False),
+                    ],
+                    order="sequence,id",
+                    fields=[
+                        "supplied_wh_id",
+                        "supplier_wh_id",
+                        "rule_ids",
+                        "product_ids",
+                        "categ_ids",
+                        "warehouse_ids",
+                    ],
+                )
+                if r["supplied_wh_id"][0] in self.warehouses
+                and r["supplier_wh_id"][0] in self.warehouses
+            ]
+            if not routes:
+                return
+
+            # The lead time of a route is the sum of the delays of its pull rules,
+            # the same aggregation odoo uses in stock.rule._get_lead_days
+            leadtimes = {}
+            for rule in self.generator.getData(
+                "stock.rule",
+                ids=[i for r in routes for i in r["rule_ids"]],
+                fields=["route_id", "action", "delay"],
+            ):
+                if rule["action"] in ("pull", "pull_push") and rule["route_id"]:
+                    leadtimes[rule["route_id"][0]] = leadtimes.get(
+                        rule["route_id"][0], 0
+                    ) + (rule["delay"] or 0)
+
+            # All variants of a template: a route on the template applies to all of them
+            variants = {}
+            for p in self.product_product.values():
+                variants.setdefault(p["template"], []).append(p["name"])
+
+            # Root of the item hierarchy, ie the root product category of odoo
+            roots = [
+                "All items",  # We use the default 'All items' from Frepple to have one less level of hierarchy
+            ]
+
+            # Collect the distributions. The key is what frepple makes unique as well,
+            # so a second route for the same item and warehouse pair is skipped.
+            distributions = {}
+            priority_item = 1
+            priority_category = 10
+            priority_warehouse = 99
+            for r in routes:
+                destination = self.warehouses[r["supplied_wh_id"][0]]
+                origin = self.warehouses[r["supplier_wh_id"][0]]
+                destination_obj = self.generator.getData(
+                    "stock.warehouse",
+                    ids=[r["supplied_wh_id"][0]],
+                    object=True,
+                )[0]
+                leadtime = leadtimes.get(r["id"], 0)
+                items = []
+                for tmpl in r["product_ids"]:
+                    items.extend(
+                        (item, priority_item) for item in variants.get(tmpl, [])
+                    )
+                for categ in r["categ_ids"]:
+                    if categ in self.categories:
+                        items.append(
+                            (self.categories[categ]["complete_name"], priority_category)
+                        )
+
+                if (
+                    r["supplier_wh_id"][0] in destination_obj.resupply_wh_ids.ids
+                    or r["supplied_wh_id"][0] in r["warehouse_ids"]
+                ):
+                    # Selected on the warehouse it supplies: the default for all items
+                    items.extend((item, priority_warehouse) for item in roots)
+                for item, priority in items:
+                    distributions.setdefault(
+                        (item, destination, origin), (leadtime, priority, r["id"])
+                    )
+
+            for (item, destination, origin), (
+                leadtime,
+                priority,
+                route_id,
+            ) in distributions.items():
+                yield json.dumps(
+                    {
+                        "priority": priority,
+                        "leadtime": leadtime * 86400,
+                        "route_id": route_id,
+                        "item": {"name": item},
+                        "destination": {"name": destination},
+                        "origin": {"name": origin},
+                    }
+                ) + ",\n"
+        except Exception as e:
+            yield from self.flagException("exporting item distributions", e)
