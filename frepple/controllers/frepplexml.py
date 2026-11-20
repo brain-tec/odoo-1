@@ -621,7 +621,6 @@ class XMLController(odoo.http.Controller):
                     # Set the polymorphic related_data_id field if found
                     if related_data_id:
                         i["related_data_id"] = related_data_id
-                logger.info(data.get("recommendations"))
                 req.env["frepple.recommendation"].sudo().with_context(
                     frepple_import=True
                 ).create(data.get("recommendations"))

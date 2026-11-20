@@ -14,14 +14,12 @@
                      <div class="row mt16 o_settings_container">
                         <div class="col-12 d-flex align-items-center">
                            <div class="flex-grow-1">
-                              <label for="manufacturing_warehouse" string="Configuring a connection to frepple is easy." class="o_form_label"/>
-                              <br/>
-                              <label for="manufacturing_warehouse" string="However, it might not always work out of the box (if you have a proxy, customizations…)." class="o_form_label"/>
-                              <br/>
-                              <div class="o_form_label mb-0">
-                                 Contact us at
+                              <div class="text-muted o_form_label">
+                              Configuring a connection to frepple is easy.<br/>
+                              However, it might not always work out of the box (if you have a proxy, customizations…).<br/>
+                              Contact us at
                                  <a href="mailto:info@frepple.com?subject=Help%20me%20configure%20my%20Odoo-freppLe%20connection">info@frepple.com</a>
-                                 and we will be happy to help you set it up.
+                              and we will be happy to help you set it up.
                               </div>
                            </div>
                            <div class="ms-3">
