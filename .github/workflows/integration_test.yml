@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "19.0-dev"
+      - "19.0"
   workflow_dispatch:
 
 jobs:
@@ -13,11 +14,12 @@ jobs:
       - name: Trigger event on frepple repository
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.COMMUNITY_GITHUB_TOKEN }}
-          script: |
-            await github.rest.repos.createDispatchEvent({
-              owner: "frePPLe",
-              repo: "frepple",
-              event_type: "odoo_connector_19",
-            });
+          token: ${{ secrets.COMMUNITY_GITHUB_TOKEN }}
+          repo: frepple
+          owner: frePPLe
+          event_type: odoo_connector_19
+          message: |
+            {
+              "branch": "${{ github.ref_name }}"
+            }
 
